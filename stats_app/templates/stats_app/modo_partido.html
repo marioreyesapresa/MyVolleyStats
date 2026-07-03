@@ -1,0 +1,1601 @@
+{% extends 'stats_app/base_voley.html' %}
+
+{% block title %}Scout Rotation Pro | {{ partido.equipo.nombre }}{% endblock %}
+
+{% block header_title %}Scout Rotation Pro{% endblock %}
+
+{% block content %}
+<!-- Tab: Pizarra de Rotación -->
+<div id="tab-rotacion-content" class="tab-content hidden w-full max-w-6xl mx-auto space-y-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Interactive Rotation Court Card (Col 8) -->
+        <div class="lg:col-span-8 bg-[#121824] rounded-3xl p-6 md:p-8 border border-slate-800 shadow-xl space-y-6 flex flex-col justify-between">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-black uppercase tracking-wider text-white">Rotación Activa</h3>
+                    <p class="text-slate-400 text-sm mt-0.5">Visualización táctica de las zonas en pista (Z1 - Z6).</p>
+                </div>
+                <!-- Zone filter tabs -->
+                <div class="flex space-x-1.5 bg-[#1a202c] p-1.5 rounded-xl border border-slate-800">
+                    <button onclick="highlightZones('delantera')" class="px-4 py-1.5 bg-blue-600 text-white text-[10px] font-black rounded-lg uppercase tracking-wider transition-all">Delante</button>
+                    <button onclick="highlightZones('zaguera')" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] font-black rounded-lg uppercase tracking-wider transition-all">Zaguera</button>
+                    <button onclick="highlightZones('todas')" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] font-black rounded-lg uppercase tracking-wider transition-all">Todas</button>
+                </div>
+            </div>
+
+            <!-- Court Drawing Container -->
+            <div class="relative bg-blue-950/20 rounded-3xl border border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center min-h-[440px] overflow-hidden">
+                <!-- Court Graphic -->
+                <div id="court-grid-view" class="w-full max-w-2xl aspect-[4/3] bg-teal-900/60 rounded-3xl border-4 border-white/90 relative p-2 flex flex-col divide-y-4 divide-white shadow-2xl animate-fade-in">
+                    <!-- Net (Network Line) -->
+                    <div class="absolute top-1/2 left-0 right-0 h-1.5 bg-yellow-400 z-10 border-b border-black/20 shadow-md"></div>
+                    
+                    <!-- Top Half (Attack/Front Row Zone) -->
+                    <div class="flex-1 grid grid-cols-3 divide-x-4 divide-white/60">
+                        <!-- Zone 4 (Left-Front) -->
+                        <div id="zone-4" onclick="selectZonePizarra(4)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 4</span>
+                            <div class="zone-badge-container mt-3 w-full flex justify-center">
+                                <!-- Populated dynamically from JS -->
+                            </div>
+                        </div>
+                        <!-- Zone 3 (Middle-Front) -->
+                        <div id="zone-3" onclick="selectZonePizarra(3)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 3</span>
+                            <div class="zone-badge-container mt-3 w-full flex justify-center">
+                                <!-- Populated dynamically from JS -->
+                            </div>
+                        </div>
+                        <!-- Zone 2 (Right-Front) -->
+                        <div id="zone-2" onclick="selectZonePizarra(2)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 2</span>
+                            <div class="zone-badge-container mt-3 w-full flex justify-center">
+                                <!-- Populated dynamically from JS -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bottom Half (Back Row Zone) -->
+                    <div class="flex-1 grid grid-cols-3 divide-x-4 divide-white/60">
+                        <!-- Zone 5 (Left-Back) -->
+                        <div id="zone-5" onclick="selectZonePizarra(5)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 5</span>
+                            <div class="zone-badge-container mt-3 w-full flex justify-center">
+                                <!-- Populated dynamically from JS -->
+                            </div>
+                        </div>
+                        <!-- Zone 6 (Middle-Back) -->
+                        <div id="zone-6" onclick="selectZonePizarra(6)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 6</span>
+                            <div class="zone-badge-container mt-3 w-full flex justify-center">
+                                <!-- Populated dynamically from JS -->
+                            </div>
+                        </div>
+                        <!-- Zone 1 (Right-Back/Serve) -->
+                        <div id="zone-1" onclick="selectZonePizarra(1)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 1 (Saque)</span>
+                            <div class="zone-badge-container mt-3 w-full flex justify-center">
+                                <!-- Populated dynamically from JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Court Controls -->
+            <div class="flex space-x-4 animate-fade-in">
+                <button onclick="rotar('adelante')" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-2xl active:scale-95 transition-all flex items-center justify-center uppercase tracking-widest shadow-lg">
+                    <i data-lucide="rotate-cw" class="w-5 h-5 mr-3"></i> Rotación 🔄
+                </button>
+                <button onclick="toggleModal('modal-config')" class="py-4 px-8 bg-slate-800 hover:bg-slate-700 text-white text-sm font-black rounded-2xl active:scale-95 transition-all flex items-center justify-center uppercase tracking-widest shadow-md">
+                    <i data-lucide="sliders" class="w-5 h-5 mr-2"></i> Config. Set
+                </button>
+            </div>
+        </div>
+
+        <!-- Bench available panel (Col 4) -->
+        <div id="bench-panel-container" class="lg:col-span-4 bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-col justify-between space-y-6 animate-fade-in">
+            <div class="space-y-4 flex-1 flex flex-col justify-between">
+                <div class="space-y-1">
+                    <h3 class="text-lg font-black uppercase tracking-wider text-white">Banquillo Disponible</h3>
+                    <p class="text-slate-400 text-xs leading-normal">Pulsa una jugadora del banquillo y luego la zona de la pista (Z1-Z6) para asignarle la posición.</p>
+                </div>
+                
+                <!-- Grid of available players -->
+                <div id="bench-players-list" class="grid grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto pr-1 py-2 scrollbar-hide flex-1">
+                    <!-- Dynamically populated from JS -->
+                </div>
+            </div>
+            
+            <div class="pt-4 border-t border-slate-850 space-y-3">
+                <button onclick="guardarAlineacionLocal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest shadow-lg flex items-center justify-center">
+                    <i data-lucide="save" class="w-4 h-4 mr-2"></i> Guardar Alineación
+                </button>
+                <button onclick="clearTempLineup()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white font-black py-3.5 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center">
+                    <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Limpiar Todo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab: Scout en Vivo -->
+<div id="tab-scout-content" class="tab-content hidden w-full space-y-8">
+    <!-- Roster Selector Card & Scoreboard -->
+    <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+            <!-- Columna Izquierda: Selección Jugadora (Flexible) -->
+            <div class="lg:col-span-2 space-y-3">
+                <div class="flex items-center justify-between lg:justify-start lg:space-x-4">
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Selección Jugadora</h3>
+                    <!-- Mobile settings button if screen is small -->
+                    <button onclick="toggleModal('modal-config')" class="lg:hidden text-slate-400 hover:text-white transition-all flex items-center space-x-1" title="Ajustes Set">
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div id="active-roster-container" class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide py-1">
+                    <!-- Dynamically populated from JS -->
+                </div>
+            </div>
+            
+            <!-- Columna Derecha: Marcador Compacto y Masivo -->
+            <div class="flex items-center justify-between lg:justify-end space-x-8 border-t lg:border-t-0 border-slate-800/80 pt-4 lg:pt-0 self-center">
+                <!-- Sets status (discrete) -->
+                <div class="flex flex-col items-center lg:items-end space-y-0.5">
+                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-[0.15em]">SETS GLOBAL</span>
+                    <span id="scoreboard-sets" class="text-xs font-black text-slate-300 tracking-widest font-mono">
+                        (0) - (0)
+                    </span>
+                </div>
+                
+                <!-- Digital Scoreboard current set points (Clean, flat & massive) -->
+                <div class="flex items-center space-x-4 select-none">
+                    <!-- Local team points (Massive emerald digital) -->
+                    <div class="flex flex-col items-center">
+                        <span id="score-local" class="text-4xl lg:text-5xl font-black font-mono text-emerald-400 tracking-tight leading-none min-w-[48px] text-center">00</span>
+                        <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5">LOCAL</span>
+                    </div>
+                    
+                    <!-- Colon divider -->
+                    <span class="text-slate-700 font-black font-mono text-3xl leading-none -mt-4">:</span>
+                    
+                    <!-- Rival team points (Massive rose digital) -->
+                    <div class="flex flex-col items-center">
+                        <span id="score-rival" class="text-4xl lg:text-5xl font-black font-mono text-rose-500 tracking-tight leading-none min-w-[48px] text-center">00</span>
+                        <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5">RIVAL</span>
+                    </div>
+                </div>
+
+                <!-- Desktop Settings button -->
+                <button onclick="toggleModal('modal-config')" class="hidden lg:flex items-center justify-center p-3 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl text-slate-400 hover:text-white transition-all active:scale-95 shadow-lg" title="Ajustes Set">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat Registration Panel -->
+    <div class="bg-[#121824] rounded-3xl p-6 md:p-8 border border-slate-800 shadow-xl space-y-6">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+            <div class="flex items-center space-x-3">
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Acciones Técnicas</h3>
+                <!-- ── Indicador de Fase Actual ─────────────────────── -->
+                <div id="fase-badge" class="flex items-center space-x-1.5 px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all duration-300
+                     bg-blue-500/10 border-blue-500/30 text-blue-400">
+                    <span id="fase-dot" class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                    <span id="fase-label">K1 — Recepción</span>
+                </div>
+            </div>
+            <button onclick="eliminarUltimo()" class="px-4 py-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-black rounded-xl active:scale-95 transition-all flex items-center uppercase tracking-widest hover:bg-rose-500/20 shadow-md">
+                <i data-lucide="undo-2" class="w-4 h-4 mr-2"></i> Deshacer
+            </button>
+        </div>
+
+        <!-- Actions grid -->
+        <div id="scout-actions-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
+            <!-- Serve buttons -->
+            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
+                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Saque</span>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="registrar('SAQUE', '++')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Ace (++)">++</button>
+                    <button onclick="registrar('SAQUE', '+')" class="py-5 bg-emerald-500/60 hover:bg-emerald-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positivo (+)">+</button>
+                    <button onclick="registrar('SAQUE', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativo (-)">-</button>
+                    <button onclick="registrar('SAQUE', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
+                </div>
+            </div>
+
+            <!-- Reception buttons -->
+            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
+                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Recepción</span>
+                <div class="grid grid-cols-5 gap-1">
+                    <button onclick="registrar('RECEPCION', '++')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Excelente (++)">++</button>
+                    <button onclick="registrar('RECEPCION', '+')" class="py-5 bg-emerald-500/60 hover:bg-emerald-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positiva (+)">+</button>
+                    <button onclick="registrar('RECEPCION', '=')" class="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Continuidad (=)">=</button>
+                    <button onclick="registrar('RECEPCION', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativa (-)">-</button>
+                    <button onclick="registrar('RECEPCION', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
+                </div>
+            </div>
+
+            <!-- Attack buttons -->
+            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
+                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Ataque</span>
+                <div class="grid grid-cols-5 gap-1">
+                    <button onclick="registrar('ATAQUE', '++')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Punto (++)">++</button>
+                    <button onclick="registrar('ATAQUE', '+')" class="py-5 bg-emerald-500/60 hover:bg-emerald-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positivo (+)">+</button>
+                    <button onclick="registrar('ATAQUE', '=')" class="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Continuidad (=)">=</button>
+                    <button onclick="registrar('ATAQUE', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativo (-)">-</button>
+                    <button onclick="registrar('ATAQUE', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
+                </div>
+            </div>
+
+            <!-- Block buttons -->
+            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
+                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Bloqueo</span>
+                <div class="grid grid-cols-5 gap-1">
+                    <button onclick="registrar('BLOQUEO', '++')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Punto (++)">++</button>
+                    <button onclick="registrar('BLOQUEO', '+')" class="py-5 bg-emerald-500/60 hover:bg-emerald-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positivo (+)">+</button>
+                    <button onclick="registrar('BLOQUEO', '=')" class="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Continuidad (=)">=</button>
+                    <button onclick="registrar('BLOQUEO', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativo (-)">-</button>
+                    <button onclick="registrar('BLOQUEO', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
+                </div>
+            </div>
+
+            <!-- Defense buttons -->
+            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
+                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Defensa</span>
+                <div class="grid grid-cols-5 gap-1">
+                    <button onclick="registrar('DEFENSA', '++')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Perfecta (++)">++</button>
+                    <button onclick="registrar('DEFENSA', '+')" class="py-5 bg-emerald-500/60 hover:bg-emerald-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positiva (+)">+</button>
+                    <button onclick="registrar('DEFENSA', '=')" class="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Continuidad (=)">=</button>
+                    <button onclick="registrar('DEFENSA', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativa (-)">-</button>
+                    <button onclick="registrar('DEFENSA', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
+                </div>
+            </div>
+
+            <!-- Colocacion buttons -->
+            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
+                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Colocación</span>
+                <div class="grid grid-cols-5 gap-1">
+                    <button onclick="registrar('COLOCACION', '++')" class="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Excelente (++)">++</button>
+                    <button onclick="registrar('COLOCACION', '+')" class="py-5 bg-blue-500/60 hover:bg-blue-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positiva (+)">+</button>
+                    <button onclick="registrar('COLOCACION', '=')" class="py-5 bg-[#1e293b] border border-slate-850 hover:bg-slate-750 text-slate-200 font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Continuidad (=)">=</button>
+                    <button onclick="registrar('COLOCACION', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativa (-)">-</button>
+                    <button onclick="registrar('COLOCACION', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Opponent buttons (Red & Orange) -->
+        <div id="scout-opponent-grid" class="grid grid-cols-2 gap-6 border-t border-slate-800/60 pt-6 transition-all duration-300">
+            <button onclick="registrar('ERROR_RIVAL', '')" class="py-5 md:py-6 bg-orange-950/20 hover:bg-orange-900/20 border-2 border-orange-850 text-orange-400 font-black rounded-2xl active:scale-95 transition-all text-xs md:text-sm uppercase tracking-widest flex items-center justify-center shadow-lg">
+                <i data-lucide="award" class="w-5 h-5 mr-3"></i> Error Rival
+            </button>
+            <button onclick="registrar('PUNTO_RIVAL', '')" class="py-5 md:py-6 bg-rose-950/20 hover:bg-rose-900/20 border-2 border-rose-800/30 text-rose-400 font-black rounded-2xl active:scale-95 transition-all text-xs md:text-sm uppercase tracking-widest flex items-center justify-center shadow-lg">
+                <i data-lucide="zap-off" class="w-5 h-5 mr-3"></i> Punto Rival
+            </button>
+        </div>
+    </div>
+
+    <!-- Recent Logs (History box) -->
+    <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-800/60 pb-3">
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Registro Histórico</h3>
+            <span id="counter-text" class="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 shadow-sm">0 ACCIONES</span>
+        </div>
+        
+        <div id="historial-list" class="space-y-2.5 max-h-64 overflow-y-auto pr-1 scrollbar-hide">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+</div>
+
+<!-- Tab: Indicadores del Set -->
+<div id="tab-metricas-content" class="tab-content hidden w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- ═══ LEFT COLUMN: 65% (8 cols) ═══════════════════════════════ -->
+        <div class="lg:col-span-8 space-y-5">
+
+            <!-- Chart: Rendimiento en Vivo -->
+            <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-sm font-black uppercase tracking-wider text-white">Rendimiento en Vivo</h3>
+                        <p class="text-slate-500 text-[10px] mt-0.5">Evolución de efectividad y tendencias del set.</p>
+                    </div>
+                    <div class="flex items-center space-x-4 text-[9px] font-black text-slate-500 uppercase">
+                        <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>K1</span>
+                        <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-blue-500 mr-1.5"></span>K2</span>
+                    </div>
+                </div>
+
+                <div class="bg-[#090d16] rounded-2xl px-4 pt-4 pb-8 border border-slate-800 relative shadow-inner h-56">
+                    <div class="absolute inset-0 grid grid-cols-4 grid-rows-3 opacity-5 pointer-events-none">
+                        <div class="border-r border-b border-white"></div><div class="border-r border-b border-white"></div>
+                        <div class="border-r border-b border-white"></div><div class="border-b border-white"></div>
+                        <div class="border-r border-b border-white"></div><div class="border-r border-b border-white"></div>
+                        <div class="border-r border-b border-white"></div><div class="border-b border-white"></div>
+                    </div>
+                    <svg class="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stop-color="#10b981" stop-opacity="0.4"/>
+                                <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M 0 80 Q 25 30 50 45 T 100 10" fill="url(#g1)" stroke="#10b981" stroke-width="3" />
+                        <path d="M 0 90 Q 20 60 50 70 T 100 40" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-dasharray="3 2" opacity="0.7" />
+                    </svg>
+                    <div class="absolute bottom-2 left-4 right-4 flex justify-between text-[8px] font-black text-slate-600 uppercase tracking-widest">
+                        <span>Inicio</span><span>Medio Set</span><span>Match Point</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matrix: Eficacia por Rotación Activa -->
+            <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Eficacia por Rotación Activa</h3>
+                        <p class="text-[9px] text-slate-600 mt-0.5">K1 / K2 por posición del colocador en el set actual</p>
+                    </div>
+                    <span class="text-[9px] font-black text-slate-600 uppercase tracking-wider">R1 → R6</span>
+                </div>
+                <div id="rotation-matrix" class="grid grid-cols-6 gap-3">
+                    <!-- 6 rotation blocks rendered by JS -->
+                    {% for i in "123456" %}
+                    <div class="rot-block bg-[#090d16] rounded-2xl p-3 border border-slate-800 flex flex-col items-center space-y-2" data-pos="{{ forloop.counter }}">
+                        <span class="text-[9px] font-black text-slate-500 uppercase tracking-wider">R{{ forloop.counter }}</span>
+                        <div class="w-full space-y-1">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[7px] font-bold text-emerald-500">K1</span>
+                                <span class="rot-k1 text-[9px] font-black text-white">—</span>
+                            </div>
+                            <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                                <div class="rot-k1-bar h-full bg-emerald-500 rounded-full transition-all" style="width:0%"></div>
+                            </div>
+                            <div class="flex justify-between items-center mt-1">
+                                <span class="text-[7px] font-bold text-blue-500">K2</span>
+                                <span class="rot-k2 text-[9px] font-black text-white">—</span>
+                            </div>
+                            <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                                <div class="rot-k2-bar h-full bg-blue-500 rounded-full transition-all" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ RIGHT COLUMN: 35% (4 cols) ══════════════════════════════ -->
+        <div class="lg:col-span-4 space-y-4">
+
+            <!-- BLOQUE 1: Líderes del Set (compact) -->
+            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Líderes del Set</h3>
+
+                <div class="flex items-center space-x-3 py-1.5">
+                    <div class="p-2 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20 flex-none">
+                        <i data-lucide="crown" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">MVP</span>
+                        <p id="mvp-label" class="text-xs font-black text-white truncate">--</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3 py-1.5">
+                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20 flex-none">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Mejor Sacadora</span>
+                        <p id="lider-saque-label" class="text-xs font-black text-white truncate">--</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3 py-1.5">
+                    <div class="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20 flex-none">
+                        <i data-lucide="target" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Mejor Atacante</span>
+                        <p id="lider-ataque-label" class="text-xs font-black text-white truncate">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOQUE 2: Alerta Táctica (compact) -->
+            <div id="alerta-card" class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2 transition-colors duration-300">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Alerta Táctica</h3>
+                <div class="bg-rose-950/20 p-3 rounded-xl border border-rose-900/25 flex items-start space-x-2.5">
+                    <div class="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg border border-rose-500/20 flex-none mt-0.5">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 animate-pulse"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <span class="text-[8px] font-black text-rose-400 uppercase tracking-widest block">Rendimiento Bajo</span>
+                        <p id="alerta-label" class="text-[11px] font-bold text-slate-200 mt-0.5 leading-snug">Sin alertas en el set</p>
+                        <div id="alerta-bar-wrap" class="mt-1.5 hidden">
+                            <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                                <div id="alerta-bar" class="h-full bg-rose-500 rounded-full transition-all" style="width:0%"></div>
+                            </div>
+                            <span id="alerta-pct" class="text-[8px] font-black text-rose-400 mt-0.5 block">0% errores directos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOQUE 3: Eficacia K1/K2 (compact) -->
+            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-3">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Eficacia de Complejos</h3>
+                <div class="space-y-1">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span class="text-[9px] font-black text-slate-400 uppercase">K1 Recep.+Ataque</span>
+                        </div>
+                        <span id="k1-pct-label" class="text-[10px] font-black text-emerald-400">0%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="k1-bar" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-700" style="width:0%"></div>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            <span class="text-[9px] font-black text-slate-400 uppercase">K2 Saque+Bloq.+Def.</span>
+                        </div>
+                        <span id="k2-pct-label" class="text-[10px] font-black text-blue-400">0%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="k2-bar" class="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-700" style="width:0%"></div>
+                    </div>
+                </div>
+                <p class="text-[8px] text-slate-700 italic">(++ − --) / Total acciones del complejo</p>
+            </div>
+
+            <!-- BLOQUE 4: Registro de Parones -->
+            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2 flex-1">
+                <div class="flex justify-between items-center pb-1 border-b border-slate-800">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Registro de Parones</h3>
+                    <button onclick="registrarTimeout()" class="text-[8px] font-black text-slate-500 hover:text-amber-400 uppercase tracking-wider flex items-center space-x-1 transition-colors">
+                        <i data-lucide="plus" class="w-3 h-3"></i><span>T. Muerto</span>
+                    </button>
+                </div>
+                <div id="parones-list" class="space-y-1.5 max-h-44 overflow-y-auto pr-0.5 scrollbar-hide">
+                    <p id="parones-empty" class="text-[9px] text-slate-600 italic text-center py-3">Sin parones registrados</p>
+                </div>
+            </div>
+
+            <!-- PDF Reports Shortcuts -->
+            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Informes</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-3 text-white text-[10px] font-black rounded-xl active:scale-95 transition-all uppercase tracking-wider text-center flex items-center justify-center border border-slate-700 shadow-md">
+                        <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5 text-emerald-400"></i>PDF
+                    </a>
+                    <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black rounded-xl active:scale-95 transition-all uppercase tracking-wider text-center flex items-center justify-center shadow-md">
+                        <i data-lucide="bar-chart-3" class="w-3.5 h-3.5 mr-1.5"></i>Informe
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- ======================================= -->
+<!-- MODAL CONFIGURACIÓN GENERAL DEL SET     -->
+<!-- ======================================= -->
+<div id="modal-config" class="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-[#121824] border border-slate-800 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl">
+        <div class="p-6 border-b border-slate-800 bg-[#090d16] flex justify-between items-center">
+            <h2 class="text-lg font-black uppercase text-white tracking-tight">Configuración del Set</h2>
+            <button onclick="toggleModal('modal-config')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+        </div>
+        <div class="p-8 space-y-6">
+            <div class="space-y-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Set Seleccionado</label>
+                <div class="grid grid-cols-5 gap-2">
+                    {% for i in "12345" %}
+                    <button onclick="setSet('{{ forloop.counter }}')" class="btn-set-choice py-3 rounded-xl border border-slate-800 bg-[#1a202c] text-slate-400 font-black text-sm transition-all" data-set="{{ forloop.counter }}">{{ forloop.counter }}</button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="space-y-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Roster Activo en Pista</label>
+                <div class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {% for j in jugadoras %}
+                    <button onclick="toggleJugadoraActiva('{{ j.id }}', this)" 
+                            class="btn-config-choice p-3 rounded-xl border border-slate-800 bg-[#1a202c] flex flex-col items-center justify-center transition-all"
+                            data-id="{{ j.id }}" data-dorsal="{{ j.dorsal }}">
+                        <span class="text-xl font-black text-white">#{{ j.dorsal }}</span>
+                        <span class="text-[8px] font-black text-slate-500 uppercase truncate w-full text-center">{{ j.nombre }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="p-6 bg-[#090d16] border-t border-slate-800">
+            <button onclick="guardarConfiguracionSet()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-sm shadow-xl active:scale-95 transition-all uppercase tracking-wider">
+                Actualizar Cambios
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================= -->
+<!-- MODAL DE CONFIRMACIÓN DE FIN DE SET      -->
+<!-- ======================================= -->
+<div id="modal-fin-set" class="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-[#121824] border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+        <div class="p-6 border-b border-slate-800 bg-[#090d16] flex justify-between items-center">
+            <h2 id="modal-fin-set-title" class="text-lg font-black uppercase text-white tracking-tight">¡Set Finalizado!</h2>
+            <button onclick="toggleModal('modal-fin-set')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+        </div>
+        <div class="p-8 space-y-6 text-center">
+            <div class="space-y-1">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Resultado Final</span>
+                <span id="modal-fin-set-score" class="text-5xl font-black text-emerald-400 font-mono tracking-tight leading-none block">25 - 23</span>
+            </div>
+            
+            <div class="space-y-3 text-left">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Duración del Set (minutos)</label>
+                <input type="number" id="input-set-duracion" value="20" min="1" max="120"
+                       class="w-full px-4 py-3 rounded-xl border border-slate-800 bg-[#090d16] text-white font-bold text-center text-lg focus:outline-none focus:border-blue-500 transition-all" />
+            </div>
+        </div>
+        <div class="p-6 bg-[#090d16] border-t border-slate-800 flex space-x-3">
+            <button onclick="toggleModal('modal-fin-set')" class="flex-1 bg-slate-850 hover:bg-slate-750 text-white font-black py-4 rounded-xl text-sm shadow-md active:scale-95 transition-all uppercase tracking-wider">
+                Modificar
+            </button>
+            <button onclick="guardarFinSet()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-sm shadow-xl active:scale-95 transition-all uppercase tracking-wider">
+                Guardar y Siguiente
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Floating Toast -->
+<div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 opacity-0 transform -translate-y-10 bg-slate-900 border border-slate-800 text-white font-black py-4 px-8 rounded-2xl shadow-2xl pointer-events-none flex items-center space-x-3 transition-all z-[200]">
+    <i data-lucide="info" class="w-6 h-6 text-emerald-400"></i>
+    <span id="toast-message">MANDO</span>
+</div>
+
+<script>
+    let allJugadoras = [
+        {% for j in jugadoras %}
+        { id: '{{ j.id }}', dorsal: '{{ j.dorsal }}', nombre: '{{ j.nombre|escapejs }}', posicion: '{{ j.posicion }}' },
+        {% endfor %}
+    ];
+
+    let state = { 
+        partido_id: '{{ partido.id }}', 
+        jugadora_id: null, 
+        set_numero: 1,
+        activeRoster: [],
+        rotation: null,
+        set_finished: false,
+        // ── Fases de juego (K0=Saque propio, K1=Recepción, K2=Defensa) ──
+        fase_actual: 'K1',   // default: start receiving (rival serves first)
+        tenemos_saque: false, // true when we are serving
+        rotacion_num: 1       // current rotation R1-R6 (increments on side-out win)
+    };
+
+    let selectedBenchPlayerId = null;
+    let tempLineup = { pos1: null, pos2: null, pos3: null, pos4: null, pos5: null, pos6: null };
+
+    // Pre-cargar historial inicial
+    const historialInicial = {{ historial_inicial|safe }};
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Init active roster with first 8 players
+        allJugadoras.slice(0, 8).forEach(j => {
+            state.activeRoster.push({ id: j.id, dorsal: j.dorsal });
+        });
+        
+        updateUIHeader();
+        
+        historialInicial.forEach(data => renderAction(data, data.calidad));
+        setSet(1); // Set 1 initial load
+        updateFaseIndicator(); // Show K1 badge on startup
+
+        // Active tab detection
+        const initialTab = getQueryParam('tab') || 'scout';
+        switchTab(initialTab);
+        
+        // Listen to tab clicks from sidebar to intercept reload if on same match page
+        document.querySelectorAll('.sidebar-nav-item').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const url = new URL(link.href);
+                if (url.pathname === window.location.pathname) {
+                    const tab = url.searchParams.get('tab');
+                    if (tab) {
+                        e.preventDefault();
+                        switchTab(tab);
+                        const drawerDark = document.getElementById('mobile-drawer-dark');
+                        if (drawerDark) drawerDark.classList.add('hidden');
+                    }
+                }
+            });
+        });
+    });
+
+    // Helper to get url params
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    // Dynamic tab switcher with pushState
+    function switchTab(tabId) {
+        switchTabNoPush(tabId);
+        
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('tab', tabId);
+        window.history.pushState({ tab: tabId }, '', newUrl.toString());
+    }
+
+    // Tab switcher without pushing state (for popstate or initial load)
+    function switchTabNoPush(tabId) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(el => {
+            el.classList.add('hidden');
+        });
+        
+        // Show current tab content
+        const activeTabContent = document.getElementById(`tab-${tabId}-content`);
+        if (activeTabContent) {
+            activeTabContent.classList.remove('hidden');
+        }
+        
+        // Update active class on sidebar items
+        document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+            item.classList.remove('sidebar-active-dark');
+            item.classList.add('text-slate-400');
+        });
+        
+        // Highlight active items (mobile and desktop menus)
+        const activeItems = document.querySelectorAll(`.nav-${tabId}`);
+        activeItems.forEach(item => {
+            item.classList.add('sidebar-active-dark');
+            item.classList.remove('text-slate-400');
+        });
+        
+        // Update header title in topbar
+        const headerTitle = document.querySelector('header h1');
+        if (headerTitle) {
+            if (tabId === 'rotacion') {
+                headerTitle.innerText = 'Pizarra de Rotación';
+            } else if (tabId === 'scout') {
+                headerTitle.innerText = 'Scout en Vivo';
+            } else if (tabId === 'metricas') {
+                headerTitle.innerText = 'Indicadores del Set';
+            }
+        }
+    }
+
+    // Handle back/forward navigation
+    window.addEventListener('popstate', (event) => {
+        const tab = (event.state && event.state.tab) || getQueryParam('tab') || 'scout';
+        switchTabNoPush(tab);
+    });
+
+    function toggleModal(id) {
+        const modal = document.getElementById(id);
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Sync buttons in config set modal
+            if(id === 'modal-config') {
+                state.activeRoster = [];
+                if (state.rotation) {
+                    for (let i = 1; i <= 6; i++) {
+                        const player = state.rotation[`pos${i}`];
+                        if (player) {
+                            state.activeRoster.push({ id: String(player.id), dorsal: player.dorsal });
+                        }
+                    }
+                }
+                
+                document.querySelectorAll('.btn-config-choice').forEach(btn => {
+                    const jId = btn.dataset.id;
+                    const jugEnRoster = state.activeRoster.find(j => String(j.id) === String(jId));
+                    if (jugEnRoster) {
+                        btn.style.borderColor = '#3b82f6';
+                        btn.style.backgroundColor = '#1e3a8a';
+                    } else {
+                        btn.style.borderColor = '#1e293b';
+                        btn.style.backgroundColor = '#1a202c';
+                    }
+                });
+            }
+        } else {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    function setSet(num) {
+        state.set_numero = parseInt(num);
+
+        // Reset phase state for the new set
+        state.fase_actual   = 'K1';   // assume rival serves to start each set
+        state.tenemos_saque = false;
+        state.rotacion_num  = 1;
+        updateFaseIndicator();
+
+        document.querySelectorAll('.btn-set-choice').forEach(b => {
+            if(parseInt(b.dataset.set) === state.set_numero) {
+                b.style.borderColor = '#3b82f6';
+                b.style.color = '#3b82f6';
+            } else {
+                b.style.borderColor = '#1e293b';
+                b.style.color = '#94a3b8';
+            }
+        });
+        
+        // Fetch rotation for new set
+        loadRotation();
+        updateFlashboard();
+    }
+
+    function toggleJugadoraActiva(id, btn) {
+        const idx = state.activeRoster.findIndex(j => String(j.id) === String(id));
+        if (idx > -1) { 
+            state.activeRoster.splice(idx, 1); 
+            btn.style.borderColor = '#1e293b';
+            btn.style.backgroundColor = '#1a202c';
+        } else { 
+            const j = allJugadoras.find(x => x.id == id); 
+            state.activeRoster.push({ id: String(j.id), dorsal: j.dorsal }); 
+            btn.style.borderColor = '#3b82f6';
+            btn.style.backgroundColor = '#1e3a8a';
+        }
+    }
+
+    async function guardarConfiguracionSet() {
+        if (!state.rotation) {
+            showToast("⚠️ No hay alineación inicial en este set");
+            return;
+        }
+
+        const currentActiveIds = [];
+        for (let i = 1; i <= 6; i++) {
+            if (state.rotation[`pos${i}`]) {
+                currentActiveIds.push(String(state.rotation[`pos${i}`].id));
+            }
+        }
+
+        const newActiveIds = state.activeRoster.map(x => String(x.id));
+
+        const salePlayers = currentActiveIds.filter(id => !newActiveIds.includes(id));
+        const entraPlayers = newActiveIds.filter(id => !currentActiveIds.includes(id));
+
+        if (salePlayers.length > 0 || entraPlayers.length > 0) {
+            if (salePlayers.length === 1 && entraPlayers.length === 1) {
+                const saleId = salePlayers[0];
+                const entraId = entraPlayers[0];
+
+                try {
+                    // 1. Register substitution statistic
+                    const rCambio = await fetch('{% url "stats_app:api_registrar_cambio" %}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: JSON.stringify({
+                            partido_id: state.partido_id,
+                            sale_id: saleId,
+                            entra_id: entraId,
+                            set_numero: state.set_numero
+                        })
+                    });
+
+                    // 2. Update rotation position
+                    const newPositions = {
+                        set_numero: state.set_numero,
+                        pos1: state.rotation.pos1 ? state.rotation.pos1.id : '',
+                        pos2: state.rotation.pos2 ? state.rotation.pos2.id : '',
+                        pos3: state.rotation.pos3 ? state.rotation.pos3.id : '',
+                        pos4: state.rotation.pos4 ? state.rotation.pos4.id : '',
+                        pos5: state.rotation.pos5 ? state.rotation.pos5.id : '',
+                        pos6: state.rotation.pos6 ? state.rotation.pos6.id : '',
+                    };
+
+                    for (let i = 1; i <= 6; i++) {
+                        if (state.rotation[`pos${i}`] && String(state.rotation[`pos${i}`].id) === saleId) {
+                            newPositions[`pos${i}`] = entraId;
+                        }
+                    }
+
+                    const rRot = await fetch(`{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: JSON.stringify(newPositions)
+                    });
+
+                    if (rCambio.ok && rRot.ok) {
+                        const cambioRes = await rCambio.json();
+                        // Render substitution action log in UI
+                        renderAction(cambioRes, '=');
+
+                        // Log in Registro de Parones
+                        const saleJ = allJugadoras.find(x => String(x.id) === saleId);
+                        const entraJ = allJugadoras.find(x => String(x.id) === entraId);
+                        const pL = document.getElementById('score-local')?.innerText || '?';
+                        const pR = document.getElementById('score-rival')?.innerText || '?';
+                        addParonEntry(
+                            `🔄 Cambio: #${saleJ?.dorsal ?? '?'} → #${entraJ?.dorsal ?? '?'}`,
+                            `${pL} - ${pR}`, 'cambio'
+                        );
+
+                        showToast("✅ Cambio registrado");
+                        await renderActivePlayers();
+                        toggleModal('modal-config');
+                        updateFlashboard();
+                    } else {
+                        showToast("❌ Error al registrar el cambio");
+                    }
+                } catch (e) {
+                    showToast("❌ Error al guardar alineación");
+                }
+            } else {
+                showToast("⚠️ Realiza sustituciones de una en una para registrar el cambio.");
+            }
+        } else {
+            toggleModal('modal-config');
+        }
+    }
+
+    function updateUIHeader() {
+        const container = document.getElementById('active-roster-container');
+        container.innerHTML = '';
+        
+        if (state.rotation) {
+            // Draw Z1 to Z6 players in rotation order
+            for (let i = 1; i <= 6; i++) {
+                const player = state.rotation[`pos${i}`];
+                if (player) {
+                    const pj = allJugadoras.find(x => x.id == player.id);
+                    const nombre = pj ? pj.nombre : 'Jugadora';
+                    const html = `
+                        <button onclick="selectJugadora('${player.id}')" 
+                                class="btn-jug flex-none flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-[#161b26] border-2 border-slate-800 rounded-2xl hover:border-slate-700 active:scale-95 transition-all text-white shadow-md animate-fade-in" 
+                                id="btn-header-${player.id}">
+                            <span class="text-lg md:text-xl font-black">#${player.dorsal}</span>
+                            <span class="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-tight max-w-[56px] md:max-w-[72px] truncate">${nombre}</span>
+                        </button>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                } else {
+                    const html = `
+                        <div class="flex-none flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-[#090d16] border-2 border-dashed border-slate-800 rounded-2xl text-slate-600">
+                            <span class="text-lg md:text-xl font-black text-slate-500">Z${i}</span>
+                            <span class="text-[8px] font-bold uppercase tracking-tight text-slate-500">Vacío</span>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                }
+            }
+        } else {
+            container.innerHTML = `
+                <div class="flex items-center space-x-3 text-amber-500 py-3 pl-1">
+                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                    <span class="text-xs font-black uppercase tracking-wider">Alineación no configurada para este set. Configúrala en la Pizarra de Rotación.</span>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+        }
+        
+        if (state.rotation) {
+            container.insertAdjacentHTML('beforeend', `
+                <div class="h-12 w-px bg-slate-800 mx-2 flex-none self-center animate-fade-in"></div>
+                <button onclick="selectJugadora('null')" 
+                        class="btn-jug flex-none flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-[#1e293b] border-2 border-slate-800 rounded-2xl hover:border-slate-700 active:scale-95 transition-all text-emerald-400 shadow-md animate-fade-in" 
+                        id="btn-header-null">
+                    <span class="text-lg md:text-xl font-black">EQ</span>
+                    <span class="text-[8px] md:text-[9px] font-bold text-emerald-500/80 uppercase tracking-tight">Equipo</span>
+                </button>
+            `);
+        }
+        
+        if (state.jugadora_id) {
+            selectJugadora(state.jugadora_id);
+        } else {
+            selectJugadora('null');
+        }
+    }
+
+    function selectJugadora(id) {
+        state.jugadora_id = (id === 'null' || id === null) ? null : id;
+        document.querySelectorAll('.btn-jug').forEach(b => {
+            b.style.borderColor = '#1e293b';
+            if (b.id.includes('null')) {
+                b.style.color = '#34d399';
+                b.style.backgroundColor = '#1e293b';
+            } else {
+                b.style.color = '#ffffff';
+                b.style.backgroundColor = '#161b26';
+            }
+        });
+        let activeId = id === null ? 'null' : id;
+        let el = document.getElementById(`btn-header-${activeId}`);
+        if(el) {
+            el.style.borderColor = '#10b981';
+            el.style.color = '#10b981';
+            el.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+        }
+    }
+
+    // Active court zone click selects that player
+    function selectZone(zoneNum) {
+        if(!state.rotation) return;
+        const player = state.rotation[`pos${zoneNum}`];
+        if(player) {
+            selectJugadora(player.id);
+            showToast(`🎯 Seleccionada: #${player.dorsal}`);
+        } else {
+            showToast(`⚠️ Zona ${zoneNum} vacía`);
+        }
+    }
+
+    // Highlight zones front / back
+    function highlightZones(type) {
+        const front = [2, 3, 4];
+        const back = [1, 5, 6];
+        
+        for (let i = 1; i <= 6; i++) {
+            const el = document.getElementById(`zone-${i}`);
+            if(!el) continue;
+            
+            el.style.backgroundColor = 'transparent';
+            if (type === 'delantera' && front.includes(i)) {
+                el.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+            } else if (type === 'zaguera' && back.includes(i)) {
+                el.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+            }
+        }
+    }
+
+    // Fetch active players and render them in header
+    async function renderActivePlayers() {
+        try {
+            const container = document.getElementById('active-roster-container');
+            if (container) {
+                container.innerHTML = '';
+            }
+            
+            const response = await fetch(`{% url "stats_app:api_get_rotacion" partido.id %}?set=${state.set_numero}`);
+            if (response.status === 200) {
+                state.rotation = await response.json();
+            } else {
+                state.rotation = null;
+            }
+            updateUIHeader();
+        } catch(e) {
+            console.error("Error al renderizar jugadoras activas: ", e);
+        }
+    }
+
+    // Fetch rotation from API
+    async function loadRotation() {
+        try {
+            await renderActivePlayers();
+            if (state.rotation) {
+                // Copy backend rotation to local tempLineup state
+                tempLineup.pos1 = state.rotation.pos1 ? state.rotation.pos1.id : null;
+                tempLineup.pos2 = state.rotation.pos2 ? state.rotation.pos2.id : null;
+                tempLineup.pos3 = state.rotation.pos3 ? state.rotation.pos3.id : null;
+                tempLineup.pos4 = state.rotation.pos4 ? state.rotation.pos4.id : null;
+                tempLineup.pos5 = state.rotation.pos5 ? state.rotation.pos5.id : null;
+                tempLineup.pos6 = state.rotation.pos6 ? state.rotation.pos6.id : null;
+            } else {
+                clearTempLineupStateOnly();
+            }
+            
+            drawCourtTempLineup();
+            drawBenchPlayers();
+        } catch(e) {
+            console.error("Error cargando rotación: ", e);
+        }
+    }
+
+    function clearTempLineupStateOnly() {
+        tempLineup.pos1 = null;
+        tempLineup.pos2 = null;
+        tempLineup.pos3 = null;
+        tempLineup.pos4 = null;
+        tempLineup.pos5 = null;
+        tempLineup.pos6 = null;
+        selectedBenchPlayerId = null;
+    }
+
+    function clearTempLineup() {
+        clearTempLineupStateOnly();
+        drawCourtTempLineup();
+        drawBenchPlayers();
+        showToast("🧹 Pista despejada localmente");
+    }
+
+    function selectBenchPlayer(id) {
+        selectedBenchPlayerId = id;
+        drawBenchPlayers();
+    }
+
+    function selectZonePizarra(zoneNum) {
+        if (!selectedBenchPlayerId) {
+            showToast("🎯 Selecciona una jugadora del banquillo primero");
+            return;
+        }
+
+        // If this player is already assigned in another zone, remove them from that zone
+        for (let i = 1; i <= 6; i++) {
+            if (tempLineup[`pos${i}`] === selectedBenchPlayerId) {
+                tempLineup[`pos${i}`] = null;
+            }
+        }
+
+        // Assign player to the selected zone
+        tempLineup[`pos${zoneNum}`] = selectedBenchPlayerId;
+        selectedBenchPlayerId = null;
+
+        drawCourtTempLineup();
+        drawBenchPlayers();
+        showToast(`📍 Jugadora asignada a Zona ${zoneNum}`);
+    }
+
+    function unassignZone(zoneNum) {
+        tempLineup[`pos${zoneNum}`] = null;
+        drawCourtTempLineup();
+        drawBenchPlayers();
+        showToast(`❌ Zona ${zoneNum} despejada`);
+    }
+
+    function drawCourtTempLineup() {
+        for (let i = 1; i <= 6; i++) {
+            const el = document.getElementById(`zone-${i}`);
+            if (!el) continue;
+            
+            const container = el.querySelector('.zone-badge-container');
+            if (!container) continue;
+            
+            container.innerHTML = '';
+            const playerId = tempLineup[`pos${i}`];
+            
+            if (playerId) {
+                const player = allJugadoras.find(x => x.id == playerId);
+                const name = player ? player.nombre : 'Jugadora';
+                const dorsal = player ? player.dorsal : '?';
+                
+                const html = `
+                    <div class="relative group/badge flex flex-col items-center animate-fade-in">
+                        <div class="player-badge w-16 h-16 md:w-20 md:h-20 rounded-full bg-emerald-600 border-2 border-emerald-500 text-white font-black text-xl md:text-2xl flex items-center justify-center shadow-md transition-all">
+                            ${dorsal}
+                        </div>
+                        <button onclick="unassignZone(${i}); event.stopPropagation();" 
+                                class="absolute top-0 right-1/2 translate-x-7 md:translate-x-9 w-5 h-5 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center active:scale-95 transition-all shadow-md z-20"
+                                title="Quitar jugadora">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <span class="player-name mt-2 text-[10px] md:text-xs font-bold text-slate-200 uppercase truncate max-w-[80px] block text-center">${name}</span>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            } else {
+                const html = `
+                    <div class="flex flex-col items-center animate-fade-in">
+                        <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-dashed border-slate-600 hover:border-slate-500 flex flex-col items-center justify-center text-slate-400 font-bold transition-all shadow-inner">
+                            <i data-lucide="plus" class="w-4 h-4 mb-0.5 opacity-60 text-slate-400/80"></i>
+                            <span class="text-xs md:text-sm tracking-tighter">Z${i}</span>
+                        </div>
+                        <span class="player-name mt-2 text-[10px] md:text-xs font-bold text-slate-500 uppercase">Vacío</span>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            }
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function drawBenchPlayers() {
+        const container = document.getElementById('bench-players-list');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        // Find which player IDs are currently on the court
+        const assignedIds = Object.values(tempLineup);
+        
+        allJugadoras.forEach(j => {
+            // Hide player card if she is already placed on court
+            if (assignedIds.includes(j.id)) {
+                return;
+            }
+            
+            const isActive = (selectedBenchPlayerId === j.id);
+            const activeClasses = isActive 
+                ? 'border-blue-500 bg-blue-950/40 text-blue-400 ring-2 ring-blue-500/50' 
+                : 'border-slate-800 hover:border-slate-700 bg-[#161b26] text-white';
+                
+            const html = `
+                <button onclick="selectBenchPlayer('${j.id}')" 
+                        class="p-3 rounded-2xl border-2 transition-all flex flex-col items-center justify-center text-center shadow-md active:scale-95 ${activeClasses}" 
+                        id="bench-card-${j.id}">
+                    <span class="text-lg font-black">#${j.dorsal}</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight truncate max-w-[80px] block mt-0.5">${j.nombre}</span>
+                </button>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    async function guardarAlineacionLocal() {
+        const body = {
+            set_numero: state.set_numero,
+            pos1: tempLineup.pos1 || '',
+            pos2: tempLineup.pos2 || '',
+            pos3: tempLineup.pos3 || '',
+            pos4: tempLineup.pos4 || '',
+            pos5: tempLineup.pos5 || '',
+            pos6: tempLineup.pos6 || '',
+        };
+
+        if (Object.values(body).some(x => x === '')) {
+            showToast("⚠️ Asigna jugadoras a las 6 zonas antes de guardar");
+            return;
+        }
+
+        try {
+            const r = await fetch(`{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify(body)
+            });
+            if(r.ok) {
+                showToast("✅ Alineación guardada y activa");
+                loadRotation();
+            } else {
+                showToast("❌ Error al guardar alineación");
+            }
+        } catch(e) {
+            showToast("❌ Error de conexión");
+        }
+    }
+
+    // Rotate manual
+    async function rotar(dir) {
+        if(!state.rotation) {
+            showToast("⚠️ Configura la alineación primero");
+            return;
+        }
+        try {
+            const r = await fetch(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ set_numero: state.set_numero, direccion: dir })
+            });
+            if(r.ok) {
+                showToast("🔄 Rotación completada");
+                loadRotation();
+            } else {
+                showToast("❌ Error al rotar");
+            }
+        } catch(e) {
+            showToast("❌ Error de red");
+        }
+    }
+
+    // ── Indicador visual de fase ─────────────────────────────────────────
+    function updateFaseIndicator() {
+        const badge  = document.getElementById('fase-badge');
+        const dot    = document.getElementById('fase-dot');
+        const label  = document.getElementById('fase-label');
+        if (!badge) return;
+
+        const cfg = {
+            'K0': { text: 'K0 — Saque',      base: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400', dotCls: 'bg-emerald-400' },
+            'K1': { text: 'K1 — Recepción',  base: 'bg-blue-500/10 border-blue-500/30 text-blue-400',          dotCls: 'bg-blue-400'    },
+            'K2': { text: 'K2 — Defensa',    base: 'bg-amber-500/10 border-amber-500/30 text-amber-400',       dotCls: 'bg-amber-400'   },
+        };
+        const c = cfg[state.fase_actual] || cfg['K1'];
+        badge.className = `flex items-center space-x-1.5 px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${c.base}`;
+        label.textContent = c.text;
+        dot.className = `w-1.5 h-1.5 rounded-full animate-pulse ${c.dotCls}`;
+    }
+
+    // ── Auto-rotación en Side-Out ganado (K1 → K0) ──────────────────────
+    async function autoRotarSideOut() {
+        if (!state.rotation) return;
+        try {
+            const r = await fetch(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ set_numero: state.set_numero, direccion: 'horario' })
+            });
+            if (r.ok) {
+                // Advance rotation counter R1→R2→…→R6→R1
+                state.rotacion_num = (state.rotacion_num % 6) + 1;
+                showToast(`🔄 Rotación → R${state.rotacion_num}`);
+                await renderActivePlayers();   // refresh player header buttons
+                loadRotation();                // refresh court view
+            }
+        } catch (e) { /* silent */ }
+    }
+
+    // Register tactical action
+    async function registrar(accion, calidad) {
+        if (state.set_finished) {
+            showToast("⚠️ Set finalizado. Pasa al siguiente set para continuar registrando.");
+            return;
+        }
+        let jug_id = state.jugadora_id; 
+        if (!jug_id && !['ERROR_RIVAL', 'PUNTO_RIVAL'].includes(accion)) { 
+            showToast("⚠️ SELECCIONA JUGADORA"); 
+            return; 
+        }
+
+        // ── Determine the fase to tag this action with ───────────────────
+        // SAQUE always belongs to K0 (our serve phase)
+        // RECEPCION/ATAQUE after rival serve belong to K1
+        // BLOQUEO/DEFENSA when rival attacks belong to K2
+        let faseTag = state.fase_actual;
+        if (accion === 'SAQUE')    faseTag = 'K0';
+        if (accion === 'RECEPCION' || accion === 'COLOCACION') faseTag = 'K1';
+        if (accion === 'BLOQUEO'  || accion === 'DEFENSA')    faseTag = 'K2';
+        // ATAQUE inherits the current phase (K1 if after reception, K2 if after defence)
+        
+        try {
+            const response = await fetch('{% url "stats_app:api_registrar_estadistica" %}', { 
+                method: 'POST', 
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-CSRFToken': '{{ csrf_token }}' 
+                }, 
+                body: JSON.stringify({ 
+                    partido_id: state.partido_id, 
+                    jugadora_id: jug_id, 
+                    accion: accion, 
+                    calidad: calidad, 
+                    set_numero: state.set_numero, 
+                    fase: faseTag
+                }) 
+            });
+            
+            const res = await response.json();
+            if (res.status === 'ok') { 
+                renderAction(res, calidad); 
+                showToast("✅ Acción registrada");
+
+                // ── Phase-transition logic after each registered action ───
+                const esPuntoNuestro    = (calidad === '++') || (accion === 'ERROR_RIVAL');
+                const esPuntoRival      = (calidad === '--') || (accion === 'PUNTO_RIVAL');
+                const esAccionIntermedia = !esPuntoNuestro && !esPuntoRival;
+
+                if (esPuntoNuestro) {
+                    if (!state.tenemos_saque) {
+                        // Side-out ganado: rotamos y pasamos a K0
+                        state.tenemos_saque = true;
+                        state.fase_actual   = 'K0';
+                        await autoRotarSideOut();
+                    } else {
+                        // Punto con saque propio: mantenemos K0
+                        state.fase_actual = 'K0';
+                    }
+                } else if (esPuntoRival) {
+                    // Side-out perdido o error con saque propio → rival saca → K1
+                    state.tenemos_saque = false;
+                    state.fase_actual   = 'K1';
+                } else if (esAccionIntermedia) {
+                    // Rally continúa: avanzar fase si aplica
+                    if (accion === 'RECEPCION' && (calidad === '++' || calidad === '+' || calidad === '=')) {
+                        // Recepción exitosa → siguiente acción será ataque K1
+                        state.fase_actual = 'K1';
+                    } else if (accion === 'DEFENSA' && (calidad === '++' || calidad === '+')) {
+                        // Defensa positiva → contra-ataque K2
+                        state.fase_actual = 'K2';
+                    }
+                    // SAQUE positivo (+) → rival recibe → podemos entrar a K2
+                    if (accion === 'SAQUE' && calidad === '+') {
+                        state.fase_actual = 'K2';
+                    }
+                }
+
+                updateFaseIndicator();
+                updateFlashboard();
+                resetVisual();
+            } else {
+                showToast("❌ Error al registrar");
+            }
+        } catch (e) { 
+            showToast("❌ Error de conexión"); 
+        }
+    }
+
+    function renderAction(data, calidad) {
+        const list = document.getElementById('historial-list');
+        
+        let displayActionText = data.accion_texto || '';
+        
+        let colorClass = 'text-slate-200';
+        if (calidad === '++') colorClass = 'text-emerald-400';
+        else if (calidad === '+') colorClass = 'text-emerald-500';
+        else if (calidad === '=') colorClass = 'text-slate-400';
+        else if (calidad === '-') colorClass = 'text-orange-400';
+        else if (calidad === '--') colorClass = 'text-rose-400';
+        else if (displayActionText.includes('ERROR RIVAL')) colorClass = 'text-orange-400';
+        else if (displayActionText.includes('PUNTO RIVAL')) colorClass = 'text-rose-400';
+        else if (displayActionText.includes('CAMBIO')) colorClass = 'text-blue-400';
+
+        const html = `<div id="reg-${data.id}" class="history-item bg-[#161b26] p-4 rounded-2xl border border-slate-800/80 flex justify-between items-center shadow-sm">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center font-black border border-slate-800 text-xs">${data.dorsal}</div>
+                <div class="font-black text-xs uppercase tracking-wider italic ${colorClass}">${displayActionText}</div>
+            </div>
+            <button onclick="eliminarRegistro(${data.id})" class="text-rose-400/50 hover:text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl transition-all">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+        </div>`;
+        list.insertAdjacentHTML('afterbegin', html); 
+        updateCounter(); 
+        lucide.createIcons();
+    }
+
+    async function eliminarRegistro(id) {
+        if (!confirm('¿Eliminar esta acción?')) return;
+        try {
+            const r = await fetch('{% url "stats_app:api_eliminar_estadistica" %}', { 
+                method: 'POST', 
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-CSRFToken': '{{ csrf_token }}' 
+                }, 
+                body: JSON.stringify({ id: id }) 
+            });
+            if ((await r.json()).status === 'ok') { 
+                document.getElementById(`reg-${id}`).remove(); 
+                updateCounter(); 
+                showToast("🗑️ Acción eliminada");
+                updateFlashboard();
+            }
+        } catch(e) {
+            showToast("❌ Error al eliminar");
+        }
+    }
+
+    async function eliminarUltimo() {
+        const list = document.getElementById('historial-list');
+        if(list.children.length === 0) {
+            showToast("⚠️ Historial vacío");
+            return;
+        }
+        const firstChild = list.children[0];
+        const id = firstChild.id.replace('reg-', '');
+        eliminarRegistro(id);
+    }
+
+    function updateCounter() { 
+        document.getElementById('counter-text').innerText = `${document.getElementById('historial-list').children.length} ACCIONES`; 
+    }
+
+    function showToast(m) { 
+        const t = document.getElementById('toast'); 
+        document.getElementById('toast-message').innerText = m; 
+        t.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+        t.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto'); 
+        setTimeout(() => {
+            t.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+            t.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto'); 
+        }, 2000); 
+    }
+
+    function resetVisual() { 
+        state.jugadora_id = null; 
+        document.querySelectorAll('.btn-jug').forEach(b => {
+            b.style.borderColor = '#1e293b';
+            b.style.color = b.id.includes('null') ? '#34d399' : '#ffffff';
+        });
+    }
+
+    function checkSetEnd(pLocal, pRival) {
+        const currentSet = state.set_numero;
+        const limit = (currentSet === 5) ? 15 : 25;
+        
+        const actionsGrid = document.getElementById('scout-actions-grid');
+        const opponentGrid = document.getElementById('scout-opponent-grid');
+        
+        if ((pLocal >= limit || pRival >= limit) && Math.abs(pLocal - pRival) >= 2) {
+            state.set_finished = true;
+            
+            // Disable action grids
+            if (actionsGrid) {
+                actionsGrid.classList.add('pointer-events-none', 'opacity-30');
+            }
+            if (opponentGrid) {
+                opponentGrid.classList.add('pointer-events-none', 'opacity-30');
+            }
+            
+            // Show modal if it's not already shown
+            const modal = document.getElementById('modal-fin-set');
+            if (modal && modal.classList.contains('hidden')) {
+                const winnerText = pLocal > pRival ? "¡Tu equipo ha ganado el set!" : "El rival ha ganado el set.";
+                document.getElementById('modal-fin-set-title').innerText = winnerText;
+                document.getElementById('modal-fin-set-score').innerText = `${pLocal} - ${pRival}`;
+                toggleModal('modal-fin-set');
+            }
+        } else {
+            state.set_finished = false;
+            // Enable action grids
+            if (actionsGrid) {
+                actionsGrid.classList.remove('pointer-events-none', 'opacity-30');
+            }
+            if (opponentGrid) {
+                opponentGrid.classList.remove('pointer-events-none', 'opacity-30');
+            }
+        }
+    }
+
+    function guardarFinSet() {
+        const duracion = parseInt(document.getElementById('input-set-duracion').value) || 20;
+        const setGuardado = state.set_numero;
+
+        // Save duration
+        localStorage.setItem(`partido_${state.partido_id}_set_${setGuardado}_duration`, duracion);
+
+        // ── CRITICAL STATE RESET ─────────────────────────────────────────
+        // 1. Mark set as NOT finished so checkSetEnd() stops triggering modal
+        state.set_finished = false;
+
+        // 2. Close the modal first
+        const modal = document.getElementById('modal-fin-set');
+        if (modal) modal.classList.add('hidden');
+
+        // 3. Re-enable action grids now that we are advancing
+        ['scout-actions-grid', 'scout-opponent-grid'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('pointer-events-none', 'opacity-30');
+        });
+        // ────────────────────────────────────────────────────────────────
+
+        showToast(`✅ Set ${setGuardado} guardado (${duracion} min)`);
+
+        if (setGuardado < 5) {
+            // Advance to next set — setSet() calls updateFlashboard() which will
+            // read 0-0 from the new set and NOT trigger checkSetEnd() again.
+            setSet(setGuardado + 1);
+        } else {
+            showToast("🏁 Partido finalizado (5 sets completados)");
+        }
+    }
+
+    // ── Registro de Parones helpers ─────────────────────────────────────────
+    function registrarTimeout() {
+        const pL = document.getElementById('score-local')?.innerText || '?';
+        const pR = document.getElementById('score-rival')?.innerText || '?';
+        addParonEntry('⏸️ Tiempo Muerto', `${pL} - ${pR}`, 'timeout');
+        showToast('⏸️ T.M. registrado');
+    }
+
+    function addParonEntry(texto, marcador, tipo) {
+        const list = document.getElementById('parones-list');
+        if (!list) return;
+        const empty = document.getElementById('parones-empty');
+        if (empty) empty.classList.add('hidden');
+
+        const colors = {
+            'timeout': 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+            'cambio':  'bg-blue-500/10 border-blue-500/20 text-blue-400'
+        };
+        const dot = colors[tipo] || colors['cambio'];
+
+        const entry = document.createElement('div');
+        entry.className = `flex justify-between items-center px-3 py-1.5 rounded-lg border ${dot} text-[9px]`;
+        entry.innerHTML = `
+            <span class="font-bold truncate flex-1">${texto}</span>
+            <span class="font-black ml-2 whitespace-nowrap opacity-80">${marcador}</span>
+        `;
+        list.insertBefore(entry, list.firstChild);
+    }
+
+    // Refresh live stats
+    async function updateFlashboard() {
+        try {
+            const body = { partido_id: state.partido_id, set_numero: state.set_numero };
+            const r = await fetch('{% url "stats_app:api_obtener_stats_set" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify(body)
+            });
+            const res = await r.json();
+            
+            if(res.status === 'ok') {
+                // Update Scoreboard
+                const pLocal = res.puntos_local !== undefined ? res.puntos_local : 0;
+                const pRival = res.puntos_rival !== undefined ? res.puntos_rival : 0;
+                const sLocal = res.sets_local !== undefined ? res.sets_local : 0;
+                const sRival = res.sets_rival !== undefined ? res.sets_rival : 0;
+                
+                document.getElementById('score-local').innerText = String(pLocal).padStart(2, '0');
+                document.getElementById('score-rival').innerText = String(pRival).padStart(2, '0');
+                document.getElementById('scoreboard-sets').innerText = `(${sLocal}) - (${sRival})`;
+
+                // Regulation check for Set End
+                checkSetEnd(pLocal, pRival);
+
+                // ── BLOQUE 1: Líderes del Set ──────────────────────────────
+                // MVP provisional: jugadora con más ++ globales (del ataque)
+                if (res.mvp) {
+                    document.getElementById('mvp-label').innerText =
+                        `#${res.mvp.dorsal} ${res.mvp.nombre} (${res.mvp.eficiencia}%)`;
+                } else {
+                    document.getElementById('mvp-label').innerText = 'Sin datos aún';
+                }
+
+                // Mejor sacadora
+                if (res.mejor_saque) {
+                    document.getElementById('lider-saque-label').innerText =
+                        `#${res.mejor_saque.dorsal} ${res.mejor_saque.nombre} (${res.mejor_saque.pp} aces)`;
+                } else {
+                    document.getElementById('lider-saque-label').innerText = '--';
+                }
+
+                // Mejor atacante
+                if (res.mejor_ataque) {
+                    document.getElementById('lider-ataque-label').innerText =
+                        `#${res.mejor_ataque.dorsal} ${res.mejor_ataque.nombre} (${res.mejor_ataque.pp} puntos)`;
+                } else {
+                    document.getElementById('lider-ataque-label').innerText = '--';
+                }
+
+                // ── BLOQUE 2: Alerta Táctica ───────────────────────────────
+                const alertaCard   = document.getElementById('alerta-card');
+                const alertaLabel  = document.getElementById('alerta-label');
+                const alertaBarWrap = document.getElementById('alerta-bar-wrap');
+                const alertaBar    = document.getElementById('alerta-bar');
+                const alertaPct    = document.getElementById('alerta-pct');
+
+                if (res.alerta && res.alerta.dorsal !== '--') {
+                    alertaLabel.innerText = `${res.alerta.dorsal} – ${res.alerta.nombre}: ${res.alerta.mensaje}`;
+                    alertaCard.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+                    // Compute % errors for this player from desglose_jugadoras if available
+                    let pctErr = 0;
+                    if (res.desglose_jugadoras) {
+                        let totalAcc = 0, totalErr = 0;
+                        Object.values(res.desglose_jugadoras).forEach(fund => {
+                            fund.forEach(j => {
+                                if ('#' + j.dorsal === res.alerta.dorsal) {
+                                    totalAcc += j.total;
+                                    totalErr += j.mm;
+                                }
+                            });
+                        });
+                        pctErr = totalAcc > 0 ? Math.round((totalErr / totalAcc) * 100) : 0;
+                    }
+                    alertaBarWrap.classList.remove('hidden');
+                    alertaBar.style.width = `${pctErr}%`;
+                    alertaPct.innerText = `${pctErr}% errores directos`;
+                } else {
+                    alertaLabel.innerText = 'Sin alertas en el set';
+                    alertaCard.style.borderColor = '';
+                    alertaBarWrap.classList.add('hidden');
+                    alertaBar.style.width = '0%';
+                }
+
+                // ── BLOQUE 3: Complejos K1 / K2 ───────────────────────────
+                const k1 = res.k1_efi !== undefined ? res.k1_efi : 0;
+                const k2 = res.k2_efi !== undefined ? res.k2_efi : 0;
+
+                document.getElementById('k1-pct-label').innerText = `${k1}%`;
+                document.getElementById('k1-bar').style.width = `${k1}%`;
+                document.getElementById('k2-pct-label').innerText = `${k2}%`;
+                document.getElementById('k2-bar').style.width = `${k2}%`;
+            }
+        } catch(e) {
+            console.error("Error al actualizar flashboard: ", e);
+        }
+    }
+</script>
+{% endblock %}

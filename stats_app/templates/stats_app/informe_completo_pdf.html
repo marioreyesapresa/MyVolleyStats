@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe Completo - {{ partido.rival }}</title>
+    <style>
+        @page { size: A4 landscape; margin: 0.5cm; }
+        body { font-family: 'Helvetica', sans-serif; font-size: 8px; color: #1e293b; }
+        
+        /* Header con Identificación de Set */
+        .header { text-align: center; margin-bottom: 12px; border-bottom: 3px solid #2563eb; padding-bottom: 10px; }
+        .title { font-size: 16px; font-weight: 900; text-transform: uppercase; color: #1e293b; }
+        .set-badge { display: inline-block; background-color: #2563eb; color: white; padding: 2px 10px; border-radius: 4px; font-size: 10px; margin-top: 5px; text-transform: uppercase; font-weight: 900; }
+        
+        .stats-table { width: 100%; border-collapse: collapse; margin-top: 5px; table-layout: fixed; }
+        
+        /* Aumento de Padding para lectura de élite */
+        .stats-table th { background-color: #f8fafc; padding: 10px 4px; border: 1px solid #e2e8f0; font-weight: 900; text-transform: uppercase; font-size: 7px; color: #64748b; }
+        .stats-table td { padding: 10px 4px; border: 1px solid #e2e8f0; text-align: center; font-family: 'Courier', monospace; font-size: 9px; }
+        
+        .player-cell { text-align: left !important; font-weight: bold; background-color: #f8fafc; font-family: 'Helvetica', sans-serif !important; font-size: 10px; width: 14%; }
+        .balance-cell { font-size: 13px; font-weight: 900; width: 5%; }
+        
+        /* Resaltado de EFI */
+        .efi-cell { font-weight: 900; color: #1e40af; font-size: 11px; width: 7%; background-color: #eff6ff; border-left: 2px solid #2563eb !important; }
+        
+        .scouting-format { color: #334155; letter-spacing: 1px; width: 13.5%; }
+        .success { color: #059669; font-weight: bold; }
+        .error { color: #dc2626; font-weight: bold; }
+        
+        .legend { margin-top: 20px; font-size: 7.5px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Scouting Técnico: {{ partido.equipo.nombre }} vs {{ partido.rival }}</div>
+        <div class="set-badge">
+            {% if set_n == 'global' %}INFORME GLOBAL DEL PARTIDO{% else %}ANÁLISIS DETALLADO: SET {{ set_n }}{% endif %}
+        </div>
+        <div style="font-size: 9px; color: #64748b; margin-top: 5px;">Fecha del Encuentro: {{ fecha }} | Analítica Voley App Pro</div>
+    </div>
+
+    <table class="stats-table">
+        <thead>
+            <tr>
+                <th>Jugadora</th>
+                <th>BAL</th>
+                <th>SAQUE</th>
+                <th>RECEPCIÓN</th>
+                <th style="background-color: #f0f9ff;">ATAQUE</th>
+                <th>BLOQUEO</th>
+                <th>DEFENSA</th>
+                <th style="background-color: #dbeafe; color: #1e3a8a;">EFI (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for j in jugadoras_stats_list %}
+            <tr>
+                <td class="player-cell">#{{ j.dorsal }} {{ j.nombre }}</td>
+                <td class="balance-cell" style="color: {% if j.balance > 0 %}#059669{% elif j.balance < 0 %}#dc2626{% else %}#64748b{% endif %};">
+                    {{ j.balance }}
+                </td>
+                
+                <!-- Saque -->
+                <td class="scouting-format">
+                    <span class="success">{{ j.desglose.SAQUE.pp|default:0 }}</span>/<span style="color: #2563eb;">{{ j.desglose.SAQUE.p|default:0 }}</span>/{{ j.desglose.SAQUE.m|default:0 }}/<span class="error">{{ j.desglose.SAQUE.mm|default:0 }}</span>
+                </td>
+                
+                <!-- Recepción -->
+                <td class="scouting-format">
+                    <span class="success">{{ j.desglose.RECEPCION.pp|default:0 }}</span>/<span style="color: #2563eb;">{{ j.desglose.RECEPCION.p|default:0 }}</span>/{{ j.desglose.RECEPCION.m|default:0 }}/<span class="error">{{ j.desglose.RECEPCION.mm|default:0 }}</span>
+                </td>
+                
+                <!-- Ataque -->
+                <td class="scouting-format" style="background-color: #f0f9ff; font-weight: bold;">
+                    <span class="success">{{ j.desglose.ATAQUE.pp|default:0 }}</span>/<span style="color: #2563eb;">{{ j.desglose.ATAQUE.p|default:0 }}</span>/{{ j.desglose.ATAQUE.m|default:0 }}/<span class="error">{{ j.desglose.ATAQUE.mm|default:0 }}</span>
+                </td>
+
+                <!-- Bloqueo -->
+                <td class="scouting-format">
+                    <span class="success">{{ j.desglose.BLOQUEO.pp|default:0 }}</span>/<span style="color: #2563eb;">{{ j.desglose.BLOQUEO.p|default:0 }}</span>/{{ j.desglose.BLOQUEO.m|default:0 }}/<span class="error">{{ j.desglose.BLOQUEO.mm|default:0 }}</span>
+                </td>
+
+                <!-- Defensa -->
+                <td class="scouting-format">
+                    <span class="success">{{ j.desglose.DEFENSA.pp|default:0 }}</span>/<span style="color: #2563eb;">{{ j.desglose.DEFENSA.p|default:0 }}</span>/{{ j.desglose.DEFENSA.m|default:0 }}/<span class="error">{{ j.desglose.DEFENSA.mm|default:0 }}</span>
+                </td>
+                
+                <!-- Eficacia Resaltada -->
+                <td class="efi-cell">{{ j.efi_global }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="legend">
+        <strong>FORMATO DE SCOUTING:</strong> ( ++ / + / - / -- ). 
+        <strong>++</strong>: Acción Perfecta/Punto | <strong>+</strong>: Positiva/Continuidad | <strong>-</strong>: Negativa/Mala | <strong>--</strong>: Error Directo.
+        <br>
+        <strong>EFICACIA REAL (EFI):</strong> Balance de acciones terminales ((++) - (--)) dividido por el volumen total de intervenciones. Suelo: 0%.
+        <br>
+        <span style="font-style: italic; color: #94a3b8;">Este documento es para uso interno del staff técnico de {{ partido.equipo.nombre }}.</span>
+    </div>
+</body>
+</html>

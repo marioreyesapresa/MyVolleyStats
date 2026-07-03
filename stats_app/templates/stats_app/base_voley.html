@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Scout Rotation Pro | Voley Técnico{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
+        .sidebar-dark { background-color: #090d16; }
+        .sidebar-active-dark { background-color: rgba(255, 255, 255, 0.08); border-left: 4px solid #10b981; color: #10b981 !important; }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col md:flex-row bg-[#0b0f19] text-[#f1f5f9]">
+
+    <!-- Mobile Header -->
+    <header class="md:hidden bg-[#090d16] text-white px-4 py-4 flex justify-between items-center shadow-md border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+            <i data-lucide="zap" class="text-emerald-500 w-6 h-6 animate-pulse"></i>
+            <span class="font-black tracking-tight text-lg uppercase">Voley Stats</span>
+        </div>
+        <button id="mobile-menu-btn-dark" class="text-slate-200 focus:outline-none">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+    </header>
+
+    <!-- Mobile Drawer -->
+    <div id="mobile-drawer-dark" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm md:hidden">
+        <aside class="w-64 h-full sidebar-dark text-white flex flex-col p-6 space-y-6 relative transition-transform">
+            <button id="close-drawer-btn-dark" class="absolute top-4 right-4 text-slate-400">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <div class="flex items-center space-x-2 pb-4 border-b border-slate-800">
+                <i data-lucide="zap" class="text-emerald-500 w-8 h-8"></i>
+                <span class="font-black tracking-tighter text-xl text-emerald-400">VOLEY STATS</span>
+            </div>
+            <nav class="flex-1 space-y-2">
+                <a href="{% url 'stats_app:dashboard' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
+                    <i data-lucide="home" class="w-5 h-5 text-slate-400"></i>
+                    <span class="font-medium text-sm">Inicio / Equipos</span>
+                </a>
+                {% if partido %}
+                <div class="h-px bg-slate-800/50 my-3"></div>
+                <p class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 px-3 pb-1">Scouting Partido</p>
+                <a href="{% url 'stats_app:modo_partido' partido.id %}?tab=rotacion" class="sidebar-nav-item nav-rotacion flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
+                    <i data-lucide="columns" class="w-5 h-5"></i>
+                    <span class="font-medium text-sm">Pizarra de Rotación</span>
+                </a>
+                <a href="{% url 'stats_app:modo_partido' partido.id %}?tab=scout" class="sidebar-nav-item nav-scout flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                    <span class="font-medium text-sm">Scout en Vivo</span>
+                </a>
+                <a href="{% url 'stats_app:modo_partido' partido.id %}?tab=metricas" class="sidebar-nav-item nav-metricas flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    <span class="font-medium text-sm">Indicadores del Set</span>
+                </a>
+                <div class="h-px bg-slate-800/50 my-3"></div>
+                <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                    <span class="font-medium text-sm">Estadísticas Finales</span>
+                </a>
+                {% endif %}
+            </nav>
+            <div class="pt-4 border-t border-slate-800">
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="flex items-center space-x-3 p-3 text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all w-full text-left">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                        <span class="font-medium text-sm">Cerrar Sesión</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Sidebar Desktop -->
+    <aside class="w-64 sidebar-dark text-white hidden md:flex flex-col p-6 space-y-8 min-h-screen border-r border-slate-900">
+        <div class="flex items-center space-x-2 pb-4 border-b border-slate-800">
+            <i data-lucide="zap" class="text-emerald-500 w-8 h-8"></i>
+            <span class="font-black tracking-tighter text-xl text-emerald-400">VOLEY STATS</span>
+        </div>
+        
+        <nav class="flex-1 space-y-2">
+            <a href="{% url 'stats_app:dashboard' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
+                <i data-lucide="home" class="w-5 h-5 text-slate-400"></i>
+                <span class="font-medium text-sm">Inicio / Equipos</span>
+            </a>
+            
+            {% if partido %}
+            <div class="h-px bg-slate-900 my-4 mx-2"></div>
+            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 px-3 pb-2">Scouting Partido</p>
+            
+            <a href="{% url 'stats_app:modo_partido' partido.id %}?tab=rotacion" class="sidebar-nav-item nav-rotacion flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
+                <i data-lucide="columns" class="w-5 h-5"></i>
+                <span class="font-medium text-sm">Pizarra de Rotación</span>
+            </a>
+            
+            <a href="{% url 'stats_app:modo_partido' partido.id %}?tab=scout" class="sidebar-nav-item nav-scout flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+                <span class="font-medium text-sm">Scout en Vivo</span>
+            </a>
+            
+            <a href="{% url 'stats_app:modo_partido' partido.id %}?tab=metricas" class="sidebar-nav-item nav-metricas flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                <span class="font-medium text-sm">Indicadores del Set</span>
+            </a>
+            
+            <div class="h-px bg-slate-900 my-4 mx-2"></div>
+            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 px-3 pb-2">Informes</p>
+            
+            <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all {% if request.resolver_match.view_name == 'stats_app:partido_stats_final' %}sidebar-active-dark{% endif %}">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                <span class="font-medium text-sm">Estadísticas Finales</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="pt-6 border-t border-slate-800 space-y-2">
+            <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="flex items-center space-x-3 p-3 text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all w-full text-left">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                    <span class="font-medium text-sm">Cerrar Sesión</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Content Area -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#0b0f19]">
+        <!-- Topbar -->
+        <header class="bg-[#090d16] border-b border-slate-800/80 px-6 py-4 flex items-center justify-between shadow-md">
+            <div>
+                <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">home &gt; voley stats</p>
+                <h1 class="text-xl font-black uppercase text-white tracking-tight">{% block header_title %}Scout Rotation Pro{% endblock %}</h1>
+            </div>
+            
+            <div class="flex items-center space-x-6 ml-auto">
+                <div class="text-right hidden sm:block">
+                    <p class="text-sm font-bold text-white">{{ request.user.first_name }} {{ request.user.last_name }}</p>
+                    <p class="text-[10px] text-emerald-400 font-black uppercase tracking-wider">Coach Voleibol</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-[#1e293b] text-emerald-400 font-black flex items-center justify-center border border-slate-800 shadow-md uppercase">
+                    {{ request.user.first_name|default:request.user.username|slice:":1" }}
+                </div>
+            </div>
+        </header>
+
+        <!-- Page body -->
+        <main class="flex-1 p-6 md:p-8 w-full mx-auto space-y-8 overflow-y-auto">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Drawer logic
+        const menuBtnDark = document.getElementById('mobile-menu-btn-dark');
+        const drawerDark = document.getElementById('mobile-drawer-dark');
+        const closeBtnDark = document.getElementById('close-drawer-btn-dark');
+
+        if(menuBtnDark && drawerDark) {
+            menuBtnDark.addEventListener('click', () => {
+                drawerDark.classList.remove('hidden');
+            });
+        }
+        if(closeBtnDark && drawerDark) {
+            closeBtnDark.addEventListener('click', () => {
+                drawerDark.classList.add('hidden');
+            });
+        }
+    </script>
+</body>
+</html>

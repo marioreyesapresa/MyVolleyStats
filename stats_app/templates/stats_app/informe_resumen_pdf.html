@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resumen Ejecutivo - {{ partido.rival }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: 'Helvetica', sans-serif; font-size: 11px; color: #1e293b; }
+        .header { display: block; border-bottom: 3px solid #2563eb; padding-bottom: 10px; margin-bottom: 25px; }
+        .title { font-size: 20px; font-weight: 900; text-transform: uppercase; }
+        .match-info { font-size: 12px; color: #64748b; font-weight: bold; margin-top: 5px; }
+        
+        .chart-section { text-align: center; margin: 30px 0; }
+        .chart-img { width: 350px; height: auto; }
+        
+        .stats-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .stats-table th { background-color: #f8fafc; padding: 12px 8px; border-bottom: 2px solid #e2e8f0; text-align: center; text-transform: uppercase; font-size: 9px; }
+        .stats-table td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+        .player-name { text-align: left !important; font-weight: bold; width: 35%; }
+        
+        .balance-pos { color: #059669; font-weight: 900; }
+        .balance-neg { color: #dc2626; font-weight: 900; }
+        
+        .efi-box { background-color: #eff6ff; padding: 4px 8px; border-radius: 6px; color: #1d4ed8; font-weight: 900; }
+        .footer { margin-top: 50px; font-size: 9px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Resumen Ejecutivo de Partido</div>
+        <div class="match-info">
+            {{ partido.equipo.nombre }} vs {{ partido.rival }} | Set: {{ set_n|upper }}
+        </div>
+    </div>
+
+    <div class="chart-section">
+        <div style="font-size: 10px; font-weight: bold; color: #64748b; margin-bottom: 10px; text-transform: uppercase;">Distribución de Puntos por Origen</div>
+        <img src="{{ chart_origen_url }}" class="chart-img">
+    </div>
+
+    <div style="font-weight: 900; text-transform: uppercase; font-size: 10px; border-left: 4px solid #2563eb; padding-left: 10px; margin-bottom: 15px;">
+        Top Rendimiento (Top 7 Jugadoras)
+    </div>
+
+    <table class="stats-table">
+        <thead>
+            <tr>
+                <th class="player-name">Jugadora</th>
+                <th>Puntos (++)</th>
+                <th>Errores (--)</th>
+                <th>Balance</th>
+                <th>Volumen Total</th>
+                <th>Eficacia Real</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for j in jugadoras_stats_list %}
+            <tr>
+                <td class="player-name">#{{ j.dorsal }} {{ j.nombre }}</td>
+                <td style="color: #059669; font-weight: bold;">{{ j.puntos }}</td>
+                <td style="color: #dc2626; font-weight: bold;">{{ j.errores }}</td>
+                <td>
+                    <span class="{% if j.balance > 0 %}balance-pos{% elif j.balance < 0 %}balance-neg{% endif %}">
+                        {{ j.balance }}
+                    </span>
+                </td>
+                <td style="font-weight: bold; color: #64748b;">{{ j.total }}</td>
+                <td><span class="efi-box">{{ j.efi_global }}%</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Documento generado automáticamente por el sistema de analítica Voley App | Fecha: {{ fecha }}
+    </div>
+</body>
+</html>

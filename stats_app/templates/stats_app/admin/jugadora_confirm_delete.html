@@ -1,0 +1,35 @@
+{% extends 'stats_app/base_voley.html' %}
+
+{% block title %}Eliminar Jugadora | Voley Stats{% endblock %}
+{% block header_title %}Eliminar Jugadora{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-[#0f172a] rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+        <div class="p-6 bg-rose-500/10 border-b border-slate-800/80">
+            <h3 class="font-extrabold text-rose-400 text-lg flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                ¿Confirmar Eliminación?
+            </h3>
+        </div>
+        <div class="p-6 space-y-6">
+            <p class="text-sm text-slate-300">
+                Estás a punto de eliminar a la jugadora <strong class="text-white">{{ object.nombre }} {{ object.apellidos }}</strong> del equipo {{ object.equipo.nombre }}. Se perderán todos sus registros estadísticos y su ficha.
+            </p>
+            <p class="text-xs text-rose-400 font-bold uppercase tracking-wider">
+                Esta acción no se puede deshacer.
+            </p>
+            
+            <form method="post" class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800/80">
+                {% csrf_token %}
+                <a href="{% url 'stats_app:dashboard' %}" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm rounded-xl transition-all">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-95">
+                    Eliminar Jugadora
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

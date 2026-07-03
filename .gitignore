@@ -1,0 +1,100 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# VOLEY STATS — .gitignore
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Secretos y configuración local ───────────────────────────────────────────
+.env
+.env.*
+!.env.example          # sí subir el template (sin valores reales)
+
+# ── Base de datos ─────────────────────────────────────────────────────────────
+# La BD SQLite contiene datos reales de usuarios y partidos → NUNCA al repo
+db.sqlite3
+*.sqlite3
+
+# ── Entorno virtual Python ────────────────────────────────────────────────────
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ── Archivos compilados Python ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# ── Django ────────────────────────────────────────────────────────────────────
+*.log
+local_settings.py
+/staticfiles/
+/mediafiles/
+/media/
+static_root/
+
+# ── Distribución / empaquetado ────────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+MANIFEST
+
+# ── Tests y cobertura ─────────────────────────────────────────────────────────
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+nosetests.xml
+
+# ── Jupyter / IPython ────────────────────────────────────────────────────────
+.ipynb_checkpoints
+*.ipynb
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.AppleDouble
+*.LSOverride
+Icon
+
+# ── Editores / IDEs ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ── Mypy / type checking ──────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ── PDF generados en runtime ─────────────────────────────────────────────────
+*.pdf
+
+# ── Uploads de usuarios ──────────────────────────────────────────────────────
+uploads/
