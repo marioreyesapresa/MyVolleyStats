@@ -22,13 +22,17 @@ class EquipoCreateView(LoginRequiredMixin, CreateView):
     model = Equipo
     fields = ['nombre', 'temporada', 'categoria']
     template_name = 'stats_app/admin/equipo_form.html'
-    success_url = reverse_lazy('stats_app:dashboard')
+
+    def get_success_url(self):
+        return reverse_lazy('stats_app:equipos_list')
 
 class EquipoUpdateView(LoginRequiredMixin, UpdateView):
     model = Equipo
     fields = ['nombre', 'temporada', 'categoria']
     template_name = 'stats_app/admin/equipo_form.html'
-    success_url = reverse_lazy('stats_app:dashboard')
+
+    def get_success_url(self):
+        return reverse_lazy('stats_app:equipos_list')
 
 class EquipoDeleteView(LoginRequiredMixin, DeleteView):
     model = Equipo
@@ -42,6 +46,11 @@ class JugadoraCreateView(LoginRequiredMixin, CreateView):
     template_name = 'stats_app/admin/jugadora_form.html'
     success_url = reverse_lazy('stats_app:dashboard')
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['fecha_nacimiento'].required = True
+        return form
+
     def get_initial(self):
         initial = super().get_initial()
         equipo_id = self.request.GET.get('equipo_id')
@@ -54,6 +63,11 @@ class JugadoraUpdateView(LoginRequiredMixin, UpdateView):
     fields = ['equipo', 'nombre', 'apellidos', 'dorsal', 'posicion', 'fecha_nacimiento']
     template_name = 'stats_app/admin/jugadora_form.html'
     success_url = reverse_lazy('stats_app:dashboard')
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['fecha_nacimiento'].required = True
+        return form
 
 class JugadoraDeleteView(LoginRequiredMixin, DeleteView):
     model = Jugadora

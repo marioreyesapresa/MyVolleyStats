@@ -72,9 +72,16 @@
                     </div>
                     <div>
                         <label for="id_fecha_nacimiento" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Fecha Nacimiento</label>
-                        <input type="date" name="fecha_nacimiento" id="id_fecha_nacimiento"
+                        <input type="date" name="fecha_nacimiento" id="id_fecha_nacimiento" required
                                class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition-all text-sm"
                                value="{{ form.fecha_nacimiento.value|date:'Y-m-d'|default_if_none:'' }}">
+                        {% if form.fecha_nacimiento.errors %}
+                            <div class="text-red-500 text-sm mt-1">
+                                {% for error in form.fecha_nacimiento.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
