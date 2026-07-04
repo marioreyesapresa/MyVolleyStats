@@ -9,7 +9,7 @@ from ..models import RotacionSet, Jugadora
 class GetRotacionActualAPI(LoginRequiredMixin, View):
     def get(self, request, partido_id):
         set_n = request.GET.get('set', 1)
-        rotacion = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=False).order_by('-fecha_actualizacion').first()
+        rotacion = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=False).order_by('-id').first()
         if not rotacion:
             rotacion = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=True).first()
         
@@ -39,12 +39,12 @@ class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
                 if not rot:
                     rot = RotacionSet(partido_id=partido_id, set_numero=set_n, es_inicial=es_inicial)
                 
-                rot.pos1_id = data.get('pos1')
-                rot.pos2_id = data.get('pos2')
-                rot.pos3_id = data.get('pos3')
-                rot.pos4_id = data.get('pos4')
-                rot.pos5_id = data.get('pos5')
-                rot.pos6_id = data.get('pos6')
+                rot.pos1_id = data.get('pos1') if data.get('pos1') else None
+                rot.pos2_id = data.get('pos2') if data.get('pos2') else None
+                rot.pos3_id = data.get('pos3') if data.get('pos3') else None
+                rot.pos4_id = data.get('pos4') if data.get('pos4') else None
+                rot.pos5_id = data.get('pos5') if data.get('pos5') else None
+                rot.pos6_id = data.get('pos6') if data.get('pos6') else None
                 rot.save()
                 return rot
 
@@ -63,7 +63,10 @@ class RotarManualAPI(LoginRequiredMixin, View):
         set_n = data.get('set_numero', 1)
         direccion = data.get('direccion', 'adelante')
         
-        actual = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=False).order_by('-fecha_actualizacion').first()
+        partido = get_object_or_404(Partido, pk=partido_id)
+        modalidad = partido.modalidad
+        
+        actual = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=False).order_by('-id').first()
         if not actual:
             actual = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=True).first()
         
@@ -71,25 +74,42 @@ class RotarManualAPI(LoginRequiredMixin, View):
         
         p1, p2, p3, p4, p5, p6 = actual.pos1_id, actual.pos2_id, actual.pos3_id, actual.pos4_id, actual.pos5_id, actual.pos6_id
         
-        if direccion == 'horario':
-            # Rotación reglamentaria FIVB (sentido horario):
-            # Zona1 → Zona6 → Zona5 → Zona4 → Zona3 → Zona2 → Zona1
-            # Cada jugadora ocupa la zona de número inferior:
-            new_p6 = p1   # quien estaba en Z1 pasa a Z6
-            new_p5 = p6   # quien estaba en Z6 pasa a Z5
-            new_p4 = p5   # quien estaba en Z5 pasa a Z4
-            new_p3 = p4   # quien estaba en Z4 pasa a Z3
-            new_p2 = p3   # quien estaba en Z3 pasa a Z2
-            new_p1 = p2   # quien estaba en Z2 pasa a Z1
+        if modalidad == 'MINIVOLEY':
+            if direccion == 'horario':
+                # Sentido horario en rombo: [Zona 1 -> Zona 4 -> Zona 3 -> Zona 2 -> Zona 1]
+                # El jugador de Zona 4 pasa a Zona 3, el de 3 a 2, el de 2 a 1 para sacar, y el de 1 a 4.
+                new_p4 = p1   # Z1 -> Z4
+                new_p3 = p4   # Z4 -> Z3
+                new_p2 = p3   # Z3 -> Z2
+                new_p1 = p2   # Z2 -> Z1
+            else:
+                # Sentido antihorario (deshacer): [Zona 1 -> Zona 2 -> Zona 3 -> Zona 4 -> Zona 1]
+                new_p1 = p4   # Z4 -> Z1
+                new_p4 = p3   # Z3 -> Z4
+                new_p3 = p2   # Z2 -> Z3
+                new_p2 = p1   # Z1 -> Z2
+            new_p5 = None
+            new_p6 = None
         else:
-            # Rotación inversa (antihoraria / deshacer):
-            # Zona1 → Zona2 → Zona3 → Zona4 → Zona5 → Zona6 → Zona1
-            new_p2 = p1
-            new_p3 = p2
-            new_p4 = p3
-            new_p5 = p4
-            new_p6 = p5
-            new_p1 = p6
+            if direccion == 'horario':
+                # Rotación reglamentaria FIVB (sentido horario):
+                # Zona1 → Zona6 → Zona5 → Zona4 → Zona3 → Zona2 → Zona1
+                # Cada jugadora ocupa la zona de número inferior:
+                new_p6 = p1   # quien estaba en Z1 pasa a Z6
+                new_p5 = p6   # quien estaba en Z6 pasa a Z5
+                new_p4 = p5   # quien estaba en Z5 pasa a Z4
+                new_p3 = p4   # quien estaba en Z4 pasa a Z3
+                new_p2 = p3   # quien estaba en Z3 pasa a Z2
+                new_p1 = p2   # quien estaba en Z2 pasa a Z1
+            else:
+                # Rotación inversa (antihoraria / deshacer):
+                # Zona1 → Zona2 → Zona3 → Zona4 → Zona5 → Zona6 → Zona1
+                new_p2 = p1
+                new_p3 = p2
+                new_p4 = p3
+                new_p5 = p4
+                new_p6 = p5
+                new_p1 = p6
 
         RotacionSet.objects.create(
             partido_id=partido_id, set_numero=set_n, es_inicial=False,

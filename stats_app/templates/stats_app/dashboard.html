@@ -126,6 +126,9 @@
                                     <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-black uppercase tracking-wider">
                                         {% if partido.local %}LOCAL{% else %}VISITANTE{% endif %}
                                     </span>
+                                    <span class="px-2 py-0.5 rounded {% if partido.modalidad == 'MINIVOLEY' %}bg-purple-500/10 text-purple-400 border border-purple-500/20{% else %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% endif %} text-[9px] font-black uppercase tracking-wider ml-1">
+                                        {{ partido.get_modalidad_display }}
+                                    </span>
                                     <h4 class="font-black text-white text-lg mt-1 uppercase tracking-tight">vs {{ partido.rival }}</h4>
                                     <p class="text-xs text-slate-400 font-semibold">{{ partido.equipo.nombre }} ({{ partido.equipo.categoria }})</p>
                                 </div>

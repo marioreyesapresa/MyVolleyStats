@@ -13,13 +13,69 @@
             <div class="flex justify-between items-center">
                 <div>
                     <h3 class="text-xl font-black uppercase tracking-wider text-white">Rotación Activa</h3>
-                    <p class="text-slate-400 text-sm mt-0.5">Visualización táctica de las zonas en pista (Z1 - Z6).</p>
                 </div>
             </div>
 
             <!-- Court Drawing Container -->
             <div class="relative bg-blue-950/20 rounded-3xl border border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center min-h-[440px] overflow-hidden">
-                <!-- Court Graphic -->
+                {% if partido.modalidad == 'MINIVOLEY' %}
+                <!-- Court Graphic for Minivoley (Diamond 4x4) -->
+                <div id="court-grid-view" class="w-full max-w-2xl aspect-[4/3] bg-teal-900/60 rounded-3xl border-4 border-white/90 relative shadow-2xl animate-fade-in">
+                    <!-- Diamond lines -->
+                    <svg class="absolute inset-0 w-full h-full text-white/40 pointer-events-none" viewBox="0 0 400 300" preserveAspectRatio="none">
+                        <polygon points="200,45 340,150 200,255 60,150" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="8,8" />
+                    </svg>
+
+                    <!-- Zone 3: Top Peak (Delantero) -->
+                    <div id="zone-3" onclick="selectZonePizarra(3)"
+                         ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
+                         ondragleave="this.classList.remove('ring-2','ring-blue-400');"
+                         ondrop="dropOnZone(event, 3);"
+                         class="absolute top-[5%] left-1/2 -translate-x-1/2 w-32 md:w-40 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group rounded-2xl">
+                        <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 3</span>
+                        <div class="zone-badge-container mt-3 w-full flex justify-center">
+                            <!-- Populated dynamically from JS -->
+                        </div>
+                    </div>
+
+                    <!-- Zone 2: Right Peak (Delantero) -->
+                    <div id="zone-2" onclick="selectZonePizarra(2)"
+                         ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
+                         ondragleave="this.classList.remove('ring-2','ring-blue-400');"
+                         ondrop="dropOnZone(event, 2);"
+                         class="absolute top-1/2 right-[5%] -translate-y-1/2 w-32 md:w-40 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group rounded-2xl">
+                        <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 2</span>
+                        <div class="zone-badge-container mt-3 w-full flex justify-center">
+                            <!-- Populated dynamically from JS -->
+                        </div>
+                    </div>
+
+                    <!-- Zone 4: Left Peak (Delantero) -->
+                    <div id="zone-4" onclick="selectZonePizarra(4)"
+                         ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
+                         ondragleave="this.classList.remove('ring-2','ring-blue-400');"
+                         ondrop="dropOnZone(event, 4);"
+                         class="absolute top-1/2 left-[5%] -translate-y-1/2 w-32 md:w-40 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group rounded-2xl">
+                        <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 4</span>
+                        <div class="zone-badge-container mt-3 w-full flex justify-center">
+                            <!-- Populated dynamically from JS -->
+                        </div>
+                    </div>
+
+                    <!-- Zone 1: Bottom Peak (Zaguero, Saque) -->
+                    <div id="zone-1" onclick="selectZonePizarra(1)"
+                         ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
+                         ondragleave="this.classList.remove('ring-2','ring-blue-400');"
+                         ondrop="dropOnZone(event, 1);"
+                         class="absolute bottom-[5%] left-1/2 -translate-x-1/2 w-32 md:w-40 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group rounded-2xl">
+                        <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 1 (Saque)</span>
+                        <div class="zone-badge-container mt-3 w-full flex justify-center">
+                            <!-- Populated dynamically from JS -->
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Court Graphic for Voleibol (Grid 6x6) -->
                 <div id="court-grid-view" class="w-full max-w-2xl aspect-[4/3] bg-teal-900/60 rounded-3xl border-4 border-white/90 relative p-2 flex flex-col divide-y-4 divide-white shadow-2xl animate-fade-in">
                     <!-- Net (Network Line) -->
                     <div class="absolute top-1/2 left-0 right-0 h-1.5 bg-yellow-400 z-10 border-b border-black/20 shadow-md"></div>
@@ -98,6 +154,7 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
             </div>
 
             <!-- Court Controls -->
@@ -113,19 +170,29 @@
                 </div>
                 <!-- Row 2: Rotation & Estado selectors -->
                 <div class="flex gap-4 bg-[#0d1117] rounded-2xl p-4 border border-slate-800">
-                    <!-- Rotación Inicial R1-R6 -->
+                    <!-- Rotación Inicial R1-R6 / R1-R4 -->
                     <div class="flex-1 space-y-2">
                         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
                             Rotación Inicial
                         </label>
-                        <div class="grid grid-cols-6 gap-1" id="rot-init-selector">
-                            {% for r in "123456" %}
-                            <button onclick="selectRotInit({{ forloop.counter }})"
-                                    id="rot-init-btn-{{ forloop.counter }}"
-                                    class="rot-init-btn py-2.5 rounded-lg border border-slate-800 bg-[#1a202c] text-slate-400
-                                           font-black text-xs transition-all hover:border-blue-500 hover:text-blue-400"
-                                    data-r="{{ forloop.counter }}">R{{ forloop.counter }}</button>
-                            {% endfor %}
+                        <div class="grid {% if partido.modalidad == 'MINIVOLEY' %}grid-cols-4{% else %}grid-cols-6{% endif %} gap-1" id="rot-init-selector">
+                            {% if partido.modalidad == 'MINIVOLEY' %}
+                                {% for r in "1234" %}
+                                <button onclick="selectRotInit({{ forloop.counter }})"
+                                        id="rot-init-btn-{{ forloop.counter }}"
+                                        class="rot-init-btn py-2.5 rounded-lg border border-slate-800 bg-[#1a202c] text-slate-400
+                                               font-black text-xs transition-all hover:border-blue-500 hover:text-blue-400"
+                                        data-r="{{ forloop.counter }}">R{{ forloop.counter }}</button>
+                                {% endfor %}
+                            {% else %}
+                                {% for r in "123456" %}
+                                <button onclick="selectRotInit({{ forloop.counter }})"
+                                        id="rot-init-btn-{{ forloop.counter }}"
+                                        class="rot-init-btn py-2.5 rounded-lg border border-slate-800 bg-[#1a202c] text-slate-400
+                                               font-black text-xs transition-all hover:border-blue-500 hover:text-blue-400"
+                                        data-r="{{ forloop.counter }}">R{{ forloop.counter }}</button>
+                                {% endfor %}
+                            {% endif %}
                         </div>
                     </div>
                     <!-- Divisor vertical -->
@@ -161,7 +228,13 @@
             <div class="space-y-4 flex-1 flex flex-col justify-between">
                 <div class="space-y-1">
                     <h3 class="text-lg font-black uppercase tracking-wider text-white">Banquillo Disponible</h3>
-                    <p class="text-slate-400 text-xs leading-normal">Pulsa una jugadora del banquillo y luego la zona de la pista (Z1-Z6) para asignarle la posición.</p>
+                    <p class="text-slate-400 text-xs leading-normal">
+                        {% if partido.modalidad == 'MINIVOLEY' %}
+                        Pulsa una jugadora del banquillo y luego la zona de la pista (Z1-Z4) para asignarle la posición.
+                        {% else %}
+                        Pulsa una jugadora del banquillo y luego la zona de la pista (Z1-Z6) para asignarle la posición.
+                        {% endif %}
+                    </p>
                 </div>
                 
                 <!-- Grid of available players -->
@@ -639,6 +712,8 @@
 </div>
 
 <script>
+    const MODALIDAD = "{{ partido.modalidad }}";
+
     let allJugadoras = [
         {% for j in jugadoras %}
         { id: '{{ j.id }}', dorsal: '{{ j.dorsal }}', nombre: '{{ j.nombre|escapejs }}', posicion: '{{ j.posicion }}' },
@@ -655,12 +730,12 @@
         // ── Fases de juego (K0=Saque propio, K1=Recepción, K2=Defensa) ──
         fase_actual: 'K1',   // default: start receiving (rival serves first)
         tenemos_saque: false, // true when we are serving
-        rotacion_num: 1       // current rotation R1-R6 (increments on side-out win)
+        rotacion_num: 1       // current rotation (R1-R6 for VOLEY, R1-R4 for MINIVOLEY)
     };
 
     let selectedBenchPlayerId = null;
     let tempLineup = { pos1: null, pos2: null, pos3: null, pos4: null, pos5: null, pos6: null };
-    let selectedRotInit    = 1;    // Rotación inicial del set activo (R1-R6)
+    let selectedRotInit    = 1;    // Rotación inicial del set activo (R1-R6 / R1-R4)
     let selectedEstadoInicial = 'K1'; // Estado inicial del set: 'K0' (saque) o 'K1' (recepción)
 
     // Pre-cargar historial inicial
@@ -809,9 +884,12 @@
         // ─────────────────────────────────────────────────
 
         // ── Restore rotation from localStorage if previously saved ─────────
-        const savedRot = parseInt(
+        let savedRot = parseInt(
             localStorage.getItem(`partido_${state.partido_id}_set_${num}_rotacion_init`) || '1'
         );
+        if (MODALIDAD.toUpperCase() === 'MINIVOLEY' && savedRot > 4) {
+            savedRot = 1;
+        }
         state.rotacion_num = savedRot;
         selectedRotInit    = savedRot;
         // Pre-select the correct button in the selector UI
@@ -881,7 +959,8 @@
                             partido_id: state.partido_id,
                             sale_id: saleId,
                             entra_id: entraId,
-                            set_numero: state.set_numero
+                            set_numero: state.set_numero,
+                            rotacion_num: state.rotacion_num
                         })
                     });
 
@@ -947,7 +1026,8 @@
         
         if (state.rotation) {
             // Draw Z1 to Z6 players in rotation order
-            for (let i = 1; i <= 6; i++) {
+            const maxZones = (MODALIDAD.toUpperCase() === 'MINIVOLEY' ? 4 : 6);
+            for (let i = 1; i <= maxZones; i++) {
                 const player = state.rotation[`pos${i}`];
                 if (player) {
                     const pj = allJugadoras.find(x => x.id == player.id);
@@ -973,9 +1053,16 @@
             }
         } else {
             container.innerHTML = `
-                <div class="flex items-center space-x-3 text-amber-500 py-3 pl-1">
-                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
-                    <span class="text-xs font-black uppercase tracking-wider">Alineación no configurada para este set. Configúrala en la Pizarra de Rotación.</span>
+                <div class="w-full flex flex-col md:flex-row md:items-center md:justify-between bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 gap-3 shadow-lg animate-fade-in">
+                    <div class="flex items-center space-x-3 text-amber-500">
+                        <i data-lucide="shield-alert" class="w-5 h-5 flex-shrink-0"></i>
+                        <span class="text-xs font-black uppercase tracking-wider">Alineación no configurada para este set.</span>
+                    </div>
+                    <button onclick="switchTab('rotacion')" 
+                            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all uppercase tracking-widest flex items-center justify-center gap-1.5 self-start md:self-auto">
+                        <i data-lucide="layout" class="w-3.5 h-3.5"></i>
+                        Pizarra de Rotación
+                    </button>
                 </div>
             `;
             if (window.lucide) lucide.createIcons();
@@ -998,6 +1085,7 @@
         } else {
             selectJugadora('null');
         }
+        updateRotBadge();
     }
 
     function selectJugadora(id) {
@@ -1308,8 +1396,19 @@
             pos6: tempLineup.pos6 || '',
         };
 
-        if (Object.values(body).some(x => x === '')) {
-            showToast("⚠️ Asigna jugadoras a las 6 zonas antes de guardar");
+        let hasEmpty = false;
+        if (MODALIDAD.toUpperCase() === 'MINIVOLEY') {
+            if (!body.pos1 || !body.pos2 || !body.pos3 || !body.pos4) {
+                hasEmpty = true;
+            }
+        } else {
+            if (!body.pos1 || !body.pos2 || !body.pos3 || !body.pos4 || !body.pos5 || !body.pos6) {
+                hasEmpty = true;
+            }
+        }
+
+        if (hasEmpty) {
+            showToast(MODALIDAD.toUpperCase() === 'MINIVOLEY' ? "⚠️ Asigna jugadoras a las 4 zonas antes de guardar" : "⚠️ Asigna jugadoras a las 6 zonas antes de guardar");
             return;
         }
 
@@ -1343,13 +1442,100 @@
         }
     }
 
+    function shiftRotationLocally(dir) {
+        if (!state.rotation) return;
+        const isMinivoley = MODALIDAD.toUpperCase() === 'MINIVOLEY';
+        
+        // Backup current objects
+        const p1 = state.rotation.pos1 ? { ...state.rotation.pos1 } : null;
+        const p2 = state.rotation.pos2 ? { ...state.rotation.pos2 } : null;
+        const p3 = state.rotation.pos3 ? { ...state.rotation.pos3 } : null;
+        const p4 = state.rotation.pos4 ? { ...state.rotation.pos4 } : null;
+        const p5 = state.rotation.pos5 ? { ...state.rotation.pos5 } : null;
+        const p6 = state.rotation.pos6 ? { ...state.rotation.pos6 } : null;
+        
+        if (isMinivoley) {
+            if (dir === 'horario') {
+                // Horario: Z1 -> Z4 -> Z3 -> Z2 -> Z1
+                state.rotation.pos4 = p1;
+                state.rotation.pos3 = p4;
+                state.rotation.pos2 = p3;
+                state.rotation.pos1 = p2;
+            } else {
+                // Antihorario (deshacer): Z1 -> Z2 -> Z3 -> Z4 -> Z1
+                state.rotation.pos1 = p4;
+                state.rotation.pos4 = p3;
+                state.rotation.pos3 = p2;
+                state.rotation.pos2 = p1;
+            }
+            state.rotation.pos5 = null;
+            state.rotation.pos6 = null;
+        } else {
+            if (dir === 'horario') {
+                // Horario FIVB: Z1 -> Z6 -> Z5 -> Z4 -> Z3 -> Z2 -> Z1
+                state.rotation.pos6 = p1;
+                state.rotation.pos5 = p6;
+                state.rotation.pos4 = p5;
+                state.rotation.pos3 = p4;
+                state.rotation.pos2 = p3;
+                state.rotation.pos1 = p2;
+            } else {
+                // Antihorario FIVB: Z1 -> Z2 -> Z3 -> Z4 -> Z5 -> Z6 -> Z1
+                state.rotation.pos2 = p1;
+                state.rotation.pos3 = p2;
+                state.rotation.pos4 = p3;
+                state.rotation.pos5 = p4;
+                state.rotation.pos6 = p5;
+                state.rotation.pos1 = p6;
+            }
+        }
+        
+        // Synchronize tempLineup positions
+        tempLineup.pos1 = state.rotation.pos1 ? state.rotation.pos1.id : null;
+        tempLineup.pos2 = state.rotation.pos2 ? state.rotation.pos2.id : null;
+        tempLineup.pos3 = state.rotation.pos3 ? state.rotation.pos3.id : null;
+        tempLineup.pos4 = state.rotation.pos4 ? state.rotation.pos4.id : null;
+        tempLineup.pos5 = state.rotation.pos5 ? state.rotation.pos5.id : null;
+        tempLineup.pos6 = state.rotation.pos6 ? state.rotation.pos6.id : null;
+    }
+
     // Rotate manual
     async function rotar(dir) {
         if(!state.rotation) {
             showToast("⚠️ Configura la alineación primero");
             return;
         }
+        
+        // 1. Modificar el estado local de rotación R1-R4 / R1-R6 ANTES de llamar a las funciones de repintado
+        if (dir === 'horario') {
+            if (MODALIDAD.toUpperCase() === 'MINIVOLEY') {
+                state.rotacion_num = ((parseInt(state.rotacion_num) - 2 + 4) % 4) + 1;
+            } else {
+                state.rotacion_num = ((parseInt(state.rotacion_num) - 2 + 6) % 6) + 1;
+            }
+        } else {
+            if (MODALIDAD.toUpperCase() === 'MINIVOLEY') {
+                state.rotacion_num = (parseInt(state.rotacion_num) % 4) + 1;
+            } else {
+                state.rotacion_num = (parseInt(state.rotacion_num) % 6) + 1;
+            }
+        }
+        localStorage.setItem(
+            `partido_${state.partido_id}_set_${state.set_numero}_rotacion_init`,
+            state.rotacion_num
+        );
+        
+        // 2. Desplazar las posiciones locales en el frontend
+        shiftRotationLocally(dir);
+        
+        // 3. Repintar la interfaz en caliente
+        updateRotBadge();
+        updateUIHeader();
+        drawCourtTempLineup();
+        drawBenchPlayers();
+        
         try {
+            // 4. Persistir la rotación en el servidor
             const r = await fetch(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
@@ -1357,12 +1543,11 @@
             });
             if(r.ok) {
                 showToast("🔄 Rotación completada");
-                loadRotation();
             } else {
-                showToast("❌ Error al rotar");
+                showToast("❌ Error al persistir la rotación en el servidor");
             }
         } catch(e) {
-            showToast("❌ Error de red");
+            showToast("❌ Error de red al persistir la rotación");
         }
     }
 
@@ -1391,20 +1576,34 @@
 
     async function autoRotarSideOut() {
         if (!state.rotation) return;
+        
+        // 1. Modificar el estado local de rotación R1-R4 / R1-R6 ANTES de llamar a las funciones de repintado
+        if (MODALIDAD.toUpperCase() === 'MINIVOLEY') {
+            state.rotacion_num = ((parseInt(state.rotacion_num) - 2 + 4) % 4) + 1;
+        } else {
+            state.rotacion_num = ((parseInt(state.rotacion_num) - 2 + 6) % 6) + 1;
+        }
+        localStorage.setItem(
+            `partido_${state.partido_id}_set_${state.set_numero}_rotacion_init`,
+            state.rotacion_num
+        );
+        
+        // 2. Desplazar las posiciones locales en el frontend
+        shiftRotationLocally('horario');
+        
+        // 3. Repintar la interfaz en caliente
+        updateRotBadge();
+        updateUIHeader();
+        drawCourtTempLineup();
+        drawBenchPlayers();
+        
         try {
-            const r = await fetch(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
+            // 4. Persistir en el servidor
+            await fetch(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                 body: JSON.stringify({ set_numero: state.set_numero, direccion: 'horario' })
             });
-            if (r.ok) {
-                // Rotación CORRECTA en voleibol (sentido horario): R1→R6→R5→R4→R3→R2→R1
-                // Al ganar side-out el colocador avanza una zona: pos - 1 en ciclo de 6
-                state.rotacion_num = ((state.rotacion_num - 2 + 6) % 6) + 1;
-                updateRotBadge();              // actualiza badge visual (sin alert/toast)
-                await renderActivePlayers();   // refresca botones de jugadora en barra
-                loadRotation();                // refresca pizarra de rotación
-            }
         } catch (e) { /* silent */ }
     }
 
@@ -1443,7 +1642,8 @@
                     accion: accion, 
                     calidad: calidad, 
                     set_numero: state.set_numero, 
-                    fase: faseTag
+                    fase: faseTag,
+                    rotacion_num: state.rotacion_num
                 }) 
             });
             

@@ -50,6 +50,7 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
             accion = data.get('accion')
             calidad = data.get('calidad', '').strip()
             set_num = data.get('set_numero', 1)
+            rotacion_num = data.get('rotacion_num', 1)
 
             partido = get_object_or_404(Partido, pk=partido_id)
             jugadora = get_object_or_404(Jugadora, pk=jugadora_id) if jugadora_id else None
@@ -60,7 +61,8 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
                 tipo_fase=fase,
                 accion=accion,
                 calidad=calidad,
-                set_numero=set_num
+                set_numero=set_num,
+                rotacion_num=rotacion_num
             )
 
             total_set = RegistroEstadistica.objects.filter(partido=partido, set_numero=set_num).count()
@@ -94,6 +96,7 @@ def RegistrarCambioAPI(request):
         jug_sale = get_object_or_404(Jugadora, id=data.get('sale_id'))
         jug_entra = get_object_or_404(Jugadora, id=data.get('entra_id'))
         set_num = data.get('set_numero', 1)
+        rotacion_num = data.get('rotacion_num', 1)
 
         registro = RegistroEstadistica.objects.create(
             partido=partido,
@@ -101,7 +104,8 @@ def RegistrarCambioAPI(request):
             accion='SUSTITUCION',
             calidad='=',
             set_numero=set_num,
-            tipo_fase='K1'
+            tipo_fase='K1',
+            rotacion_num=rotacion_num
         )
 
         return JsonResponse({

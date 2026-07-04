@@ -63,7 +63,7 @@ class JugadoraDeleteView(LoginRequiredMixin, DeleteView):
 # CRUD PARTIDO
 class PartidoCreateView(LoginRequiredMixin, CreateView):
     model = Partido
-    fields = ['equipo', 'fecha', 'hora', 'rival', 'local', 'lugar']
+    fields = ['equipo', 'fecha', 'hora', 'rival', 'local', 'lugar', 'modalidad']
     template_name = 'stats_app/admin/partido_form.html'
     success_url = reverse_lazy('stats_app:dashboard')
 
@@ -76,7 +76,7 @@ class PartidoCreateView(LoginRequiredMixin, CreateView):
 
 class PartidoUpdateView(LoginRequiredMixin, UpdateView):
     model = Partido
-    fields = ['equipo', 'fecha', 'hora', 'rival', 'local', 'lugar']
+    fields = ['equipo', 'fecha', 'hora', 'rival', 'local', 'lugar', 'modalidad']
     template_name = 'stats_app/admin/partido_form.html'
     success_url = reverse_lazy('stats_app:dashboard')
 

@@ -14,14 +14,14 @@ class JugadoraAdmin(admin.ModelAdmin):
 
 @admin.register(Partido)
 class PartidoAdmin(admin.ModelAdmin):
-    list_display = ('rival', 'equipo', 'fecha', 'hora', 'local')
-    list_filter = ('equipo', 'local')
+    list_display = ('rival', 'equipo', 'fecha', 'hora', 'local', 'modalidad')
+    list_filter = ('equipo', 'local', 'modalidad')
     search_fields = ('rival', 'lugar')
 
 @admin.register(RegistroEstadistica)
 class RegistroEstadisticaAdmin(admin.ModelAdmin):
-    list_display = ('partido', 'jugadora', 'set_numero', 'accion', 'calidad')
-    list_filter = ('partido', 'set_numero', 'accion')
+    list_display = ('partido', 'jugadora', 'set_numero', 'accion', 'calidad', 'rotacion_num')
+    list_filter = ('partido', 'set_numero', 'accion', 'rotacion_num')
 
 @admin.register(RotacionSet)
 class RotacionSetAdmin(admin.ModelAdmin):
