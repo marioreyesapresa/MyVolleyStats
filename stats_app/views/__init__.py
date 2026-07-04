@@ -9,7 +9,7 @@ from .informes import (
 )
 from .administracion import (
     DashboardView,
-    EquipoCreateView, EquipoUpdateView, EquipoDeleteView,
+    EquipoCreateView, EquipoUpdateView, EquipoDeleteView, EquipoListView,
     JugadoraCreateView, JugadoraUpdateView, JugadoraDeleteView,
     PartidoCreateView, PartidoUpdateView, PartidoDeleteView
 )

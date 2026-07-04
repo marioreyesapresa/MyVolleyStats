@@ -1,0 +1,103 @@
+{% extends 'stats_app/base_voley.html' %}
+
+{% block title %}Gestión de Equipos | Voley Stats{% endblock %}
+{% block header_title %}Gestión de Equipos{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-fade-in">
+    <!-- Header Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-md shadow-lg">
+        <div>
+            <h2 class="text-lg font-bold text-white">Administración de Equipos</h2>
+            <p class="text-sm text-slate-400">Crea nuevos equipos y añade jugadoras para definir sus plantillas.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'stats_app:equipo_nuevo' %}" class="flex items-center space-x-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-95">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>Nuevo Equipo</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Equipos Grid Section -->
+    <div class="space-y-6">
+        <h3 class="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+            <i data-lucide="users" class="text-emerald-500 w-5 h-5"></i>
+            Equipos Registrados ({{ equipos.count }})
+        </h3>
+
+        {% if not equipos %}
+            <div class="bg-slate-900/20 border border-slate-800/60 rounded-2xl p-12 text-center text-slate-400">
+                <i data-lucide="users" class="w-16 h-16 mx-auto text-slate-600 mb-4"></i>
+                <p class="text-lg font-bold text-white mb-2">No tienes equipos creados todavía</p>
+                <p class="max-w-md mx-auto text-sm">Crea tu primer equipo para empezar a registrar jugadoras y programar partidos.</p>
+                <a href="{% url 'stats_app:equipo_nuevo' %}" class="mt-4 inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-md">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Crear Equipo</span>
+                </a>
+            </div>
+        {% else %}
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                {% for equipo in equipos %}
+                    <div class="bg-[#0f172a] rounded-2xl border border-slate-800 shadow-xl overflow-hidden flex flex-col justify-between">
+                        <div>
+                            <!-- Card Header -->
+                            <div class="p-5 border-b border-slate-800/80 bg-slate-900/60 flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-extrabold text-white text-lg">{{ equipo.nombre }}</h4>
+                                    <p class="text-xs text-emerald-400 uppercase tracking-widest font-bold">{{ equipo.categoria }} | {{ equipo.temporada }}</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <a href="{% url 'stats_app:equipo_editar' equipo.id %}" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all" title="Editar Equipo">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    </a>
+                                    <a href="{% url 'stats_app:equipo_eliminar' equipo.id %}" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all" title="Eliminar Equipo">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Card Body: Roster -->
+                            <div class="p-5">
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Plantilla ({{ equipo.jugadoras.count }})</span>
+                                    <a href="{% url 'stats_app:jugadora_nueva' %}?equipo_id={{ equipo.id }}" class="flex items-center space-x-1 text-xs text-emerald-400 hover:text-emerald-300 font-bold">
+                                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                        <span>Añadir</span>
+                                    </a>
+                                </div>
+                                
+                                <div class="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                                    {% for jugadora in equipo.jugadoras.all %}
+                                        <div class="flex justify-between items-center bg-slate-900/40 p-2.5 rounded-xl border border-slate-800/50">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-black text-xs">
+                                                    #{{ jugadora.dorsal|default:"--" }}
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-semibold text-white">{{ jugadora.nombre }} {{ jugadora.apellidos }}</p>
+                                                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-wider">{{ jugadora.get_posicion_display }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center space-x-1">
+                                                <a href="{% url 'stats_app:jugadora_editar' jugadora.id %}" class="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded transition-all">
+                                                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                                </a>
+                                                <a href="{% url 'stats_app:jugadora_eliminar' jugadora.id %}" class="p-1 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 rounded transition-all">
+                                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <p class="text-xs text-slate-500 text-center py-6">No hay jugadoras asignadas.</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

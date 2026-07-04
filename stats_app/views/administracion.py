@@ -84,3 +84,11 @@ class PartidoDeleteView(LoginRequiredMixin, DeleteView):
     model = Partido
     template_name = 'stats_app/admin/partido_confirm_delete.html'
     success_url = reverse_lazy('stats_app:dashboard')
+
+class EquipoListView(LoginRequiredMixin, ListView):
+    model = Equipo
+    template_name = 'stats_app/equipos_list.html'
+    context_object_name = 'equipos'
+
+    def get_queryset(self):
+        return Equipo.objects.all().order_by('nombre')

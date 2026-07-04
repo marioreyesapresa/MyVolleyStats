@@ -4,18 +4,14 @@
 {% block header_title %}Panel de Control - Scouting & Stats{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
+<div class="space-y-8 animate-fade-in">
     <!-- Header Actions -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-md shadow-lg">
         <div>
             <h2 class="text-lg font-bold text-white">Gestión Técnica</h2>
-            <p class="text-sm text-slate-400">Crea tus equipos y partidos para empezar el registro estadístico en vivo.</p>
+            <p class="text-sm text-slate-400">Crea partidos para empezar el registro estadístico en vivo.</p>
         </div>
         <div class="flex flex-wrap gap-3">
-            <a href="{% url 'stats_app:equipo_nuevo' %}" class="flex items-center space-x-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-95">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                <span>Nuevo Equipo</span>
-            </a>
             <a href="{% url 'stats_app:partido_nuevo' %}" class="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-95">
                 <i data-lucide="calendar" class="w-4 h-4"></i>
                 <span>Nuevo Partido</span>
@@ -23,164 +19,234 @@
         </div>
     </div>
 
-    <!-- Main Grid: Equipos & Partidos -->
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        
-        <!-- Equipos Section (Left Column, col-span-1) -->
-        <div class="xl:col-span-1 space-y-6">
-            <div class="flex justify-between items-center">
-                <h3 class="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                    <i data-lucide="users" class="text-emerald-500 w-5 h-5"></i>
-                    Equipos ({{ equipos.count }})
-                </h3>
-            </div>
-
-            {% if not equipos %}
-                <div class="bg-slate-900/20 border border-slate-800/60 rounded-2xl p-8 text-center text-slate-400">
-                    <i data-lucide="users" class="w-12 h-12 mx-auto text-slate-600 mb-3"></i>
-                    <p>No tienes equipos creados todavía.</p>
-                    <a href="{% url 'stats_app:equipo_nuevo' %}" class="text-emerald-400 hover:underline mt-2 inline-block font-semibold">Crea tu primer equipo</a>
-                </div>
-            {% endif %}
-
-            {% for equipo in equipos %}
-                <div class="bg-[#0f172a] rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
-                    <div class="p-5 border-b border-slate-800/80 bg-slate-900/60 flex justify-between items-center">
-                        <div>
-                            <h4 class="font-extrabold text-white text-lg">{{ equipo.nombre }}</h4>
-                            <p class="text-xs text-emerald-400 uppercase tracking-widest font-bold">{{ equipo.categoria }} | {{ equipo.temporada }}</p>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <a href="{% url 'stats_app:equipo_editar' equipo.id %}" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all" title="Editar Equipo">
-                                <i data-lucide="edit-3" class="w-4 h-4"></i>
-                            </a>
-                            <a href="{% url 'stats_app:equipo_eliminar' equipo.id %}" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all" title="Eliminar Equipo">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="p-5">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Plantilla ({{ equipo.jugadoras.count }})</span>
-                            <a href="{% url 'stats_app:jugadora_nueva' %}?equipo_id={{ equipo.id }}" class="flex items-center space-x-1 text-xs text-emerald-400 hover:text-emerald-300 font-bold">
-                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                                <span>Añadir</span>
-                            </a>
-                        </div>
-                        
-                        <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                            {% for jugadora in equipo.jugadoras.all %}
-                                <div class="flex justify-between items-center bg-slate-900/40 p-2.5 rounded-xl border border-slate-800/50">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-black text-xs">
-                                            #{{ jugadora.dorsal|default:"--" }}
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-semibold text-white">{{ jugadora.nombre }} {{ jugadora.apellidos }}</p>
-                                            <p class="text-[10px] text-slate-400 uppercase font-black tracking-wider">{{ jugadora.get_posicion_display }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center space-x-1">
-                                        <a href="{% url 'stats_app:jugadora_editar' jugadora.id %}" class="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded transition-all">
-                                            <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
-                                        </a>
-                                        <a href="{% url 'stats_app:jugadora_eliminar' jugadora.id %}" class="p-1 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 rounded transition-all">
-                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            {% empty %}
-                                <p class="text-xs text-slate-500 text-center py-4">No hay jugadoras asignadas.</p>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-
-        <!-- Partidos Section (Right Column, col-span-2) -->
-        <div class="xl:col-span-2 space-y-6">
+    <!-- Partidos Section (Full Width) -->
+    <div class="space-y-6">
+        <!-- Section Header with Tabs -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-2">
             <h3 class="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
                 <i data-lucide="play" class="text-blue-500 w-5 h-5"></i>
                 Partidos Programados
             </h3>
-
-            {% if not partidos %}
-                <div class="bg-slate-900/20 border border-slate-800/60 rounded-2xl p-12 text-center text-slate-400">
-                    <i data-lucide="calendar" class="w-16 h-16 mx-auto text-slate-700 mb-4"></i>
-                    <p class="text-lg font-bold text-white mb-2">No hay partidos registrados</p>
-                    <p class="max-w-md mx-auto text-sm">Registra un partido y asócialo a uno de tus equipos para poder realizar el *scouting* y estadísticas en vivo.</p>
-                    <a href="{% url 'stats_app:partido_nuevo' %}" class="mt-4 inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        <span>Crear Partido</span>
-                    </a>
-                </div>
-            {% endif %}
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {% for partido in partidos %}
-                    <div class="bg-[#0f172a] rounded-2xl border border-slate-800 shadow-xl overflow-hidden flex flex-col justify-between">
-                        <div>
-                            <div class="p-5 bg-gradient-to-r from-blue-900/20 to-slate-900 border-b border-slate-800/80 flex justify-between items-start">
-                                <div>
-                                    <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-black uppercase tracking-wider">
-                                        {% if partido.local %}LOCAL{% else %}VISITANTE{% endif %}
-                                    </span>
-                                    <span class="px-2 py-0.5 rounded {% if partido.modalidad == 'MINIVOLEY' %}bg-purple-500/10 text-purple-400 border border-purple-500/20{% else %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% endif %} text-[9px] font-black uppercase tracking-wider ml-1">
-                                        {{ partido.get_modalidad_display }}
-                                    </span>
-                                    <h4 class="font-black text-white text-lg mt-1 uppercase tracking-tight">vs {{ partido.rival }}</h4>
-                                    <p class="text-xs text-slate-400 font-semibold">{{ partido.equipo.nombre }} ({{ partido.equipo.categoria }})</p>
-                                </div>
-                                <div class="flex items-center space-x-1.5">
-                                    <a href="{% url 'stats_app:partido_editar' partido.id %}" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all" title="Editar Partido">
-                                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                                    </a>
-                                    <a href="{% url 'stats_app:partido_eliminar' partido.id %}" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all" title="Eliminar Partido">
-                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                    </a>
-                                </div>
-                            </div>
-                            
-                            <div class="p-5 space-y-3.5">
-                                <div class="flex items-center space-x-3 text-slate-300 text-sm">
-                                    <i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i>
-                                    <span>{{ partido.fecha|date:"l, d \d\e F \d\e Y" }}</span>
-                                </div>
-                                <div class="flex items-center space-x-3 text-slate-300 text-sm">
-                                    <i data-lucide="clock" class="w-4 h-4 text-blue-400"></i>
-                                    <span>{{ partido.hora|time:"H:i" }} H</span>
-                                </div>
-                                <div class="flex items-center space-x-3 text-slate-300 text-sm">
-                                    <i data-lucide="map-pin" class="w-4 h-4 text-blue-400"></i>
-                                    <span class="truncate">{{ partido.lugar }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="p-5 pt-0 border-t border-slate-800/50 bg-slate-900/10 mt-2">
-                            <div class="flex flex-col gap-2 pt-4">
-                                <a href="{% url 'stats_app:modo_partido' partido.id %}" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl active:scale-95 transition-all text-center flex items-center justify-center uppercase tracking-widest shadow-md">
-                                    <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
-                                    Scout en Vivo
-                                </a>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10px] font-black rounded-lg active:scale-95 transition-all text-center flex items-center justify-center uppercase tracking-wider">
-                                        <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 mr-1.5 text-blue-400"></i>
-                                        Estadísticas
-                                    </a>
-                                    <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10px] font-black rounded-lg active:scale-95 transition-all text-center flex items-center justify-center uppercase tracking-wider">
-                                        <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5 text-emerald-400"></i>
-                                        PDF Resumen
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
+            
+            <!-- Navigation Tabs -->
+            <div class="flex space-x-2">
+                <button id="btn-tab-proximos" 
+                        onclick="switchMatchesTab('proximos')" 
+                        class="tab-matches-btn px-4 py-2 border-b-2 border-emerald-500 text-emerald-400 font-bold text-xs uppercase tracking-wider transition-all">
+                    Próximos Partidos
+                </button>
+                <button id="btn-tab-historial" 
+                        onclick="switchMatchesTab('historial')" 
+                        class="tab-matches-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-medium text-xs uppercase tracking-wider transition-all">
+                    Historial de Partidos
+                </button>
             </div>
         </div>
 
+        {% if not partidos %}
+            <div class="bg-slate-900/20 border border-slate-800/60 rounded-2xl p-12 text-center text-slate-400">
+                <i data-lucide="calendar" class="w-16 h-16 mx-auto text-slate-700 mb-4"></i>
+                <p class="text-lg font-bold text-white mb-2">No hay partidos registrados</p>
+                <p class="max-w-md mx-auto text-sm">Registra un partido y asócialo a uno de tus equipos para poder realizar el *scouting* y estadísticas en vivo.</p>
+                <a href="{% url 'stats_app:partido_nuevo' %}" class="mt-4 inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Crear Partido</span>
+                </a>
+            </div>
+        {% else %}
+            <!-- Tab Content: Próximos Partidos -->
+            <div id="tab-proximos" class="tab-matches-content">
+                <div id="grid-proximos" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-fade-in">
+                    {% for partido in partidos %}
+                        {% if not partido.finalizado %}
+                            <div class="bg-[#0f172a] rounded-2xl border border-slate-800 shadow-xl overflow-hidden flex flex-col justify-between hover:border-slate-700/80 transition-all duration-300">
+                                <div>
+                                    <!-- Card Header -->
+                                    <div class="p-5 bg-gradient-to-r from-blue-900/10 to-slate-900/40 border-b border-slate-800/80 flex justify-between items-start">
+                                        <div>
+                                            <div class="flex flex-wrap items-center gap-1.5">
+                                                <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-black uppercase tracking-wider">
+                                                    {% if partido.local %}LOCAL{% else %}VISITANTE{% endif %}
+                                                </span>
+                                                <span class="px-2 py-0.5 rounded {% if partido.modalidad == 'MINIVOLEY' %}bg-purple-500/10 text-purple-400 border border-purple-500/20{% else %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% endif %} text-[9px] font-black uppercase tracking-wider">
+                                                    {{ partido.get_modalidad_display }}
+                                                </span>
+                                            </div>
+                                            <h4 class="font-black text-white text-lg mt-2 uppercase tracking-tight">vs {{ partido.rival }}</h4>
+                                            <p class="text-xs text-slate-400 font-semibold">{{ partido.equipo.nombre }} ({{ partido.equipo.categoria }})</p>
+                                        </div>
+                                        <div class="flex items-center space-x-1.5">
+                                            <a href="{% url 'stats_app:partido_editar' partido.id %}" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all" title="Editar Partido">
+                                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                            </a>
+                                            <a href="{% url 'stats_app:partido_eliminar' partido.id %}" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all" title="Eliminar Partido">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Card Info -->
+                                    <div class="p-5 space-y-3">
+                                        <div class="flex items-center space-x-3 text-slate-300 text-sm">
+                                            <i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i>
+                                            <span>{{ partido.fecha|date:"l, d \d\e F \d\e Y" }}</span>
+                                        </div>
+                                        <div class="flex items-center space-x-3 text-slate-300 text-sm">
+                                            <i data-lucide="clock" class="w-4 h-4 text-blue-400"></i>
+                                            <span>{{ partido.hora|time:"H:i" }} H</span>
+                                        </div>
+                                        <div class="flex items-center space-x-3 text-slate-300 text-sm">
+                                            <i data-lucide="map-pin" class="w-4 h-4 text-blue-400"></i>
+                                            <span class="truncate">{{ partido.lugar }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card CTA footer -->
+                                <div class="p-5 pt-0 border-t border-slate-800/50 bg-slate-900/10 mt-2">
+                                    <div class="flex flex-col gap-2 pt-4">
+                                        <a href="{% url 'stats_app:modo_partido' partido.id %}" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl active:scale-95 transition-all text-center flex items-center justify-center uppercase tracking-widest shadow-md">
+                                            <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                                            Scout en Vivo
+                                        </a>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10px] font-black rounded-lg active:scale-95 transition-all text-center flex items-center justify-center uppercase tracking-wider">
+                                                <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 mr-1.5 text-blue-400"></i>
+                                                Estadísticas
+                                            </a>
+                                            <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10px] font-black rounded-lg active:scale-95 transition-all text-center flex items-center justify-center uppercase tracking-wider">
+                                                <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5 text-emerald-400"></i>
+                                                PDF Resumen
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Tab Content: Historial de Partidos -->
+            <div id="tab-historial" class="tab-matches-content hidden">
+                <div id="grid-historial" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-fade-in">
+                    {% for partido in partidos %}
+                        {% if partido.finalizado %}
+                            <div class="bg-[#0f172a] rounded-2xl border border-slate-800 shadow-xl overflow-hidden flex flex-col justify-between hover:border-slate-700/80 transition-all duration-300">
+                                <div>
+                                    <!-- Card Header -->
+                                    <div class="p-5 bg-gradient-to-r from-emerald-950/10 to-slate-900/40 border-b border-slate-800/80 flex justify-between items-start">
+                                        <div>
+                                            <div class="flex flex-wrap items-center gap-1.5">
+                                                <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-black uppercase tracking-wider">
+                                                    {% if partido.local %}LOCAL{% else %}VISITANTE{% endif %}
+                                                </span>
+                                                <span class="px-2 py-0.5 rounded {% if partido.modalidad == 'MINIVOLEY' %}bg-purple-500/10 text-purple-400 border border-purple-500/20{% else %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% endif %} text-[9px] font-black uppercase tracking-wider">
+                                                    {{ partido.get_modalidad_display }}
+                                                </span>
+                                                <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm shadow-emerald-500/10">
+                                                    <i data-lucide="check-circle" class="w-2.5 h-2.5"></i>
+                                                    ✓ FINALIZADO
+                                                </span>
+                                            </div>
+                                            <h4 class="font-black text-white text-lg mt-2 uppercase tracking-tight">vs {{ partido.rival }}</h4>
+                                            <p class="text-xs text-slate-400 font-semibold">{{ partido.equipo.nombre }} ({{ partido.equipo.categoria }})</p>
+                                        </div>
+                                        <div class="flex items-center space-x-1.5">
+                                            <a href="{% url 'stats_app:partido_editar' partido.id %}" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all" title="Editar Partido">
+                                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                            </a>
+                                            <a href="{% url 'stats_app:partido_eliminar' partido.id %}" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all" title="Eliminar Partido">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Card Info -->
+                                    <div class="p-5 space-y-3">
+                                        <div class="flex items-center space-x-3 text-slate-300 text-sm">
+                                            <i data-lucide="calendar" class="w-4 h-4 text-emerald-500"></i>
+                                            <span>{{ partido.fecha|date:"l, d \d\e F \d\e Y" }}</span>
+                                        </div>
+                                        <div class="flex items-center space-x-3 text-slate-300 text-sm">
+                                            <i data-lucide="clock" class="w-4 h-4 text-emerald-500"></i>
+                                            <span>{{ partido.hora|time:"H:i" }} H</span>
+                                        </div>
+                                        <div class="flex items-center space-x-3 text-slate-300 text-sm">
+                                            <i data-lucide="map-pin" class="w-4 h-4 text-emerald-500"></i>
+                                            <span class="truncate">{{ partido.lugar }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card CTA footer -->
+                                <div class="p-5 pt-0 border-t border-slate-800/50 bg-slate-900/10 mt-2">
+                                    <div class="flex flex-col gap-2 pt-4">
+                                        <div class="grid grid-cols-2 gap-3 pt-1">
+                                            <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl active:scale-95 transition-all text-center flex items-center justify-center uppercase tracking-wider shadow-md">
+                                                <i data-lucide="bar-chart-2" class="w-4 h-4 mr-2"></i>
+                                                Estadísticas
+                                            </a>
+                                            <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-black text-xs rounded-xl active:scale-95 transition-all text-center flex items-center justify-center uppercase tracking-wider">
+                                                <i data-lucide="download" class="w-4 h-4 mr-2 text-emerald-400"></i>
+                                                PDF Resumen
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
     </div>
 </div>
+
+<script>
+    function switchMatchesTab(tabId) {
+        // Toggle active tabs
+        document.querySelectorAll('.tab-matches-content').forEach(el => el.classList.add('hidden'));
+        const activeContent = document.getElementById('tab-' + tabId);
+        if (activeContent) activeContent.classList.remove('hidden');
+
+        // Toggle active buttons style
+        document.querySelectorAll('.tab-matches-btn').forEach(btn => {
+            btn.classList.remove('border-emerald-500', 'text-emerald-400', 'font-bold');
+            btn.classList.add('border-transparent', 'text-slate-400', 'font-medium');
+        });
+        const activeBtn = document.getElementById('btn-tab-' + tabId);
+        if (activeBtn) {
+            activeBtn.classList.remove('border-transparent', 'text-slate-400', 'font-medium');
+            activeBtn.classList.add('border-emerald-500', 'text-emerald-400', 'font-bold');
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Handle empty tabs elegantly
+        const proximosContainer = document.getElementById("grid-proximos");
+        if (proximosContainer && proximosContainer.children.length === 0) {
+            proximosContainer.innerHTML = `
+                <div class="bg-slate-900/20 border border-slate-800/60 rounded-2xl p-12 text-center text-slate-400 col-span-full">
+                    <i data-lucide="calendar" class="w-16 h-16 mx-auto text-slate-700 mb-4 animate-pulse"></i>
+                    <p class="text-lg font-bold text-white mb-2">No hay partidos programados</p>
+                    <p class="max-w-md mx-auto text-sm">No tienes partidos programados pendientes de jugar.</p>
+                </div>
+            `;
+        }
+
+        const historialContainer = document.getElementById("grid-historial");
+        if (historialContainer && historialContainer.children.length === 0) {
+            historialContainer.innerHTML = `
+                <div class="bg-slate-900/20 border border-slate-800/60 rounded-2xl p-12 text-center text-slate-400 col-span-full">
+                    <i data-lucide="history" class="w-16 h-16 mx-auto text-slate-700 mb-4"></i>
+                    <p class="text-lg font-bold text-white mb-2">Historial vacío</p>
+                    <p class="max-w-md mx-auto text-sm">No tienes ningún partido finalizado en tu historial todavía.</p>
+                </div>
+            `;
+        }
+
+        if (window.lucide) lucide.createIcons();
+    });
+</script>
 {% endblock %}

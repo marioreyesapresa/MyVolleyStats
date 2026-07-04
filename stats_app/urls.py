@@ -9,6 +9,7 @@ urlpatterns = [
     path('equipo/nuevo/', views.EquipoCreateView.as_view(), name='equipo_nuevo'),
     path('equipo/<int:pk>/editar/', views.EquipoUpdateView.as_view(), name='equipo_editar'),
     path('equipo/<int:pk>/eliminar/', views.EquipoDeleteView.as_view(), name='equipo_eliminar'),
+    path('equipos/', views.EquipoListView.as_view(), name='equipos_list'),
     
     path('jugadora/nueva/', views.JugadoraCreateView.as_view(), name='jugadora_nueva'),
     path('jugadora/<int:pk>/editar/', views.JugadoraUpdateView.as_view(), name='jugadora_editar'),
