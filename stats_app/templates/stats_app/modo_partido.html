@@ -241,6 +241,29 @@
                 <div id="bench-players-list" class="grid grid-cols-2 gap-2.5 overflow-y-auto pr-1 py-2 scrollbar-hide flex-1">
                     <!-- Dynamically populated from JS -->
                 </div>
+                {% if permite_libero %}
+                <div class="pt-4 border-t border-slate-800/80 space-y-3">
+                    <span class="text-xs font-black text-slate-400 uppercase tracking-wider block">Líberos Registrados</span>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div id="libero1-container" 
+                             ondrop="dropOnLibero(event, 1)" 
+                             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-amber-500');"
+                             ondragleave="this.classList.remove('ring-2','ring-amber-500');"
+                             onclick="selectLiberoZone(1)"
+                             class="p-4 bg-slate-900/60 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center min-h-[96px] cursor-pointer transition-all relative">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <div id="libero2-container" 
+                             ondrop="dropOnLibero(event, 2)" 
+                             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-amber-500');"
+                             ondragleave="this.classList.remove('ring-2','ring-amber-500');"
+                             onclick="selectLiberoZone(2)"
+                             class="p-4 bg-slate-900/60 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center min-h-[96px] cursor-pointer transition-all relative">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
             
             <div class="pt-4 border-t border-slate-800 space-y-3">
@@ -725,6 +748,7 @@
 
 <script>
     const MODALIDAD = "{{ partido.modalidad }}";
+    const PERMITE_LIBERO = {{ permite_libero|yesno:"true,false" }};
 
     let allJugadoras = [
         {% for j in jugadoras %}
@@ -749,7 +773,7 @@
     let selectedBenchPlayerId = null;
     let setsLocal = 0;
     let setsRival = 0;
-    let tempLineup = { pos1: null, pos2: null, pos3: null, pos4: null, pos5: null, pos6: null };
+    let tempLineup = { pos1: null, pos2: null, pos3: null, pos4: null, pos5: null, pos6: null, libero1: null, libero2: null };
     let selectedRotInit    = 1;    // Rotación inicial del set activo (R1-R6 / R1-R4)
     let selectedEstadoInicial = 'K1'; // Estado inicial del set: 'K0' (saque) o 'K1' (recepción)
 
@@ -996,6 +1020,8 @@
                         pos4: state.rotation.pos4 ? state.rotation.pos4.id : '',
                         pos5: state.rotation.pos5 ? state.rotation.pos5.id : '',
                         pos6: state.rotation.pos6 ? state.rotation.pos6.id : '',
+                        libero1: state.rotation.libero1 ? state.rotation.libero1.id : '',
+                        libero2: state.rotation.libero2 ? state.rotation.libero2.id : '',
                     };
 
                     for (let i = 1; i <= 6; i++) {
@@ -1078,6 +1104,24 @@
                     container.insertAdjacentHTML('beforeend', html);
                 }
             }
+            if (PERMITE_LIBERO) {
+                [1, 2].forEach(n => {
+                    const lib = state.rotation[`libero${n}`];
+                    if (lib) {
+                        const pj = allJugadoras.find(x => x.id == lib.id);
+                        const nombre = pj ? pj.nombre : `Líbero ${n}`;
+                        const html = `
+                            <button onclick="selectJugadora('${lib.id}')" 
+                                    class="btn-jug flex-none flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-amber-500 border-2 border-amber-400 rounded-2xl hover:bg-amber-600 active:scale-95 transition-all text-slate-950 shadow-md animate-fade-in" 
+                                    id="btn-header-${lib.id}">
+                                <span class="text-lg md:text-xl font-black">#${lib.dorsal}</span>
+                                <span class="text-[8px] md:text-[9px] font-bold text-slate-900 uppercase tracking-tight max-w-[56px] md:max-w-[72px] truncate">${nombre}</span>
+                            </button>
+                        `;
+                        container.insertAdjacentHTML('beforeend', html);
+                    }
+                });
+            }
         } else {
             container.innerHTML = `
                 <div class="flex-1 min-w-0 flex flex-col md:flex-row md:items-center md:justify-between bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 gap-3 shadow-lg animate-fade-in">
@@ -1117,16 +1161,31 @@
 
     function selectJugadora(id) {
         state.jugadora_id = (id === 'null' || id === null) ? null : id;
+        
+        const liberoIds = [];
+        if (state.rotation) {
+            if (state.rotation.libero1) liberoIds.push(String(state.rotation.libero1.id));
+            if (state.rotation.libero2) liberoIds.push(String(state.rotation.libero2.id));
+        }
+
         document.querySelectorAll('.btn-jug').forEach(b => {
-            b.style.borderColor = '#1e293b';
-            if (b.id.includes('null')) {
+            const btnId = b.id.replace('btn-header-', '');
+            
+            if (btnId === 'null') {
+                b.style.borderColor = '#1e293b';
                 b.style.color = '#34d399';
                 b.style.backgroundColor = '#1e293b';
+            } else if (liberoIds.includes(btnId)) {
+                b.style.borderColor = '#f59e0b';
+                b.style.color = '#0f172a';
+                b.style.backgroundColor = '#f59e0b';
             } else {
+                b.style.borderColor = '#1e293b';
                 b.style.color = '#ffffff';
                 b.style.backgroundColor = '#161b26';
             }
         });
+        
         let activeId = id === null ? 'null' : id;
         let el = document.getElementById(`btn-header-${activeId}`);
         if(el) {
@@ -1198,16 +1257,19 @@
                 tempLineup.pos4 = state.rotation.pos4 ? state.rotation.pos4.id : null;
                 tempLineup.pos5 = state.rotation.pos5 ? state.rotation.pos5.id : null;
                 tempLineup.pos6 = state.rotation.pos6 ? state.rotation.pos6.id : null;
+                tempLineup.libero1 = state.rotation.libero1 ? state.rotation.libero1.id : null;
+                tempLineup.libero2 = state.rotation.libero2 ? state.rotation.libero2.id : null;
             } else {
                 clearTempLineupStateOnly();
             }
             
             drawCourtTempLineup();
+            drawLiberoTempLineup();
             drawBenchPlayers();
         } catch(e) {
             console.error("Error cargando rotación: ", e);
         }
-    }
+     }
 
     function clearTempLineupStateOnly() {
         tempLineup.pos1 = null;
@@ -1216,12 +1278,15 @@
         tempLineup.pos4 = null;
         tempLineup.pos5 = null;
         tempLineup.pos6 = null;
+        tempLineup.libero1 = null;
+        tempLineup.libero2 = null;
         selectedBenchPlayerId = null;
     }
 
     function clearTempLineup() {
         clearTempLineupStateOnly();
         drawCourtTempLineup();
+        drawLiberoTempLineup();
         drawBenchPlayers();
         showToast("🧹 Pista despejada localmente");
     }
@@ -1367,6 +1432,96 @@
         showToast(`📍 Jugadora asignada a Zona ${zoneNum}`);
     }
 
+    // ── Libero functions for Pizarra ──────────────────────────────────────
+    function dropOnLibero(event, liberoNum) {
+        event.preventDefault();
+        const container = document.getElementById(`libero${liberoNum}-container`);
+        if (container) container.classList.remove('ring-2', 'ring-amber-500');
+        
+        const playerId = event.dataTransfer.getData('playerId');
+        if (!playerId) return;
+        
+        assignLibero(playerId, liberoNum);
+    }
+    
+    function selectLiberoZone(liberoNum) {
+        if (!selectedBenchPlayerId) {
+            showToast("🎯 Selecciona una jugadora del banquillo primero");
+            return;
+        }
+        assignLibero(selectedBenchPlayerId, liberoNum);
+    }
+    
+    function assignLibero(playerId, liberoNum) {
+        // Remove from positions pos1-pos6
+        for (let i = 1; i <= 6; i++) {
+            if (tempLineup[`pos${i}`] === playerId) {
+                tempLineup[`pos${i}`] = null;
+            }
+        }
+        // Remove from other libero slot
+        const otherLib = (liberoNum === 1 ? 2 : 1);
+        if (tempLineup[`libero${otherLib}`] === playerId) {
+            tempLineup[`libero${otherLib}`] = null;
+        }
+        
+        tempLineup[`libero${liberoNum}`] = playerId;
+        selectedBenchPlayerId = null;
+        
+        drawCourtTempLineup();
+        drawLiberoTempLineup();
+        drawBenchPlayers();
+        showToast(`👕 Líbero ${liberoNum} asignada con éxito`);
+    }
+    
+    function unassignLibero(event, liberoNum) {
+        if (event) event.stopPropagation();
+        tempLineup[`libero${liberoNum}`] = null;
+        drawLiberoTempLineup();
+        drawBenchPlayers();
+        showToast(`❌ Líbero ${liberoNum} despejada`);
+    }
+
+    function drawLiberoTempLineup() {
+        if (!PERMITE_LIBERO) return;
+        
+        [1, 2].forEach(n => {
+            const container = document.getElementById(`libero${n}-container`);
+            if (!container) return;
+            
+            container.innerHTML = '';
+            const playerId = tempLineup[`libero${n}`];
+            
+            if (playerId) {
+                const player = allJugadoras.find(x => x.id == playerId);
+                if (player) {
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1 block">LÍBERO ${n}</span>
+                            <div class="w-12 h-12 rounded-full bg-amber-500 border border-amber-400 text-slate-950 font-black flex items-center justify-center text-sm shadow-md ring-2 ring-amber-500/20">
+                                #${player.dorsal}
+                            </div>
+                            <span class="text-[9px] text-slate-300 font-semibold truncate max-w-[80px] mt-1.5 block">${player.nombre}</span>
+                            <button onclick="unassignLibero(event, ${n})" class="absolute top-1.5 right-1.5 text-slate-500 hover:text-rose-400 transition-all p-0.5" title="Quitar líbero">
+                                <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    `;
+                    if (window.lucide) lucide.createIcons();
+                }
+            } else {
+                container.innerHTML = `
+                    <div class="text-center text-slate-600">
+                        <i data-lucide="shield" class="w-5 h-5 mx-auto mb-1 opacity-40"></i>
+                        <span class="text-[10px] font-black uppercase tracking-wider block">LÍBERO ${n}</span>
+                        <span class="text-[8px] opacity-60 block">Suelte aquí</span>
+                    </div>
+                `;
+                if (window.lucide) lucide.createIcons();
+            }
+        });
+    }
+
     // ── Selector de estado inicial K0/K1 ────────────────────────────────
     function selectEstadoInicial(estado) {
         selectedEstadoInicial = estado;
@@ -1425,6 +1580,8 @@
             pos4: tempLineup.pos4 || '',
             pos5: tempLineup.pos5 || '',
             pos6: tempLineup.pos6 || '',
+            libero1: tempLineup.libero1 || '',
+            libero2: tempLineup.libero2 || '',
         };
 
         let hasEmpty = false;

@@ -33,11 +33,13 @@ class ModoPartidoView(LoginRequiredMixin, View):
                 'calidad': reg.calidad
             })
 
+        permite_libero = partido.equipo.categoria in ['CADETE', 'JUVENIL', 'JUNIOR', 'SENIOR']
         return render(request, self.template_name, {
             'partido': partido,
             'jugadoras': jugadoras,
             'matrix_actions': acciones,
-            'historial_inicial': json.dumps(historial_data)
+            'historial_inicial': json.dumps(historial_data),
+            'permite_libero': permite_libero
         })
 
 class RegistrarAccionAPI(LoginRequiredMixin, View):

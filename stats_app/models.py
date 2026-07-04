@@ -3,7 +3,16 @@ from django.db import models
 class Equipo(models.Model):
     nombre = models.CharField(max_length=100, verbose_name="Nombre del Equipo")
     temporada = models.CharField(max_length=50, verbose_name="Temporada (ej. 2025/2026)")
-    categoria = models.CharField(max_length=50, verbose_name="Categoría (ej. Alevín, Infantil, Senior)")
+    CATEGORIAS_CHOICES = [
+        ('BENJAMIN', 'Benjamín'),
+        ('ALEVIN', 'Alevín'),
+        ('INFANTIL', 'Infantil'),
+        ('CADETE', 'Cadete'),
+        ('JUVENIL', 'Juvenil'),
+        ('JUNIOR', 'Junior'),
+        ('SENIOR', 'Senior'),
+    ]
+    categoria = models.CharField(max_length=20, choices=CATEGORIAS_CHOICES, default='SENIOR', verbose_name="Categoría")
     entrenador_principal = models.CharField(max_length=100, blank=True, null=True, verbose_name="Entrenador Principal")
 
     def __str__(self):
@@ -107,6 +116,8 @@ class RotacionSet(models.Model):
     pos4 = models.ForeignKey(Jugadora, on_delete=models.SET_NULL, null=True, blank=True, related_name='pos4_rotaciones', verbose_name="Zona 4")
     pos5 = models.ForeignKey(Jugadora, on_delete=models.SET_NULL, null=True, blank=True, related_name='pos5_rotaciones', verbose_name="Zona 5")
     pos6 = models.ForeignKey(Jugadora, on_delete=models.SET_NULL, null=True, blank=True, related_name='pos6_rotaciones', verbose_name="Zona 6")
+    libero1 = models.ForeignKey(Jugadora, on_delete=models.SET_NULL, null=True, blank=True, related_name='libero1_rotaciones', verbose_name="Líbero 1")
+    libero2 = models.ForeignKey(Jugadora, on_delete=models.SET_NULL, null=True, blank=True, related_name='libero2_rotaciones', verbose_name="Líbero 2")
 
     es_inicial = models.BooleanField(default=False)
     fecha_actualizacion = models.DateTimeField(auto_now=True)

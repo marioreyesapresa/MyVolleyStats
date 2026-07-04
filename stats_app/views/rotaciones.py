@@ -23,6 +23,8 @@ class GetRotacionActualAPI(LoginRequiredMixin, View):
             'pos4': {'id': rotacion.pos4.id, 'dorsal': rotacion.pos4.dorsal} if rotacion.pos4 else None,
             'pos5': {'id': rotacion.pos5.id, 'dorsal': rotacion.pos5.dorsal} if rotacion.pos5 else None,
             'pos6': {'id': rotacion.pos6.id, 'dorsal': rotacion.pos6.dorsal} if rotacion.pos6 else None,
+            'libero1': {'id': rotacion.libero1.id, 'dorsal': rotacion.libero1.dorsal} if rotacion.libero1 else None,
+            'libero2': {'id': rotacion.libero2.id, 'dorsal': rotacion.libero2.dorsal} if rotacion.libero2 else None,
         }
         return JsonResponse(data)
 
@@ -45,6 +47,8 @@ class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
                 rot.pos4_id = data.get('pos4') if data.get('pos4') else None
                 rot.pos5_id = data.get('pos5') if data.get('pos5') else None
                 rot.pos6_id = data.get('pos6') if data.get('pos6') else None
+                rot.libero1_id = data.get('libero1') if data.get('libero1') else None
+                rot.libero2_id = data.get('libero2') if data.get('libero2') else None
                 rot.save()
                 return rot
 
@@ -113,7 +117,8 @@ class RotarManualAPI(LoginRequiredMixin, View):
 
         RotacionSet.objects.create(
             partido_id=partido_id, set_numero=set_n, es_inicial=False,
-            pos1_id=new_p1, pos2_id=new_p2, pos3_id=new_p3, pos4_id=new_p4, pos5_id=new_p5, pos6_id=new_p6
+            pos1_id=new_p1, pos2_id=new_p2, pos3_id=new_p3, pos4_id=new_p4, pos5_id=new_p5, pos6_id=new_p6,
+            libero1_id=actual.libero1_id, libero2_id=actual.libero2_id
         )
         
         return JsonResponse({'status': 'ok'})
