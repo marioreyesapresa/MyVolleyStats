@@ -15,12 +15,6 @@
                     <h3 class="text-xl font-black uppercase tracking-wider text-white">Rotación Activa</h3>
                     <p class="text-slate-400 text-sm mt-0.5">Visualización táctica de las zonas en pista (Z1 - Z6).</p>
                 </div>
-                <!-- Zone filter tabs -->
-                <div class="flex space-x-1.5 bg-[#1a202c] p-1.5 rounded-xl border border-slate-800">
-                    <button onclick="highlightZones('delantera')" class="px-4 py-1.5 bg-blue-600 text-white text-[10px] font-black rounded-lg uppercase tracking-wider transition-all">Delante</button>
-                    <button onclick="highlightZones('zaguera')" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] font-black rounded-lg uppercase tracking-wider transition-all">Zaguera</button>
-                    <button onclick="highlightZones('todas')" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] font-black rounded-lg uppercase tracking-wider transition-all">Todas</button>
-                </div>
             </div>
 
             <!-- Court Drawing Container -->
@@ -33,21 +27,33 @@
                     <!-- Top Half (Attack/Front Row Zone) -->
                     <div class="flex-1 grid grid-cols-3 divide-x-4 divide-white/60">
                         <!-- Zone 4 (Left-Front) -->
-                        <div id="zone-4" onclick="selectZonePizarra(4)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                        <div id="zone-4" onclick="selectZonePizarra(4)"
+                             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
+                             ondragleave="this.classList.remove('ring-2','ring-blue-400');"
+                             ondrop="dropOnZone(event, 4);"
+                             class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
                             <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 4</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
                             </div>
                         </div>
                         <!-- Zone 3 (Middle-Front) -->
-                        <div id="zone-3" onclick="selectZonePizarra(3)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                        <div id="zone-3" onclick="selectZonePizarra(3)"
+                             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
+                             ondragleave="this.classList.remove('ring-2','ring-blue-400');"
+                             ondrop="dropOnZone(event, 3);"
+                             class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
                             <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 3</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
                             </div>
                         </div>
                         <!-- Zone 2 (Right-Front) -->
-                        <div id="zone-2" onclick="selectZonePizarra(2)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                        <div id="zone-2" onclick="selectZonePizarra(2)"
+                             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
+                             ondragleave="this.classList.remove('ring-2','ring-blue-400');"
+                             ondrop="dropOnZone(event, 2);"
+                             class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
                             <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 2</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
@@ -58,21 +64,33 @@
                     <!-- Bottom Half (Back Row Zone) -->
                     <div class="flex-1 grid grid-cols-3 divide-x-4 divide-white/60">
                         <!-- Zone 5 (Left-Back) -->
-                        <div id="zone-5" onclick="selectZonePizarra(5)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                        <div id="zone-5" onclick="selectZonePizarra(5)"
+                             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
+                             ondragleave="this.classList.remove('ring-2','ring-blue-400');"
+                             ondrop="dropOnZone(event, 5);"
+                             class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
                             <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 5</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
                             </div>
                         </div>
                         <!-- Zone 6 (Middle-Back) -->
-                        <div id="zone-6" onclick="selectZonePizarra(6)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                        <div id="zone-6" onclick="selectZonePizarra(6)"
+                             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
+                             ondragleave="this.classList.remove('ring-2','ring-blue-400');"
+                             ondrop="dropOnZone(event, 6);"
+                             class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
                             <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 6</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
                             </div>
                         </div>
                         <!-- Zone 1 (Right-Back/Serve) -->
-                        <div id="zone-1" onclick="selectZonePizarra(1)" class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
+                        <div id="zone-1" onclick="selectZonePizarra(1)"
+                             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
+                             ondragleave="this.classList.remove('ring-2','ring-blue-400');"
+                             ondrop="dropOnZone(event, 1);"
+                             class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
                             <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 1 (Saque)</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
@@ -83,13 +101,58 @@
             </div>
 
             <!-- Court Controls -->
-            <div class="flex space-x-4 animate-fade-in">
-                <button onclick="rotar('adelante')" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-2xl active:scale-95 transition-all flex items-center justify-center uppercase tracking-widest shadow-lg">
-                    <i data-lucide="rotate-cw" class="w-5 h-5 mr-3"></i> Rotación 🔄
-                </button>
-                <button onclick="toggleModal('modal-config')" class="py-4 px-8 bg-slate-800 hover:bg-slate-700 text-white text-sm font-black rounded-2xl active:scale-95 transition-all flex items-center justify-center uppercase tracking-widest shadow-md">
-                    <i data-lucide="sliders" class="w-5 h-5 mr-2"></i> Config. Set
-                </button>
+            <div class="space-y-3 animate-fade-in">
+                <!-- Row 1: rotation button + config -->
+                <div class="flex space-x-4">
+                    <button onclick="rotar('horario')" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-2xl active:scale-95 transition-all flex items-center justify-center uppercase tracking-widest shadow-lg">
+                        <i data-lucide="rotate-cw" class="w-5 h-5 mr-3"></i> Rotación 🔄
+                    </button>
+                    <button onclick="toggleModal('modal-config')" class="py-4 px-8 bg-slate-800 hover:bg-slate-700 text-white text-sm font-black rounded-2xl active:scale-95 transition-all flex items-center justify-center uppercase tracking-widest shadow-md">
+                        <i data-lucide="sliders" class="w-5 h-5 mr-2"></i> Config. Set
+                    </button>
+                </div>
+                <!-- Row 2: Rotation & Estado selectors -->
+                <div class="flex gap-4 bg-[#0d1117] rounded-2xl p-4 border border-slate-800">
+                    <!-- Rotación Inicial R1-R6 -->
+                    <div class="flex-1 space-y-2">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
+                            Rotación Inicial
+                        </label>
+                        <div class="grid grid-cols-6 gap-1" id="rot-init-selector">
+                            {% for r in "123456" %}
+                            <button onclick="selectRotInit({{ forloop.counter }})"
+                                    id="rot-init-btn-{{ forloop.counter }}"
+                                    class="rot-init-btn py-2.5 rounded-lg border border-slate-800 bg-[#1a202c] text-slate-400
+                                           font-black text-xs transition-all hover:border-blue-500 hover:text-blue-400"
+                                    data-r="{{ forloop.counter }}">R{{ forloop.counter }}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <!-- Divisor vertical -->
+                    <div class="w-px bg-slate-800 self-stretch"></div>
+                    <!-- Estado Inicial K0/K1 -->
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
+                            Estado Inicial
+                        </label>
+                        <div class="grid grid-cols-1 gap-1" id="estado-init-selector">
+                            <button onclick="selectEstadoInicial('K0')"
+                                    id="estado-init-btn-K0"
+                                    class="estado-init-btn py-2.5 px-4 rounded-lg border border-slate-800 bg-[#1a202c] text-slate-400
+                                           font-black text-xs transition-all hover:border-emerald-500 hover:text-emerald-400 whitespace-nowrap"
+                                    data-estado="K0">
+                                <i data-lucide="zap" class="w-3 h-3 inline mr-1"></i>Saque
+                            </button>
+                            <button onclick="selectEstadoInicial('K1')"
+                                    id="estado-init-btn-K1"
+                                    class="estado-init-btn py-2.5 px-4 rounded-lg border border-blue-500 bg-blue-600 text-white
+                                           font-black text-xs transition-all hover:border-blue-400 whitespace-nowrap"
+                                    data-estado="K1">
+                                <i data-lucide="shield" class="w-3 h-3 inline mr-1"></i>Recepción
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -102,31 +165,12 @@
                 </div>
                 
                 <!-- Grid of available players -->
-                <div id="bench-players-list" class="grid grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto pr-1 py-2 scrollbar-hide flex-1">
+                <div id="bench-players-list" class="grid grid-cols-2 gap-2.5 overflow-y-auto pr-1 py-2 scrollbar-hide flex-1">
                     <!-- Dynamically populated from JS -->
                 </div>
             </div>
             
-            <div class="pt-4 border-t border-slate-850 space-y-3">
-                <!-- ── Selector Rotación Inicial ───────────────────── -->
-                <div class="space-y-2">
-                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
-                        Rotación Inicial del Set
-                    </label>
-                    <p class="text-[8px] text-slate-500 leading-tight">
-                        Zona donde empieza la colocadora. La jugadora asignada a esa zona será tratada como colocadora del set.
-                    </p>
-                    <div class="grid grid-cols-6 gap-1.5" id="rot-init-selector">
-                        {% for r in "123456" %}
-                        <button onclick="selectRotInit({{ forloop.counter }})"
-                                id="rot-init-btn-{{ forloop.counter }}"
-                                class="rot-init-btn py-2 rounded-lg border border-slate-800 bg-[#1a202c] text-slate-400
-                                       font-black text-xs transition-all hover:border-blue-500 hover:text-blue-400"
-                                data-r="{{ forloop.counter }}">R{{ forloop.counter }}</button>
-                        {% endfor %}
-                    </div>
-                </div>
-                <!-- ───────────────────────────────────────── -->
+            <div class="pt-4 border-t border-slate-800 space-y-3">
                 <button onclick="guardarAlineacionLocal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest shadow-lg flex items-center justify-center">
                     <i data-lucide="save" class="w-4 h-4 mr-2"></i> Guardar Alineación
                 </button>
@@ -616,7 +660,8 @@
 
     let selectedBenchPlayerId = null;
     let tempLineup = { pos1: null, pos2: null, pos3: null, pos4: null, pos5: null, pos6: null };
-    let selectedRotInit = 1;   // Rotación inicial del set activo (R1-R6)
+    let selectedRotInit    = 1;    // Rotación inicial del set activo (R1-R6)
+    let selectedEstadoInicial = 'K1'; // Estado inicial del set: 'K0' (saque) o 'K1' (recepción)
 
     // Pre-cargar historial inicial
     const historialInicial = {{ historial_inicial|safe }};
@@ -756,8 +801,12 @@
         state.set_numero = parseInt(num);
 
         // Reset phase state for the new set
-        state.fase_actual   = 'K1';   // assume rival serves to start each set
-        state.tenemos_saque = false;
+        // ── Restore estado inicial from localStorage ─────────────────────
+        const savedEstado = localStorage.getItem(
+            `partido_${state.partido_id}_set_${num}_estado_init`
+        ) || 'K1';
+        selectEstadoInicial(savedEstado);  // aplica estado a UI y a state
+        // ─────────────────────────────────────────────────
 
         // ── Restore rotation from localStorage if previously saved ─────────
         const savedRot = parseInt(
@@ -1145,17 +1194,14 @@
     function drawBenchPlayers() {
         const container = document.getElementById('bench-players-list');
         if (!container) return;
-        
         container.innerHTML = '';
         
-        // Find which player IDs are currently on the court
-        const assignedIds = Object.values(tempLineup);
+        // Players currently assigned to a zone
+        const assignedIds = Object.values(tempLineup).filter(Boolean);
         
         allJugadoras.forEach(j => {
-            // Hide player card if she is already placed on court
-            if (assignedIds.includes(j.id)) {
-                return;
-            }
+            // Skip players already on court
+            if (assignedIds.includes(j.id)) return;
             
             const isActive = (selectedBenchPlayerId === j.id);
             const activeClasses = isActive 
@@ -1163,9 +1209,13 @@
                 : 'border-slate-800 hover:border-slate-700 bg-[#161b26] text-white';
                 
             const html = `
-                <button onclick="selectBenchPlayer('${j.id}')" 
-                        class="p-3 rounded-2xl border-2 transition-all flex flex-col items-center justify-center text-center shadow-md active:scale-95 ${activeClasses}" 
-                        id="bench-card-${j.id}">
+                <button
+                    draggable="true"
+                    onclick="selectBenchPlayer('${j.id}')"
+                    ondragstart="event.dataTransfer.setData('playerId', '${j.id}'); event.currentTarget.classList.add('opacity-50');"
+                    ondragend="event.currentTarget.classList.remove('opacity-50');"
+                    class="p-3 rounded-2xl border-2 transition-all flex flex-col items-center justify-center text-center shadow-md active:scale-95 cursor-grab ${activeClasses}"
+                    id="bench-card-${j.id}">
                     <span class="text-lg font-black">#${j.dorsal}</span>
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight truncate max-w-[80px] block mt-0.5">${j.nombre}</span>
                 </button>
@@ -1174,8 +1224,62 @@
         });
     }
 
-    // ── Selector de rotación inicial R1-R6 ──────────────────────────────
-    // (selectedRotInit declarado en scope global junto a tempLineup)
+    // ── Drag-and-drop: drop a bench player onto a court zone ───────────────
+    function dropOnZone(event, zoneNum) {
+        event.preventDefault();
+        const zoneEl = document.getElementById(`zone-${zoneNum}`);
+        if (zoneEl) zoneEl.classList.remove('ring-2', 'ring-blue-400');
+
+        const playerId = event.dataTransfer.getData('playerId');
+        if (!playerId) return;
+
+        assignPlayerToZone(playerId, zoneNum);
+    }
+
+    function assignPlayerToZone(playerId, zoneNum) {
+        // Remove player from any other zone they may occupy
+        for (let i = 1; i <= 6; i++) {
+            if (tempLineup[`pos${i}`] === playerId) {
+                tempLineup[`pos${i}`] = null;
+            }
+        }
+        // If the target zone already had someone, they go back to bench automatically
+        // (drawBenchPlayers will show them since they won't be in tempLineup anymore)
+        tempLineup[`pos${zoneNum}`] = playerId;
+        selectedBenchPlayerId = null;
+        drawCourtTempLineup();
+        drawBenchPlayers();
+        showToast(`📍 Jugadora asignada a Zona ${zoneNum}`);
+    }
+
+    // ── Selector de estado inicial K0/K1 ────────────────────────────────
+    function selectEstadoInicial(estado) {
+        selectedEstadoInicial = estado;
+        // Actualiza el estado del scout inmediatamente
+        if (estado === 'K0') {
+            state.fase_actual   = 'K0';
+            state.tenemos_saque = true;
+        } else {
+            state.fase_actual   = 'K1';
+            state.tenemos_saque = false;
+        }
+        updateFaseIndicator();
+        // Estilos visuales del selector
+        document.querySelectorAll('.estado-init-btn').forEach(btn => {
+            const isK0    = btn.dataset.estado === 'K0';
+            const active  = btn.dataset.estado === estado;
+            const emerald = isK0 && active;
+            const blue    = !isK0 && active;
+            btn.classList.toggle('bg-emerald-600',   emerald);
+            btn.classList.toggle('border-emerald-500', emerald);
+            btn.classList.toggle('text-white',         active);
+            btn.classList.toggle('bg-blue-600',        blue);
+            btn.classList.toggle('border-blue-500',    blue);
+            btn.classList.toggle('bg-[#1a202c]',       !active);
+            btn.classList.toggle('border-slate-800',   !active);
+            btn.classList.toggle('text-slate-400',     !active);
+        });
+    }
 
     function selectRotInit(r) {
         selectedRotInit = r;
@@ -1190,17 +1294,8 @@
         });
     }
 
-    // Llama al API de rotación N veces para llegar a la rotación deseada
-    // R1 = 0 rotaciones extra, R6 = 1 rotación, R5 = 2, R4 = 3, R3 = 4, R2 = 5
-    async function aplicarRotacionesIniciales(numRotaciones) {
-        for (let i = 0; i < numRotaciones; i++) {
-            await fetch(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify({ set_numero: state.set_numero, direccion: 'horario' })
-            });
-        }
-    }
+    // aplicarRotacionesIniciales fue eliminada: el selector R1-R6 es solo
+    // un indicador estadístico y NUNCA mueve jugadoras en la BD.
 
     async function guardarAlineacionLocal() {
         const body = {
@@ -1225,21 +1320,21 @@
                 body: JSON.stringify(body)
             });
             if(r.ok) {
-                // ── Aplicar rotaciones para llegar a la R elegida ────────────
-                // R1 = 0 pasos, R6 = 1, R5 = 2, R4 = 3, R3 = 4, R2 = 5
-                const rotSteps = (selectedRotInit === 1) ? 0 : (7 - selectedRotInit);
-                if (rotSteps > 0) {
-                    await aplicarRotacionesIniciales(rotSteps);
-                }
-                // ── Actualizar estado de JS y persistir por set ───────────────
+                // ── Persistir estado inicial (K0/K1) por set ─────────────────
+                localStorage.setItem(
+                    `partido_${state.partido_id}_set_${state.set_numero}_estado_init`,
+                    selectedEstadoInicial
+                );
+                // ── Solo actualizar estado estadístico (R1-R6) — NUNCA rotar posiciones ──
                 state.rotacion_num = selectedRotInit;
                 localStorage.setItem(
                     `partido_${state.partido_id}_set_${state.set_numero}_rotacion_init`,
                     selectedRotInit
                 );
                 updateRotBadge();
-                showToast(`✅ Alineación guardada — Rotación inicial: R${selectedRotInit}`);
-                loadRotation();   // refresca pizarra con la posición final
+                const estadoLabel = selectedEstadoInicial === 'K0' ? 'Saque (K0)' : 'Recepción (K1)';
+                showToast(`✅ Alineación guardada — R${selectedRotInit} — ${estadoLabel}`);
+                loadRotation();   // refresca pizarra mostrando exactamente lo guardado
             } else {
                 showToast("❌ Error al guardar alineación");
             }
