@@ -47,6 +47,7 @@ class Partido(models.Model):
         ('MINIVOLEY', 'Minivoley 4x4'),
     ]
     modalidad = models.CharField(max_length=15, choices=MODALIDADES, default='VOLEY', verbose_name="Modalidad")
+    finalizado = models.BooleanField(default=False, verbose_name="Finalizado")
 
     def __str__(self):
         return f"{self.equipo.nombre} vs {self.rival} ({self.fecha} {self.hora})"

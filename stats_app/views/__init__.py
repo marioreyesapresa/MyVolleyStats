@@ -1,5 +1,5 @@
 from .scouting import (
-    ModoPartidoView, RegistrarAccionAPI, EliminarAccionAPI, RegistrarCambioAPI, ObtenerStatsSetAPI, get_stats_json, PartidoStatsFinalView
+    ModoPartidoView, RegistrarAccionAPI, EliminarAccionAPI, RegistrarCambioAPI, ObtenerStatsSetAPI, get_stats_json, PartidoStatsFinalView, FinalizarPartidoAPI
 )
 from .rotaciones import (
     GetRotacionActualAPI, GuardarAlineacionInicialAPI, RotarManualAPI, ActualizarPosicionJugadoraAPI

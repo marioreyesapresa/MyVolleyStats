@@ -235,6 +235,7 @@ def ObtenerStatsSetAPI(request):
 
     return JsonResponse({
         'status': 'ok',
+        'partido_finalizado': partido.finalizado,
         'equipo': equipo_stats,
         'desglose_jugadoras': stats_por_jugadora,
         'mvp': mvp,
@@ -422,3 +423,13 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
             'fundamentos': json.dumps(fundamentos)
         }
         return render(request, self.template_name, context)
+
+class FinalizarPartidoAPI(LoginRequiredMixin, View):
+    def post(self, request, partido_id):
+        try:
+            partido = get_object_or_404(Partido, id=partido_id)
+            partido.finalizado = True
+            partido.save()
+            return JsonResponse({'status': 'success', 'mensaje': 'Partido finalizado correctamente'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=500)

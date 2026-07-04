@@ -259,9 +259,9 @@
 <div id="tab-scout-content" class="tab-content hidden w-full space-y-8">
     <!-- Roster Selector Card & Scoreboard -->
     <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-            <!-- Columna Izquierda: Selección Jugadora (Flexible) -->
-            <div class="lg:col-span-2 space-y-3">
+        <div class="flex flex-col lg:flex-row items-center justify-between gap-6 w-full">
+            <!-- Bloque Izquierdo: Selección Jugadora (Flexible) -->
+            <div class="flex-1 min-w-0 space-y-3 w-full lg:w-auto">
                 <div class="flex items-center justify-between lg:justify-start lg:space-x-4">
                     <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Selección Jugadora</h3>
                     <!-- Mobile settings button if screen is small -->
@@ -274,10 +274,10 @@
                 </div>
             </div>
             
-            <!-- Columna Derecha: Marcador Compacto y Masivo -->
-            <div class="flex items-center justify-between lg:justify-end space-x-8 border-t lg:border-t-0 border-slate-800/80 pt-4 lg:pt-0 self-center">
+            <!-- Marcador Central: Sets y Puntos (Blindado) -->
+            <div class="flex items-center justify-center space-x-6 flex-shrink-0 text-center px-4 py-3 lg:py-0 border-t lg:border-t-0 border-slate-800/80 w-full lg:w-auto">
                 <!-- Sets status (discrete) -->
-                <div class="flex flex-col items-center lg:items-end space-y-0.5">
+                <div class="flex flex-col items-center space-y-0.5 flex-shrink-0">
                     <span class="text-[9px] font-black text-slate-500 uppercase tracking-[0.15em]">SETS GLOBAL</span>
                     <span id="scoreboard-sets" class="text-xs font-black text-slate-300 tracking-widest font-mono">
                         (0) - (0)
@@ -285,7 +285,7 @@
                 </div>
                 
                 <!-- Digital Scoreboard current set points (Clean, flat & massive) -->
-                <div class="flex items-center space-x-4 select-none">
+                <div class="flex items-center space-x-4 select-none flex-shrink-0">
                     <!-- Local team points (Massive emerald digital) -->
                     <div class="flex flex-col items-center">
                         <span id="score-local" class="text-4xl lg:text-5xl font-black font-mono text-emerald-400 tracking-tight leading-none min-w-[48px] text-center">00</span>
@@ -301,6 +301,18 @@
                         <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5">RIVAL</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Bloque Derecho: Botones de Acción (Blindado) -->
+            <div class="flex items-center justify-center lg:justify-end gap-3 flex-shrink-0 w-full lg:w-auto border-t lg:border-t-0 border-slate-800/80 pt-4 lg:pt-0">
+                <!-- Finalizar Partido Button -->
+                <button id="btn-finalizar-partido" 
+                        onclick="confirmarFinalizarPartido()" 
+                        class="flex items-center justify-center px-4 py-2.5 bg-rose-600/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 rounded-2xl text-rose-400 hover:text-white font-black text-xs transition-all active:scale-95 shadow-lg uppercase tracking-wider" 
+                        title="Finalizar Partido">
+                    <i data-lucide="flag" class="w-3.5 h-3.5 mr-1.5"></i>
+                    <span>Finalizar Partido</span>
+                </button>
 
                 <!-- Desktop Settings button -->
                 <button onclick="toggleModal('modal-config')" class="hidden lg:flex items-center justify-center p-3 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl text-slate-400 hover:text-white transition-all active:scale-95 shadow-lg" title="Ajustes Set">
@@ -730,10 +742,13 @@
         // ── Fases de juego (K0=Saque propio, K1=Recepción, K2=Defensa) ──
         fase_actual: 'K1',   // default: start receiving (rival serves first)
         tenemos_saque: false, // true when we are serving
-        rotacion_num: 1       // current rotation (R1-R6 for VOLEY, R1-R4 for MINIVOLEY)
+        rotacion_num: 1,       // current rotation (R1-R6 for VOLEY, R1-R4 for MINIVOLEY)
+        partido_finalizado: {% if partido.finalizado %}true{% else %}false{% endif %}
     };
 
     let selectedBenchPlayerId = null;
+    let setsLocal = 0;
+    let setsRival = 0;
     let tempLineup = { pos1: null, pos2: null, pos3: null, pos4: null, pos5: null, pos6: null };
     let selectedRotInit    = 1;    // Rotación inicial del set activo (R1-R6 / R1-R4)
     let selectedEstadoInicial = 'K1'; // Estado inicial del set: 'K0' (saque) o 'K1' (recepción)
@@ -754,6 +769,10 @@
         updateFaseIndicator(); // Show K1 badge on startup
         updateRotBadge();      // Show R1 badge on startup
         lucide.createIcons();
+
+        if (state.partido_finalizado) {
+            lockScoutInterface();
+        }
 
         // Active tab detection
         const initialTab = getQueryParam('tab') || 'scout';
@@ -928,6 +947,10 @@
     }
 
     async function guardarConfiguracionSet() {
+        if (state.partido_finalizado) {
+            showToast("⚠️ El partido está finalizado. No se puede guardar la configuración.");
+            return;
+        }
         if (!state.rotation) {
             showToast("⚠️ No hay alineación inicial en este set");
             return;
@@ -1021,6 +1044,10 @@
     }
 
     function updateUIHeader() {
+        if (state.partido_finalizado) {
+            // Roster is locked and banner is displayed
+            return;
+        }
         const container = document.getElementById('active-roster-container');
         container.innerHTML = '';
         
@@ -1053,7 +1080,7 @@
             }
         } else {
             container.innerHTML = `
-                <div class="w-full flex flex-col md:flex-row md:items-center md:justify-between bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 gap-3 shadow-lg animate-fade-in">
+                <div class="flex-1 min-w-0 flex flex-col md:flex-row md:items-center md:justify-between bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 gap-3 shadow-lg animate-fade-in">
                     <div class="flex items-center space-x-3 text-amber-500">
                         <i data-lucide="shield-alert" class="w-5 h-5 flex-shrink-0"></i>
                         <span class="text-xs font-black uppercase tracking-wider">Alineación no configurada para este set.</span>
@@ -1386,6 +1413,10 @@
     // un indicador estadístico y NUNCA mueve jugadoras en la BD.
 
     async function guardarAlineacionLocal() {
+        if (state.partido_finalizado) {
+            showToast("⚠️ El partido está finalizado. No se puede modificar la alineación.");
+            return;
+        }
         const body = {
             set_numero: state.set_numero,
             pos1: tempLineup.pos1 || '',
@@ -1501,6 +1532,10 @@
 
     // Rotate manual
     async function rotar(dir) {
+        if (state.partido_finalizado) {
+            showToast("⚠️ El partido está finalizado. No se puede rotar.");
+            return;
+        }
         if(!state.rotation) {
             showToast("⚠️ Configura la alineación primero");
             return;
@@ -1609,6 +1644,10 @@
 
     // Register tactical action
     async function registrar(accion, calidad) {
+        if (state.partido_finalizado) {
+            showToast("⚠️ El partido está finalizado. No se pueden registrar más acciones.");
+            return;
+        }
         if (state.set_finished) {
             showToast("⚠️ Set finalizado. Pasa al siguiente set para continuar registrando.");
             return;
@@ -1853,12 +1892,20 @@
 
         showToast(`✅ Set ${setGuardado} guardado (${duracion} min)`);
 
+        // Check if global sets won reaches 3 for either team BEFORE advancing
+        if (setsLocal >= 3 || setsRival >= 3) {
+            finalizarPartido();
+            showToast("🏁 Partido finalizado automáticamente (3 sets ganados)");
+            return;
+        }
+
         if (setGuardado < 5) {
             // Advance to next set — setSet() calls updateFlashboard() which will
             // read 0-0 from the new set and NOT trigger checkSetEnd() again.
             setSet(setGuardado + 1);
         } else {
             showToast("🏁 Partido finalizado (5 sets completados)");
+            finalizarPartido();
         }
     }
 
@@ -1909,12 +1956,24 @@
                 const sLocal = res.sets_local !== undefined ? res.sets_local : 0;
                 const sRival = res.sets_rival !== undefined ? res.sets_rival : 0;
                 
+                setsLocal = sLocal;
+                setsRival = sRival;
+                
                 document.getElementById('score-local').innerText = String(pLocal).padStart(2, '0');
                 document.getElementById('score-rival').innerText = String(pRival).padStart(2, '0');
                 document.getElementById('scoreboard-sets').innerText = `(${sLocal}) - (${sRival})`;
 
-                // Regulation check for Set End
-                checkSetEnd(pLocal, pRival);
+                const isFinalizado = res.partido_finalizado || (sLocal >= 3) || (sRival >= 3);
+                if (isFinalizado) {
+                    state.partido_finalizado = true;
+                    lockScoutInterface();
+                } else {
+                    if (!state.partido_finalizado) {
+                        unlockScoutInterface();
+                        // Regulation check for Set End (only check if NOT finalized)
+                        checkSetEnd(pLocal, pRival);
+                    }
+                }
 
                 // ── BLOQUE 1: Líderes del Set ──────────────────────────────
                 // MVP provisional: jugadora con más ++ globales (del ataque)
@@ -1986,6 +2045,93 @@
             }
         } catch(e) {
             console.error("Error al actualizar flashboard: ", e);
+        }
+    }
+
+    function lockScoutInterface() {
+        state.partido_finalizado = true;
+        // 1. Disable grids
+        ['scout-actions-grid', 'scout-opponent-grid'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('pointer-events-none', 'opacity-30');
+        });
+        
+        // 2. Hide / Disable manual rotation buttons, deshacer button, active roster swap
+        const deshacerBtn = document.querySelector('button[onclick="deshacer()"]');
+        if (deshacerBtn) deshacerBtn.classList.add('pointer-events-none', 'opacity-30');
+        
+        const manualRotBtns = document.querySelectorAll('button[onclick^="rotar("]');
+        manualRotBtns.forEach(btn => btn.classList.add('pointer-events-none', 'opacity-30'));
+
+        const finalizarBtn = document.getElementById('btn-finalizar-partido');
+        if (finalizarBtn) {
+            finalizarBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 mr-1.5"></i> Finalizado`;
+            finalizarBtn.className = "flex items-center justify-center px-4 py-2.5 bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 rounded-2xl font-black text-xs pointer-events-none shadow-lg uppercase tracking-wider";
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // 3. Render beautiful banner inside / above the active-roster-container
+        const rosterContainer = document.getElementById('active-roster-container');
+        if (rosterContainer) {
+            rosterContainer.innerHTML = `
+                <div class="flex-1 min-w-0 flex flex-col md:flex-row md:items-center md:justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 gap-3 shadow-lg animate-fade-in text-emerald-400">
+                    <div class="flex items-center space-x-3">
+                        <i data-lucide="trophy" class="w-5 h-5 flex-shrink-0"></i>
+                        <div>
+                            <span class="text-xs font-black uppercase tracking-wider block">Partido Finalizado</span>
+                            <span class="text-[10px] text-emerald-500/80 font-bold">Las estadísticas finales se han consolidado.</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-black tracking-widest font-mono">SETS GLOBAL</span>
+                        <span class="block text-lg font-black font-mono tracking-wider">(${setsLocal}) - (${setsRival})</span>
+                    </div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+
+    function unlockScoutInterface() {
+        // Re-enable actions
+        ['scout-actions-grid', 'scout-opponent-grid'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('pointer-events-none', 'opacity-30');
+        });
+        
+        const deshacerBtn = document.querySelector('button[onclick="deshacer()"]');
+        if (deshacerBtn) deshacerBtn.classList.remove('pointer-events-none', 'opacity-30');
+        
+        const manualRotBtns = document.querySelectorAll('button[onclick^="rotar("]');
+        manualRotBtns.forEach(btn => btn.classList.remove('pointer-events-none', 'opacity-30'));
+    }
+
+    function confirmarFinalizarPartido() {
+        if (state.partido_finalizado) return;
+        if (confirm("¿Estás seguro de que deseas FINALIZAR EL PARTIDO de forma definitiva? Se cerrará el acta en el estado actual y se guardarán las estadísticas.")) {
+            finalizarPartido();
+        }
+    }
+
+    async function finalizarPartido() {
+        try {
+            const response = await fetch(`/api/partido/${state.partido_id}/finalizar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+            const res = await response.json();
+            if (res.status === 'success') {
+                showToast("🏁 Partido finalizado");
+                state.partido_finalizado = true;
+                lockScoutInterface();
+            } else {
+                showToast("❌ Error al finalizar partido: " + (res.error || ''));
+            }
+        } catch (e) {
+            showToast("❌ Error de red al finalizar el partido");
         }
     }
 </script>

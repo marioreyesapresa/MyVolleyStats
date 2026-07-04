@@ -33,4 +33,5 @@ urlpatterns = [
     path('api/rotacion/inicial/<int:partido_id>/', views.GuardarAlineacionInicialAPI.as_view(), name='api_guardar_rotacion_inicial'),
     path('api/rotacion/rotar/<int:partido_id>/', views.RotarManualAPI.as_view(), name='api_rotar_manual'),
     path('api/jugadora/actualizar-posicion/', views.ActualizarPosicionJugadoraAPI.as_view(), name='api_actualizar_pos_jugadora'),
+    path('api/partido/<int:partido_id>/finalizar/', views.FinalizarPartidoAPI.as_view(), name='api_finalizar_partido'),
 ]
