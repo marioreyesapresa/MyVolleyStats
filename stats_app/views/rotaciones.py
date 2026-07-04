@@ -71,10 +71,25 @@ class RotarManualAPI(LoginRequiredMixin, View):
         
         p1, p2, p3, p4, p5, p6 = actual.pos1_id, actual.pos2_id, actual.pos3_id, actual.pos4_id, actual.pos5_id, actual.pos6_id
         
-        if direccion == 'adelante':
-            new_p1, new_p6, new_p5, new_p4, new_p3, new_p2 = p2, p1, p6, p5, p4, p3
+        if direccion == 'horario':
+            # Rotación reglamentaria FIVB (sentido horario):
+            # Zona1 → Zona6 → Zona5 → Zona4 → Zona3 → Zona2 → Zona1
+            # Cada jugadora ocupa la zona de número inferior:
+            new_p6 = p1   # quien estaba en Z1 pasa a Z6
+            new_p5 = p6   # quien estaba en Z6 pasa a Z5
+            new_p4 = p5   # quien estaba en Z5 pasa a Z4
+            new_p3 = p4   # quien estaba en Z4 pasa a Z3
+            new_p2 = p3   # quien estaba en Z3 pasa a Z2
+            new_p1 = p2   # quien estaba en Z2 pasa a Z1
         else:
-            new_p2, new_p1, new_p6, new_p5, new_p4, new_p3 = p1, p6, p5, p4, p3, p2
+            # Rotación inversa (antihoraria / deshacer):
+            # Zona1 → Zona2 → Zona3 → Zona4 → Zona5 → Zona6 → Zona1
+            new_p2 = p1
+            new_p3 = p2
+            new_p4 = p3
+            new_p5 = p4
+            new_p6 = p5
+            new_p1 = p6
 
         RotacionSet.objects.create(
             partido_id=partido_id, set_numero=set_n, es_inicial=False,

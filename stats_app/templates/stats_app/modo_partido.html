@@ -108,6 +108,25 @@
             </div>
             
             <div class="pt-4 border-t border-slate-850 space-y-3">
+                <!-- ── Selector Rotación Inicial ───────────────────── -->
+                <div class="space-y-2">
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
+                        Rotación Inicial del Set
+                    </label>
+                    <p class="text-[8px] text-slate-500 leading-tight">
+                        Zona donde empieza la colocadora. La jugadora asignada a esa zona será tratada como colocadora del set.
+                    </p>
+                    <div class="grid grid-cols-6 gap-1.5" id="rot-init-selector">
+                        {% for r in "123456" %}
+                        <button onclick="selectRotInit({{ forloop.counter }})"
+                                id="rot-init-btn-{{ forloop.counter }}"
+                                class="rot-init-btn py-2 rounded-lg border border-slate-800 bg-[#1a202c] text-slate-400
+                                       font-black text-xs transition-all hover:border-blue-500 hover:text-blue-400"
+                                data-r="{{ forloop.counter }}">R{{ forloop.counter }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+                <!-- ───────────────────────────────────────── -->
                 <button onclick="guardarAlineacionLocal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest shadow-lg flex items-center justify-center">
                     <i data-lucide="save" class="w-4 h-4 mr-2"></i> Guardar Alineación
                 </button>
@@ -597,6 +616,7 @@
 
     let selectedBenchPlayerId = null;
     let tempLineup = { pos1: null, pos2: null, pos3: null, pos4: null, pos5: null, pos6: null };
+    let selectedRotInit = 1;   // Rotación inicial del set activo (R1-R6)
 
     // Pre-cargar historial inicial
     const historialInicial = {{ historial_inicial|safe }};
@@ -738,7 +758,16 @@
         // Reset phase state for the new set
         state.fase_actual   = 'K1';   // assume rival serves to start each set
         state.tenemos_saque = false;
-        state.rotacion_num  = 1;
+
+        // ── Restore rotation from localStorage if previously saved ─────────
+        const savedRot = parseInt(
+            localStorage.getItem(`partido_${state.partido_id}_set_${num}_rotacion_init`) || '1'
+        );
+        state.rotacion_num = savedRot;
+        selectedRotInit    = savedRot;
+        // Pre-select the correct button in the selector UI
+        selectRotInit(savedRot);
+        // ─────────────────────────────────────────────────
         updateFaseIndicator();
         updateRotBadge();
 
@@ -1145,6 +1174,34 @@
         });
     }
 
+    // ── Selector de rotación inicial R1-R6 ──────────────────────────────
+    // (selectedRotInit declarado en scope global junto a tempLineup)
+
+    function selectRotInit(r) {
+        selectedRotInit = r;
+        document.querySelectorAll('.rot-init-btn').forEach(btn => {
+            const active = parseInt(btn.dataset.r) === r;
+            btn.classList.toggle('bg-blue-600',      active);
+            btn.classList.toggle('border-blue-500',  active);
+            btn.classList.toggle('text-white',       active);
+            btn.classList.toggle('bg-[#1a202c]',    !active);
+            btn.classList.toggle('border-slate-800', !active);
+            btn.classList.toggle('text-slate-400',   !active);
+        });
+    }
+
+    // Llama al API de rotación N veces para llegar a la rotación deseada
+    // R1 = 0 rotaciones extra, R6 = 1 rotación, R5 = 2, R4 = 3, R3 = 4, R2 = 5
+    async function aplicarRotacionesIniciales(numRotaciones) {
+        for (let i = 0; i < numRotaciones; i++) {
+            await fetch(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ set_numero: state.set_numero, direccion: 'horario' })
+            });
+        }
+    }
+
     async function guardarAlineacionLocal() {
         const body = {
             set_numero: state.set_numero,
@@ -1168,8 +1225,21 @@
                 body: JSON.stringify(body)
             });
             if(r.ok) {
-                showToast("✅ Alineación guardada y activa");
-                loadRotation();
+                // ── Aplicar rotaciones para llegar a la R elegida ────────────
+                // R1 = 0 pasos, R6 = 1, R5 = 2, R4 = 3, R3 = 4, R2 = 5
+                const rotSteps = (selectedRotInit === 1) ? 0 : (7 - selectedRotInit);
+                if (rotSteps > 0) {
+                    await aplicarRotacionesIniciales(rotSteps);
+                }
+                // ── Actualizar estado de JS y persistir por set ───────────────
+                state.rotacion_num = selectedRotInit;
+                localStorage.setItem(
+                    `partido_${state.partido_id}_set_${state.set_numero}_rotacion_init`,
+                    selectedRotInit
+                );
+                updateRotBadge();
+                showToast(`✅ Alineación guardada — Rotación inicial: R${selectedRotInit}`);
+                loadRotation();   // refresca pizarra con la posición final
             } else {
                 showToast("❌ Error al guardar alineación");
             }
