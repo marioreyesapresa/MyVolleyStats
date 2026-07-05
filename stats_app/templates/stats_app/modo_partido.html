@@ -4,9 +4,11 @@
 
 {% block header_title %}Scout Rotation Pro{% endblock %}
 
+{% block topbar %}{% endblock %}
+
 {% block content %}
 <!-- Tab: Pizarra de Rotación -->
-<div id="tab-rotacion-content" class="tab-content hidden w-full max-w-6xl mx-auto space-y-8">
+<div id="tab-rotacion-content" class="tab-content hidden w-full max-w-6xl mx-auto space-y-8 -mt-6 md:-mt-8">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Interactive Rotation Court Card (Col 8) -->
         <div class="lg:col-span-8 bg-[#121824] rounded-3xl p-6 md:p-8 border border-slate-800 shadow-xl space-y-6 flex flex-col justify-between">
@@ -279,7 +281,7 @@
 </div>
 
 <!-- Tab: Scout en Vivo -->
-<div id="tab-scout-content" class="tab-content hidden w-full space-y-8">
+<div id="tab-scout-content" class="tab-content hidden w-full space-y-8 -mt-6 md:-mt-8">
     <!-- Contenedor del Modo Avanzado (Diseño Tradicional) -->
     <div id="scout-avanzado-container" class="space-y-8">
         <!-- Roster Selector Card & Scoreboard -->
@@ -312,18 +314,18 @@
                     <!-- Digital Scoreboard current set points (Clean, flat & massive) -->
                     <div class="flex items-center space-x-4 select-none flex-shrink-0">
                         <!-- Local team points (Massive emerald digital) -->
-                        <div class="flex flex-col items-center">
+                        <div class="flex flex-col items-center min-w-0 max-w-[120px] lg:max-w-[160px]">
                             <span id="score-local" class="text-4xl lg:text-5xl font-black font-mono text-emerald-400 tracking-tight leading-none min-w-[48px] text-center">00</span>
-                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5">LOCAL</span>
+                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5 truncate w-full text-center" title="{{ partido.equipo.nombre }}">{{ partido.equipo.nombre }}</span>
                         </div>
                         
                         <!-- Colon divider -->
                         <span class="text-slate-700 font-black font-mono text-3xl leading-none -mt-4">:</span>
                         
                         <!-- Rival team points (Massive rose digital) -->
-                        <div class="flex flex-col items-center">
+                        <div class="flex flex-col items-center min-w-0 max-w-[120px] lg:max-w-[160px]">
                             <span id="score-rival" class="text-4xl lg:text-5xl font-black font-mono text-rose-500 tracking-tight leading-none min-w-[48px] text-center">00</span>
-                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5">RIVAL</span>
+                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5 truncate w-full text-center" title="{{ partido.rival }}">{{ partido.rival }}</span>
                         </div>
                     </div>
                 </div>
@@ -416,56 +418,94 @@
     </div>
 
     <!-- Contenedor del Modo Rápido (Rediseño modular por pestañas) -->
-    <div id="scout-rapido-container" class="hidden w-full space-y-6">
-        <!-- 1. BARRA DE NAVEGACIÓN SUPERIOR MÓVIL (Tabs fijas) -->
-        <div class="flex items-center justify-start overflow-x-auto pb-2 scrollbar-hide py-1 bg-[#090d16] p-2 rounded-2xl border border-slate-800 shadow-inner gap-2">
-            <button onclick="switchRapidoTab('gameplay')" id="tab-btn-gameplay" class="rapido-tab-btn px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all bg-blue-600 text-white shadow-md">
-                Juego
+    <div id="scout-rapido-container" class="hidden w-full space-y-2">
+        <!-- 1. MENÚ DE NAVEGACIÓN FLOTANTE (estilo píldora) -->
+        <div class="sticky top-2 z-50 flex items-center justify-center gap-2 px-1">
+            <button class="sidebar-toggle-trigger hidden md:flex items-center justify-center w-8 h-8 rounded-full bg-neutral-800/90 backdrop-blur-sm shadow-md text-neutral-300 hover:text-white transition-all active:scale-95 flex-shrink-0" title="Mostrar/Ocultar menú">
+                <i data-lucide="panel-left" class="w-3.5 h-3.5"></i>
             </button>
-            <button onclick="switchRapidoTab('score')" id="tab-btn-score" class="rapido-tab-btn px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-slate-400 hover:text-white">
-                Marcador
-            </button>
-            <button onclick="switchRapidoTab('adjust')" id="tab-btn-adjust" class="rapido-tab-btn px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-slate-400 hover:text-white">
-                Ajustes
-            </button>
-            <button onclick="switchRapidoTab('file')" id="tab-btn-file" class="rapido-tab-btn px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-slate-400 hover:text-white">
-                Archivos
-            </button>
-            <button onclick="switchRapidoTab('settings')" id="tab-btn-settings" class="rapido-tab-btn px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-slate-400 hover:text-white">
-                Configuración
-            </button>
+            <div class="flex items-center gap-1 bg-neutral-800/90 backdrop-blur-sm rounded-full shadow-md px-3 py-1.5 max-w-[92vw] overflow-x-auto scrollbar-hide">
+                <button onclick="switchRapidoTab('gameplay')" id="tab-btn-gameplay" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full bg-neutral-600 text-white">
+                    Juego
+                </button>
+                <button onclick="switchRapidoTab('acciones')" id="tab-btn-acciones" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Acciones
+                </button>
+                <button onclick="switchRapidoTab('score')" id="tab-btn-score" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Marcador
+                </button>
+                <button onclick="switchRapidoTab('adjust')" id="tab-btn-adjust" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Ajustes
+                </button>
+                <button onclick="switchRapidoTab('file')" id="tab-btn-file" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Archivos
+                </button>
+                <button onclick="switchRapidoTab('settings')" id="tab-btn-settings" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Configuración
+                </button>
+            </div>
         </div>
 
         <!-- 2. PESTAÑA: [Game Play] -->
-        <div id="rapido-gameplay-content" class="rapido-tab-content space-y-6">
+        <div id="rapido-gameplay-content" class="rapido-tab-content flex flex-col gap-2">
             <!-- Marcador Superior Us / Them -->
-            <div class="flex justify-between items-center bg-[#090d16] p-5 rounded-3xl border border-slate-800/80 shadow-lg text-center">
+            <div class="flex-shrink-0 flex justify-between items-center bg-[#090d16] p-2.5 rounded-2xl border border-slate-800/80 shadow-lg text-center">
                 <div class="text-left text-[9px] font-black text-slate-500 uppercase tracking-widest font-mono space-y-0.5">
                     <div>SET: <span id="gameplay-current-set">1</span></div>
-                    <div>CAMBIOS: <span id="gameplay-substitutions">0</span></div>
-                    <div>T.M.: <span id="gameplay-timeouts">0</span></div>
+                    <div class="pt-1.5 flex flex-col items-start gap-1">
+                        <span id="gameplay-rot-indicator" class="inline-flex items-center px-2 py-0.5 rounded-md border text-[9px] font-black tracking-wider bg-amber-500/10 border-amber-500/30 text-amber-400 whitespace-nowrap">
+                            ROTACIÓN: R1
+                        </span>
+                        <span id="gameplay-fase-indicator" class="inline-flex items-center px-2 py-0.5 rounded-md border text-[9px] font-black tracking-wider bg-blue-500/10 border-blue-500/30 text-blue-400 whitespace-nowrap">
+                            FASE: K1 (RECEPCIÓN)
+                        </span>
+                    </div>
                 </div>
                 
-                <div class="flex items-center space-x-6">
-                    <span class="text-emerald-400 text-3xl font-black font-mono">{{ partido.equipo.nombre }} <span id="gameplay-score-local" class="text-4xl">0</span></span>
-                    <span class="text-slate-600 text-2xl font-black font-mono">|</span>
-                    <span class="text-rose-500 text-3xl font-black font-mono"><span id="gameplay-score-rival" class="text-4xl">0</span> {{ partido.rival }}</span>
+                <div class="flex items-center space-x-4 md:space-x-6 min-w-0 flex-1 justify-center px-2">
+                    <div class="flex items-baseline gap-2 min-w-0 max-w-[42%]">
+                        <span class="text-emerald-400 text-xl md:text-3xl font-black font-mono truncate" title="{{ partido.equipo.nombre }}">{{ partido.equipo.nombre }}</span>
+                        <span id="gameplay-score-local" class="text-3xl md:text-4xl font-black font-mono text-emerald-400 flex-shrink-0">0</span>
+                    </div>
+                    <span class="text-slate-600 text-2xl font-black font-mono flex-shrink-0">|</span>
+                    <div class="flex items-baseline gap-2 min-w-0 max-w-[42%] justify-end">
+                        <span id="gameplay-score-rival" class="text-3xl md:text-4xl font-black font-mono text-rose-500 flex-shrink-0">0</span>
+                        <span class="text-rose-500 text-xl md:text-3xl font-black font-mono truncate text-right" title="{{ partido.rival }}">{{ partido.rival }}</span>
+                    </div>
                 </div>
 
-                <div class="text-right text-[9px] font-black text-slate-500 uppercase tracking-widest font-mono space-y-0.5">
+                <div class="text-right text-[9px] font-black text-slate-500 uppercase tracking-widest font-mono">
                     <div>SET: <span id="gameplay-current-set-right">1</span></div>
-                    <div>CAMBIOS: <span id="gameplay-substitutions-right">0</span></div>
-                    <div>T.M.: <span id="gameplay-timeouts-right">0</span></div>
                 </div>
             </div>
 
+            <!-- Acciones de Banquillo (franja fina de accesos rápidos) -->
+            <div class="flex-shrink-0 flex items-center gap-1.5 overflow-x-auto scrollbar-hide bg-[#090d16] px-1.5 py-1 rounded-xl border border-slate-800/80 shadow-inner">
+                <button onclick="eliminarUltimo()" class="flex-1 min-w-[76px] flex items-center justify-center gap-1 px-2 py-1.5 bg-[#121824] hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 whitespace-nowrap">
+                    <i data-lucide="undo-2" class="w-3 h-3 flex-shrink-0"></i>
+                    <span>Deshacer</span>
+                </button>
+                <button onclick="rotar('horario')" class="flex-1 min-w-[76px] flex items-center justify-center gap-1 px-2 py-1.5 bg-[#121824] hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 whitespace-nowrap">
+                    <i data-lucide="rotate-cw" class="w-3 h-3 flex-shrink-0"></i>
+                    <span>Rotar</span>
+                </button>
+                <button onclick="switchTab('rotacion')" class="flex-1 min-w-[76px] flex items-center justify-center gap-1 px-2 py-1.5 bg-[#121824] hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 whitespace-nowrap">
+                    <i data-lucide="arrow-right-left" class="w-3 h-3 flex-shrink-0"></i>
+                    <span>Sustituir</span>
+                </button>
+                <button onclick="swapServe()" class="flex-1 min-w-[76px] flex items-center justify-center gap-1 px-2 py-1.5 bg-[#121824] hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 whitespace-nowrap">
+                    <i data-lucide="refresh-cw" class="w-3 h-3 flex-shrink-0"></i>
+                    <span>Saque</span>
+                </button>
+            </div>
+
             <!-- Contenedor del Grid Dinámico de Zonas del Campo (Poblado por JS) -->
-            <div id="gameplay-grid-container" class="space-y-6">
+            <div id="gameplay-grid-container" class="flex-1 min-h-0">
                 <!-- Poblado dinámicamente por renderGameplayGrid() -->
             </div>
 
             <!-- Botonera Inferior: Score point for Us / Them -->
-            <div class="grid grid-cols-2 gap-4 mt-6">
+            <div class="flex-shrink-0 grid grid-cols-2 gap-4">
                 <button onclick="registrar('ERROR_RIVAL', '')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2">
                     <i data-lucide="plus-circle" class="w-5 h-5"></i>
                     <span>Punto para {{ partido.equipo.nombre }}</span>
@@ -477,7 +517,20 @@
             </div>
         </div>
 
-        <!-- 3. PESTAÑA: [Score] -->
+        <!-- 3. PESTAÑA: [Acciones / Historial] -->
+        <div id="rapido-acciones-content" class="rapido-tab-content hidden space-y-6">
+            <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest">Últimas Acciones</h3>
+                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Sesión Actual</span>
+                </div>
+                <div id="quick-history-list" class="flex flex-col gap-2 max-h-[65vh] overflow-y-auto pr-1 scrollbar-hide">
+                    <div class="text-[10px] font-bold text-slate-600 uppercase tracking-wider px-2 py-2.5">Aún no hay acciones registradas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. PESTAÑA: [Score] -->
         <div id="rapido-score-content" class="rapido-tab-content hidden space-y-6">
             <!-- Barra superior rápida -->
             <div class="flex justify-between items-center bg-[#090d16] p-4 rounded-2xl border border-slate-800 shadow-lg">
@@ -493,75 +546,112 @@
             <div class="grid grid-cols-2 gap-4 min-h-[400px]">
                 <!-- Lado Izquierdo (Verde brillante) -->
                 <div class="bg-emerald-600 rounded-3xl p-6 flex flex-col justify-between items-center shadow-lg border border-emerald-500 text-white">
-                    <button onclick="registrar('ERROR_RIVAL', '')" class="w-full py-4 bg-emerald-700/50 hover:bg-emerald-700 border border-emerald-400/30 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md">
-                        Sumar Punto
-                    </button>
+                    <div class="w-full flex items-center gap-2">
+                        <button onclick="registrar('ERROR_RIVAL', '')" class="flex-1 py-4 bg-emerald-700/50 hover:bg-emerald-700 border border-emerald-400/30 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md">
+                            Sumar Punto
+                        </button>
+                        <button onclick="restarPunto('local')" title="Restar punto (corrección)" class="flex-shrink-0 w-14 py-4 bg-black/10 hover:bg-black/25 border border-white/20 text-white/80 hover:text-white font-black text-lg rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center">
+                            −
+                        </button>
+                    </div>
                     <span id="giant-score-local" class="text-[120px] md:text-[180px] font-black leading-none my-6 select-none font-mono">0</span>
                     <span class="text-sm font-black uppercase tracking-widest opacity-80">{{ partido.equipo.nombre }} (Local)</span>
                 </div>
 
                 <!-- Lado Derecho (Rojo apagado) -->
                 <div class="bg-rose-800/80 rounded-3xl p-6 flex flex-col justify-between items-center shadow-lg border border-rose-700 text-white">
-                    <button onclick="registrar('PUNTO_RIVAL', '')" class="w-full py-4 bg-rose-900/50 hover:bg-rose-900 border border-rose-500/30 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md">
-                        Sumar Punto
-                    </button>
+                    <div class="w-full flex items-center gap-2">
+                        <button onclick="registrar('PUNTO_RIVAL', '')" class="flex-1 py-4 bg-rose-900/50 hover:bg-rose-900 border border-rose-500/30 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md">
+                            Sumar Punto
+                        </button>
+                        <button onclick="restarPunto('rival')" title="Restar punto (corrección)" class="flex-shrink-0 w-14 py-4 bg-black/10 hover:bg-black/25 border border-white/20 text-white/80 hover:text-white font-black text-lg rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center">
+                            −
+                        </button>
+                    </div>
                     <span id="giant-score-rival" class="text-[120px] md:text-[180px] font-black leading-none my-6 select-none font-mono">0</span>
                     <span class="text-sm font-black uppercase tracking-widest opacity-80">{{ partido.rival }}</span>
                 </div>
             </div>
         </div>
 
-        <!-- 4. PESTAÑA: [Adjust] -->
+        <!-- 5. PESTAÑA: [Adjust] -->
         <div id="rapido-adjust-content" class="rapido-tab-content hidden space-y-6">
-            <!-- Acciones durante el punto -->
+            <!-- Posesión del Saque -->
             <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
-                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Acciones durante el punto</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button onclick="takeNotes()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="edit-3" class="w-4 h-4"></i>
-                        <span>Tomar Notas</span>
+                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Posesión del Saque</h3>
+                <div class="flex items-center gap-3">
+                    <button id="ajustes-serve-btn-nosotros" onclick="setServePossession(true)" class="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 bg-emerald-600 text-white shadow-md">
+                        Nosotros Sacamos
                     </button>
-                    <button onclick="clearNonScore()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="x-circle" class="w-4 h-4"></i>
-                        <span>Limpiar no puntuables</span>
+                    <button id="ajustes-serve-btn-rival" onclick="setServePossession(false)" class="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 bg-[#1e293b] border border-slate-700 text-slate-400 hover:text-white">
+                        Rival Saca
                     </button>
                 </div>
+                <p class="text-[10px] text-slate-500 font-bold">Corrige aquí quién tiene el saque si el marcador se ha desincronizado del juego real.</p>
             </div>
 
-            <!-- Acciones durante el Set -->
+            <!-- Reglas del Set -->
             <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
-                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Acciones durante el Set</h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <button onclick="eliminarUltimo()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="undo" class="w-4 h-4"></i>
-                        <span>Deshacer</span>
-                    </button>
-                    <button onclick="swapServe()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                        <span>Cambiar Saque</span>
-                    </button>
-                    <button onclick="clearPlayers()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="users" class="w-4 h-4"></i>
-                        <span>Quitar Jugadoras</span>
-                    </button>
-                    <button onclick="rotarManual()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="rotate-cw" class="w-4 h-4"></i>
-                        <span>Rotar</span>
-                    </button>
-                    <button onclick="switchTab('rotacion')" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
-                        <span>Sustituir Jugadoras</span>
-                    </button>
+                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Reglas del Set</h3>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Puntos por set</label>
+                        <input id="input-puntos-set" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Set decisivo</label>
+                        <input id="input-puntos-set-decisivo" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Sets para ganar</label>
+                        <input id="input-sets-para-ganar" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
+                    </div>
                 </div>
+                <button onclick="guardarReglasSet()" class="w-full py-3 bg-blue-600/20 hover:bg-blue-600 border border-blue-500/30 text-blue-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    <span>Guardar Reglas del Set</span>
+                </button>
+            </div>
+
+            <!-- Preferencias -->
+            <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-5">
+                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Preferencias</h3>
+
+                <label class="flex items-center justify-between cursor-pointer gap-4">
+                    <span class="text-xs font-bold text-slate-300">Auto-rotación al ganar el saque</span>
+                    <div class="relative flex-shrink-0">
+                        <input type="checkbox" id="toggle-auto-rotacion" class="sr-only peer" onchange="togglePref('autoRotacion', 'voley_pref_auto_rotacion', this.checked)">
+                        <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                        <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+                    </div>
+                </label>
+
+                <label class="flex items-center justify-between cursor-pointer gap-4">
+                    <span class="text-xs font-bold text-slate-300">Vibración táctil al registrar</span>
+                    <div class="relative flex-shrink-0">
+                        <input type="checkbox" id="toggle-vibracion" class="sr-only peer" onchange="togglePref('vibracion', 'voley_pref_vibracion', this.checked)">
+                        <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                        <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+                    </div>
+                </label>
+
+                <label class="flex items-center justify-between cursor-pointer gap-4">
+                    <span class="text-xs font-bold text-slate-300">Confirmar antes de deshacer / restar punto</span>
+                    <div class="relative flex-shrink-0">
+                        <input type="checkbox" id="toggle-confirmar-borrado" class="sr-only peer" onchange="togglePref('confirmarBorrado', 'voley_pref_confirmar_borrado', this.checked)">
+                        <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                        <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+                    </div>
+                </label>
             </div>
 
             <!-- Otras Acciones -->
             <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
                 <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Otras Acciones</h3>
                 <div class="grid grid-cols-2 gap-4">
-                    <button onclick="saveDataAdjust()" class="py-4 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="save" class="w-4 h-4"></i>
-                        <span>Guardar Datos</span>
+                    <button onclick="clearPlayers()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span>Quitar Jugadoras</span>
                     </button>
                     <button onclick="confirmarFinalSet()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
                         <i data-lucide="check-square" class="w-4 h-4"></i>
@@ -579,7 +669,7 @@
             </div>
         </div>
 
-        <!-- 5. PESTAÑA: [File] -->
+        <!-- 6. PESTAÑA: [File] -->
         <div id="rapido-file-content" class="rapido-tab-content hidden space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Columna Izquierda: Saved Match files -->
@@ -652,7 +742,7 @@
             </div>
         </div>
 
-        <!-- 6. PESTAÑA: [Settings] -->
+        <!-- 7. PESTAÑA: [Settings] -->
         <div id="rapido-settings-content" class="rapido-tab-content hidden space-y-6">
             <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-6">
                 <div>
@@ -698,7 +788,7 @@
 </div>
 
 <!-- Tab: Indicadores del Set -->
-<div id="tab-metricas-content" class="tab-content hidden w-full">
+<div id="tab-metricas-content" class="tab-content hidden w-full -mt-6 md:-mt-8">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <!-- ═══ LEFT COLUMN: 65% (8 cols) ═══════════════════════════════ -->
@@ -997,7 +1087,21 @@
         rotacion_num: 1,       // current rotation (R1-R6 for VOLEY, R1-R4 for MINIVOLEY)
         partido_finalizado: {% if partido.finalizado %}true{% else %}false{% endif %},
         modo_scout: 'rapido',   // default scouting mode: rapido
-        marcador: { local: 0, rival: 0 } // optimistic score state
+        marcador: { local: 0, rival: 0 }, // optimistic score state
+        quickHistory: [], // últimas acciones registradas en esta sesión (para panel "Últimas Acciones")
+        // ── Preferencias de usuario (pestaña Ajustes), persistidas en localStorage ──
+        prefs: {
+            autoRotacion: true,       // rota automáticamente al ganar el saque (side-out)
+            vibracion: true,          // feedback háptico al registrar acciones (si el dispositivo lo soporta)
+            confirmarBorrado: true    // pedir confirmación antes de deshacer / restar punto
+        },
+        // ── Reglas del set (editable desde Ajustes) ─────────────────────
+        reglas: {
+            puntosPorSet: {{ partido.puntos_por_set }},
+            puntosSetDecisivo: {{ partido.puntos_set_decisivo }},
+            setsParaGanar: {{ partido.sets_para_ganar }},
+            setDecisivoNumero: {{ partido.set_decisivo_numero }}
+        }
     };
 
     let selectedBenchPlayerId = null;
@@ -1010,7 +1114,38 @@
     // Pre-cargar historial inicial
     const historialInicial = {{ historial_inicial|safe }};
 
+    // ── Preferencias de usuario (pestaña Ajustes) ───────────────────────────
+    // Se guardan en localStorage: las de comportamiento (auto-rotación, sonido,
+    // vibración, confirmaciones) son globales a la app; el modo de scout
+    // (rápido/avanzado) se recuerda por partido.
+    function loadPrefs() {
+        const getBool = (key, def) => {
+            const v = localStorage.getItem(key);
+            return v === null ? def : (v === '1');
+        };
+        state.prefs.autoRotacion     = getBool('voley_pref_auto_rotacion', true);
+        state.prefs.vibracion        = getBool('voley_pref_vibracion', true);
+        state.prefs.confirmarBorrado = getBool('voley_pref_confirmar_borrado', true);
+
+        const savedModo = localStorage.getItem(`voley_modo_scout_${state.partido_id}`);
+        if (savedModo === 'rapido' || savedModo === 'avanzado') {
+            state.modo_scout = savedModo;
+        }
+    }
+
+    function setPref(key, value) {
+        localStorage.setItem(key, value ? '1' : '0');
+    }
+
+    function hapticFeedback(duracionMs) {
+        if (state.prefs.vibracion && navigator.vibrate) {
+            try { navigator.vibrate(duracionMs || 12); } catch (e) { /* dispositivo sin soporte */ }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+        loadPrefs();
+
         // Init active roster with first 8 players
         allJugadoras.slice(0, 8).forEach(j => {
             state.activeRoster.push({ id: j.id, dorsal: j.dorsal });
@@ -1020,6 +1155,7 @@
         renderBotonerasAcciones();
         
         historialInicial.forEach(data => renderAction(data, data.calidad));
+        hydrateQuickHistoryFromInicial();
         setSet(1); // Set 1 initial load
         updateFaseIndicator(); // Show K1 badge on startup
         updateRotBadge();      // Show R1 badge on startup
@@ -1997,11 +2133,30 @@
         badge.className = `flex items-center space-x-1.5 px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${c.base}`;
         label.textContent = c.text;
         dot.className = `w-1.5 h-1.5 rounded-full animate-pulse ${c.dotCls}`;
+
+        updateGameplayFaseIndicator();
     }
     // ── Indicador visual de rotación R1-R6 ────────────────────────────────
     function updateRotBadge() {
         const label = document.getElementById('rot-label');
         if (label) label.textContent = `R${state.rotacion_num}`;
+
+        const gpRot = document.getElementById('gameplay-rot-indicator');
+        if (gpRot) gpRot.textContent = `ROTACIÓN: R${state.rotacion_num}`;
+    }
+
+    // ── Indicador compacto de Fase (K) para la pestaña Juego del modo rápido ──
+    function updateGameplayFaseIndicator() {
+        const el = document.getElementById('gameplay-fase-indicator');
+        if (!el) return;
+        const cfg = {
+            'K0': { text: 'FASE: K0 (SAQUE)',      cls: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' },
+            'K1': { text: 'FASE: K1 (RECEPCIÓN)',  cls: 'bg-blue-500/10 border-blue-500/30 text-blue-400'          },
+            'K2': { text: 'FASE: K2 (TRANSICIÓN)', cls: 'bg-amber-500/10 border-amber-500/30 text-amber-400'      },
+        };
+        const c = cfg[state.fase_actual] || cfg['K1'];
+        el.className = `inline-flex items-center px-2 py-0.5 rounded-md border text-[9px] font-black tracking-wider whitespace-nowrap transition-all duration-300 ${c.cls}`;
+        el.textContent = c.text;
     }
 
     async function autoRotarSideOut() {
@@ -2099,7 +2254,13 @@
             
             const res = await response.json();
             if (res.status === 'ok') { 
-                renderAction(res, calidad); 
+                // Registra SIEMPRE la acción en el historial ("Últimas Acciones"),
+                // sin importar la calidad (++, +, =, -, --). Cambios de jugadora
+                // (api_registrar_cambio) y Tiempos Muertos (registrarTimeout) usan
+                // flujos independientes y quedan excluidos intencionadamente.
+                try { pushQuickHistory(res, calidad, accion, jug_id); } catch (e) { /* no bloquear el flujo principal */ }
+                try { renderAction(res, calidad); } catch (e) { /* no bloquear el flujo principal */ }
+                hapticFeedback();
                 showToast("✅ Acción registrada");
 
                 if (isRapido && state.jugadora_id) {
@@ -2116,7 +2277,11 @@
                         // Side-out ganado: rotamos y pasamos a K0
                         state.tenemos_saque = true;
                         state.fase_actual   = 'K0';
-                        await autoRotarSideOut();
+                        if (state.prefs.autoRotacion) {
+                            await autoRotarSideOut();
+                        } else {
+                            showToast("🏐 Saque ganado. Recuerda rotar manualmente");
+                        }
                     } else {
                         // Punto con saque propio: mantenemos K0
                         state.fase_actual = 'K0';
@@ -2151,11 +2316,7 @@
         }
     }
 
-    function renderAction(data, calidad) {
-        const list = document.getElementById('historial-list');
-        
-        let displayActionText = data.accion_texto || '';
-        
+    function resolveAccionColorClass(calidad, displayActionText) {
         let colorClass = 'text-slate-200';
         if (calidad === '++') colorClass = 'text-emerald-400';
         else if (calidad === '+') colorClass = 'text-emerald-500';
@@ -2165,6 +2326,14 @@
         else if (displayActionText.includes('ERROR RIVAL')) colorClass = 'text-orange-400';
         else if (displayActionText.includes('PUNTO RIVAL')) colorClass = 'text-rose-400';
         else if (displayActionText.includes('CAMBIO')) colorClass = 'text-blue-400';
+        return colorClass;
+    }
+
+    function renderAction(data, calidad) {
+        const list = document.getElementById('historial-list');
+        
+        let displayActionText = data.accion_texto || '';
+        const colorClass = resolveAccionColorClass(calidad, displayActionText);
 
         const html = `<div id="reg-${data.id}" class="history-item bg-[#161b26] p-4 rounded-2xl border border-slate-800/80 flex justify-between items-center shadow-sm">
             <div class="flex items-center space-x-3">
@@ -2180,8 +2349,96 @@
         lucide.createIcons();
     }
 
+    // ── Panel "Últimas Acciones" (pestaña Acciones, modo rápido) ──────────
+    // Captura TODAS las acciones registradas vía registrar() (cualquier calidad:
+    // ++, +, =, -, --). Cambios de jugadora y Tiempos Muertos NO pasan por
+    // registrar(), por lo que quedan excluidos de este historial de forma natural.
+    const QUICK_HISTORY_MAX = 40;
+
+    // ── Hidrata state.quickHistory con las acciones ya existentes en BD ──────
+    // (historialInicial) al cargar/recargar la página. Sin esto, quickHistory
+    // solo contendría acciones registradas en la sesión actual, provocando que
+    // "Restar Punto" (pestaña Marcador) y el panel "Acciones" aparezcan vacíos
+    // justo después de recargar aunque el partido ya tenga puntos anotados.
+    function hydrateQuickHistoryFromInicial() {
+        if (!Array.isArray(historialInicial) || historialInicial.length === 0) return;
+
+        // historialInicial viene ordenado del más reciente al más antiguo (-id);
+        // lo recorremos en orden cronológico para reconstruir el marcador parcial.
+        const cronologico = [...historialInicial].reverse();
+        let runningLocal = 0;
+        let runningRival = 0;
+
+        const hydrated = cronologico.map(data => {
+            const calidad = data.calidad || '';
+            const displayActionText = data.accion_texto || '';
+            const esPuntoLocal = (calidad === '++') || displayActionText.includes('Error del Rival');
+            const esPuntoRival = (calidad === '--') || displayActionText.includes('Punto del Rival');
+            if (esPuntoLocal) runningLocal++;
+            if (esPuntoRival) runningRival++;
+
+            return {
+                id: data.id,
+                score: `${String(runningLocal).padStart(2, '0')}-${String(runningRival).padStart(2, '0')}`,
+                playerLabel: (data.dorsal && data.dorsal !== 'EQ') ? `#${data.dorsal}` : 'Equipo',
+                actionLabel: displayActionText,
+                colorClass: resolveAccionColorClass(calidad, displayActionText),
+                esPuntoLocal: esPuntoLocal,
+                esPuntoRival: esPuntoRival
+            };
+        });
+
+        // Más reciente primero, igual que pushQuickHistory() con unshift().
+        state.quickHistory = hydrated.reverse().slice(0, QUICK_HISTORY_MAX);
+    }
+
+    function pushQuickHistory(data, calidad, accion, jugId) {
+        let playerLabel;
+        if (accion === 'ERROR_RIVAL' || accion === 'PUNTO_RIVAL') {
+            playerLabel = 'Rival';
+        } else if (jugId) {
+            const pj = allJugadoras.find(x => String(x.id) === String(jugId));
+            playerLabel = pj ? `#${pj.dorsal} ${pj.nombre}` : `#${data.dorsal}`;
+        } else {
+            playerLabel = (data.dorsal && data.dorsal !== 'EQ') ? `#${data.dorsal}` : 'Equipo';
+        }
+
+        const displayActionText = data.accion_texto || '';
+        const esPuntoLocal = (calidad === '++') || (accion === 'ERROR_RIVAL');
+        const esPuntoRival = (calidad === '--') || (accion === 'PUNTO_RIVAL');
+        state.quickHistory.unshift({
+            id: data.id,
+            score: `${String(state.marcador.local).padStart(2, '0')}-${String(state.marcador.rival).padStart(2, '0')}`,
+            playerLabel: playerLabel,
+            actionLabel: displayActionText,
+            colorClass: resolveAccionColorClass(calidad, displayActionText),
+            esPuntoLocal: esPuntoLocal,
+            esPuntoRival: esPuntoRival
+        });
+        state.quickHistory = state.quickHistory.slice(0, QUICK_HISTORY_MAX);
+        renderQuickHistory();
+    }
+
+    function renderQuickHistory() {
+        const container = document.getElementById('quick-history-list');
+        if (!container) return;
+
+        if (state.quickHistory.length === 0) {
+            container.innerHTML = `<div class="text-[10px] font-bold text-slate-600 uppercase tracking-wider px-2 py-2.5">Aún no hay acciones registradas</div>`;
+            return;
+        }
+
+        container.innerHTML = state.quickHistory.map(item => `
+            <div class="flex items-center gap-3 bg-[#161b26] border border-slate-800/80 rounded-xl px-4 py-3 shadow-sm">
+                <span class="text-[10px] font-black font-mono text-slate-300 bg-[#090d16] px-2 py-1 rounded-lg border border-slate-800 flex-shrink-0">[${item.score}]</span>
+                <span class="text-xs font-black text-white truncate flex-1">${item.playerLabel}</span>
+                <span class="text-xs font-black uppercase tracking-wide flex-shrink-0 ${item.colorClass}">${item.actionLabel}</span>
+            </div>
+        `).join('');
+    }
+
     async function eliminarRegistro(id) {
-        if (!confirm('¿Eliminar esta acción?')) return;
+        if (state.prefs.confirmarBorrado && !confirm('¿Eliminar esta acción?')) return;
         try {
             const r = await fetch('{% url "stats_app:api_eliminar_estadistica" %}', { 
                 method: 'POST', 
@@ -2192,14 +2449,28 @@
                 body: JSON.stringify({ id: id }) 
             });
             if ((await r.json()).status === 'ok') { 
-                document.getElementById(`reg-${id}`).remove(); 
+                document.getElementById(`reg-${id}`)?.remove(); 
                 updateCounter(); 
+                state.quickHistory = state.quickHistory.filter(item => String(item.id) !== String(id));
+                renderQuickHistory();
                 showToast("🗑️ Acción eliminada");
                 updateFlashboard();
             }
         } catch(e) {
             showToast("❌ Error al eliminar");
         }
+    }
+
+    // ── Corrección manual del marcador (pestaña Marcador): resta el último
+    // punto anotado de un lado concreto, eliminando el registro real que lo
+    // generó para mantener el marcador siempre consistente con la BD.
+    function restarPunto(side) {
+        const item = state.quickHistory.find(h => side === 'local' ? h.esPuntoLocal : h.esPuntoRival);
+        if (!item) {
+            showToast('⚠️ No hay puntos que restar');
+            return;
+        }
+        eliminarRegistro(item.id);
     }
 
     async function eliminarUltimo() {
@@ -2244,7 +2515,7 @@
         if (state.set_finished) return;  // modal ya fue mostrado y está visible, no re-abrir
 
         const currentSet = state.set_numero;
-        const limit = (currentSet === 5) ? 15 : 25;
+        const limit = (currentSet === state.reglas.setDecisivoNumero) ? state.reglas.puntosSetDecisivo : state.reglas.puntosPorSet;
         
         const actionsGrid = document.getElementById('scout-actions-grid');
         const opponentGrid = document.getElementById('scout-opponent-grid');
@@ -2308,19 +2579,20 @@
 
         showToast(`✅ Set ${setGuardado} guardado (${duracion} min)`);
 
-        // Check if global sets won reaches 3 for either team BEFORE advancing
-        if (setsLocal >= 3 || setsRival >= 3) {
+        // Check if global sets won reaches the configured target BEFORE advancing
+        const setsParaGanar = state.reglas.setsParaGanar;
+        if (setsLocal >= setsParaGanar || setsRival >= setsParaGanar) {
             finalizarPartido();
-            showToast("🏁 Partido finalizado automáticamente (3 sets ganados)");
+            showToast(`🏁 Partido finalizado automáticamente (${setsParaGanar} sets ganados)`);
             return;
         }
 
-        if (setGuardado < 5) {
+        if (setGuardado < state.reglas.setDecisivoNumero) {
             // Advance to next set — setSet() calls updateFlashboard() which will
             // read 0-0 from the new set and NOT trigger checkSetEnd() again.
             setSet(setGuardado + 1);
         } else {
-            showToast("🏁 Partido finalizado (5 sets completados)");
+            showToast(`🏁 Partido finalizado (${state.reglas.setDecisivoNumero} sets completados)`);
             finalizarPartido();
         }
     }
@@ -2399,7 +2671,17 @@
                 updateUIMarcador();
                 document.getElementById('scoreboard-sets').innerText = `(${sLocal}) - (${sRival})`;
 
-                const isFinalizado = res.partido_finalizado || (sLocal >= 3) || (sRival >= 3);
+                // Mantener sincronizadas las reglas del set con la BD (por si se
+                // actualizaron desde otra sesión/dispositivo)
+                if (res.puntos_por_set !== undefined) {
+                    state.reglas.puntosPorSet = res.puntos_por_set;
+                    state.reglas.puntosSetDecisivo = res.puntos_set_decisivo;
+                    state.reglas.setsParaGanar = res.sets_para_ganar;
+                    state.reglas.setDecisivoNumero = res.set_decisivo_numero;
+                }
+
+                const setsParaGanar = state.reglas.setsParaGanar;
+                const isFinalizado = res.partido_finalizado || (sLocal >= setsParaGanar) || (sRival >= setsParaGanar);
                 if (isFinalizado) {
                     state.partido_finalizado = true;
                     lockScoutInterface();
@@ -2832,6 +3114,7 @@
 
     function cambiarModoScout(modo) {
         state.modo_scout = modo;
+        localStorage.setItem(`voley_modo_scout_${state.partido_id}`, modo);
 
         const btnRapido = document.getElementById('btn-modo-rapido');
         const btnAvanzado = document.getElementById('btn-modo-avanzado');
@@ -2869,17 +3152,78 @@
         }
 
         document.querySelectorAll('.rapido-tab-btn').forEach(btn => {
-            btn.className = 'rapido-tab-btn px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-slate-400 hover:text-white';
+            btn.className = 'rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white';
         });
         const activeBtn = document.getElementById(`tab-btn-${tabName}`);
         if (activeBtn) {
-            activeBtn.className = 'rapido-tab-btn px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all bg-blue-600 text-white shadow-md';
+            activeBtn.className = 'rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full bg-neutral-600 text-white';
         }
 
         if (tabName === 'gameplay') {
             renderGameplayGrid();
         }
+        if (tabName === 'acciones') {
+            renderQuickHistory();
+        }
+        if (tabName === 'adjust') {
+            renderAjustesPrefs();
+        }
         if (window.lucide) lucide.createIcons();
+    }
+
+    // ── Sincroniza los controles de la pestaña Ajustes con el estado actual ──
+    function renderAjustesPrefs() {
+        renderServePossessionUI();
+
+        const toggleAutoRot = document.getElementById('toggle-auto-rotacion');
+        const toggleVibracion = document.getElementById('toggle-vibracion');
+        const toggleConfirmar = document.getElementById('toggle-confirmar-borrado');
+        if (toggleAutoRot) toggleAutoRot.checked = state.prefs.autoRotacion;
+        if (toggleVibracion) toggleVibracion.checked = state.prefs.vibracion;
+        if (toggleConfirmar) toggleConfirmar.checked = state.prefs.confirmarBorrado;
+
+        const inputPuntosSet = document.getElementById('input-puntos-set');
+        const inputPuntosDecisivo = document.getElementById('input-puntos-set-decisivo');
+        const inputSetsGanar = document.getElementById('input-sets-para-ganar');
+        if (inputPuntosSet) inputPuntosSet.value = state.reglas.puntosPorSet;
+        if (inputPuntosDecisivo) inputPuntosDecisivo.value = state.reglas.puntosSetDecisivo;
+        if (inputSetsGanar) inputSetsGanar.value = state.reglas.setsParaGanar;
+    }
+
+    function togglePref(prefKey, storageKey, checked) {
+        state.prefs[prefKey] = checked;
+        setPref(storageKey, checked);
+        showToast(checked ? '✅ Preferencia activada' : '⛔ Preferencia desactivada');
+    }
+
+    async function guardarReglasSet() {
+        const puntosPorSet = parseInt(document.getElementById('input-puntos-set').value) || state.reglas.puntosPorSet;
+        const puntosSetDecisivo = parseInt(document.getElementById('input-puntos-set-decisivo').value) || state.reglas.puntosSetDecisivo;
+        const setsParaGanar = parseInt(document.getElementById('input-sets-para-ganar').value) || state.reglas.setsParaGanar;
+
+        try {
+            const r = await fetch('{% url "stats_app:api_actualizar_config_set" partido.id %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({
+                    puntos_por_set: puntosPorSet,
+                    puntos_set_decisivo: puntosSetDecisivo,
+                    sets_para_ganar: setsParaGanar
+                })
+            });
+            const res = await r.json();
+            if (res.status === 'ok') {
+                state.reglas.puntosPorSet = res.puntos_por_set;
+                state.reglas.puntosSetDecisivo = res.puntos_set_decisivo;
+                state.reglas.setsParaGanar = res.sets_para_ganar;
+                state.reglas.setDecisivoNumero = res.set_decisivo_numero;
+                showToast('✅ Reglas del set actualizadas');
+            } else {
+                showToast('❌ ' + (res.mensaje || 'Error al guardar'));
+            }
+        } catch (e) {
+            showToast('❌ Error de conexión');
+        }
     }
 
     function registrarGameplay(accion, calidad, playerId) {
@@ -2900,75 +3244,13 @@
             return;
         }
 
-        const frontCourtZones = [4, 3, 2];
-        const backCourtZones = [5, 6, 1];
+        // Campo unificado (sin sub-recuadros): fila delantera (4,3,2) + fila zaguera (5,6,Saque=1)
+        const zonasOrdenadas = [4, 3, 2, 5, 6, 1];
+        const btnBase = 'flex-1 flex items-center justify-center px-1.5 text-[11px] sm:text-xs md:text-sm font-black rounded-xl transition-all active:scale-95 text-center leading-tight';
 
-        let html = '';
+        let html = `<div class="grid grid-cols-3 grid-rows-2 gap-3 h-full">`;
 
-        // Zona Delantera
-        html += `
-            <div class="bg-blue-950/20 border border-blue-900/50 rounded-3xl p-5 shadow-lg space-y-4">
-                <div class="flex justify-between items-center border-b border-blue-900/30 pb-2">
-                    <span class="text-xs font-black text-blue-400 uppercase tracking-widest pl-1">Zona Delantera</span>
-                    <span class="text-[9px] font-bold text-slate-500 uppercase">Zonas 4, 3, 2</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        `;
-
-        frontCourtZones.forEach(z => {
-            const player = state.rotation[`pos${z}`];
-            let pId = '';
-            let pLabel = 'Anónimo (EQ)';
-            if (player) {
-                pId = player.id;
-                const pj = allJugadoras.find(x => String(x.id) === String(player.id));
-                const nombre = pj ? pj.nombre : 'Jugadora';
-                pLabel = `#${player.dorsal} ${nombre}`;
-            }
-            
-            html += `
-                <div class="bg-[#121824] rounded-2xl p-4 border border-slate-800 flex flex-col justify-between space-y-3">
-                    <div class="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Zona ${z}</span>
-                        <span class="text-xs font-black text-white truncate max-w-[120px]">${pLabel}</span>
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <div class="grid grid-cols-3 gap-1">
-                            <button onclick="registrarGameplay('ATAQUE', '++', '${pId}')" class="py-2.5 px-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Punto Ataque</button>
-                            <button onclick="registrarGameplay('ATAQUE', '=', '${pId}')" class="py-2.5 px-1 bg-white hover:bg-slate-200 text-black text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Continuidad</button>
-                            <button onclick="registrarGameplay('ATAQUE', '--', '${pId}')" class="py-2.5 px-1 bg-rose-600 hover:bg-rose-500 text-white text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Error Ataque</button>
-                        </div>
-                        <div class="grid grid-cols-3 gap-1">
-                            <button onclick="registrarGameplay('BLOQUEO', '++', '${pId}')" class="py-2.5 px-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Punto Bloqueo</button>
-                            <button onclick="registrarGameplay('BLOQUEO', '=', '${pId}')" class="py-2.5 px-1 bg-white hover:bg-slate-200 text-black text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Toque Bloqueo</button>
-                            <button onclick="registrarGameplay('BLOQUEO', '--', '${pId}')" class="py-2.5 px-1 bg-rose-600 hover:bg-rose-500 text-white text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Error Bloqueo</button>
-                        </div>
-                        <div class="grid grid-cols-3 gap-1">
-                            <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="py-2.5 px-1 bg-white hover:bg-slate-200 text-black text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Colocación</button>
-                            <button onclick="registrarGameplay('DEFENSA', '=', '${pId}')" class="py-2.5 px-1 bg-white hover:bg-slate-200 text-black text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Defensa</button>
-                            <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="py-2.5 px-1 bg-rose-600 hover:bg-rose-500 text-white text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Error Colocación</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        html += `
-                </div>
-            </div>
-        `;
-
-        // Zona Zaguera
-        html += `
-            <div class="bg-blue-950/20 border border-blue-900/50 rounded-3xl p-5 shadow-lg space-y-4">
-                <div class="flex justify-between items-center border-b border-blue-900/30 pb-2">
-                    <span class="text-xs font-black text-blue-400 uppercase tracking-widest pl-1">Zona Zaguera</span>
-                    <span class="text-[9px] font-bold text-slate-500 uppercase">Zonas 5, 6, 1</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        `;
-
-        backCourtZones.forEach(z => {
+        zonasOrdenadas.forEach(z => {
             const player = state.rotation[`pos${z}`];
             let pId = '';
             let pLabel = 'Anónimo (EQ)';
@@ -2979,34 +3261,47 @@
                 pLabel = `#${player.dorsal} ${nombre}`;
             }
             const isServer = (z === 1);
-            const serverTitle = isServer ? 'Saque (Zona 1)' : `Zona ${z}`;
-            const btnClass = isServer ? 'py-2.5' : 'py-[18px]';
+            const isZagueraSinSaque = (z === 5 || z === 6);
+            const zoneTitle = isServer ? 'Saque (Zona 1)' : `Zona ${z}`;
 
             html += `
-                <div class="bg-[#121824] rounded-2xl p-4 border border-slate-800 flex flex-col justify-between space-y-3">
-                    <div class="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">${serverTitle}</span>
-                        <span class="text-xs font-black text-white truncate max-w-[120px]">${pLabel}</span>
+                <div class="bg-[#121824] rounded-2xl p-3 md:p-4 border border-slate-800 flex flex-col h-full min-h-0">
+                    <div class="flex justify-between items-center border-b border-slate-800/80 pb-2 mb-2.5 flex-shrink-0">
+                        <span class="text-[10px] md:text-xs font-black text-blue-400 uppercase tracking-wider">${zoneTitle}</span>
+                        <span class="text-xs md:text-sm font-black text-white truncate max-w-[130px]">${pLabel}</span>
                     </div>
-                    <div class="flex flex-col gap-2">
-                        <div class="grid grid-cols-3 gap-1">
-                            <button onclick="registrarGameplay('ATAQUE', '++', '${pId}')" class="${btnClass} px-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Punto Ataque</button>
-                            <button onclick="registrarGameplay('ATAQUE', '=', '${pId}')" class="${btnClass} px-1 bg-white hover:bg-slate-200 text-black text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Continuidad</button>
-                            <button onclick="registrarGameplay('ATAQUE', '--', '${pId}')" class="${btnClass} px-1 bg-rose-600 hover:bg-rose-500 text-white text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Error Ataque</button>
+                    <div class="flex flex-col gap-2 flex-1">
+                        <div class="grid grid-cols-3 gap-1.5 flex-1">
+                            <button onclick="registrarGameplay('ATAQUE', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Ataque</button>
+                            <button onclick="registrarGameplay('ATAQUE', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Continuidad</button>
+                            <button onclick="registrarGameplay('ATAQUE', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Ataque</button>
                         </div>
-                        <div class="grid grid-cols-3 gap-1">
-                            <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnClass} px-1 bg-white hover:bg-slate-200 text-black text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Colocación</button>
-                            <button onclick="registrarGameplay('DEFENSA', '=', '${pId}')" class="${btnClass} px-1 bg-white hover:bg-slate-200 text-black text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Defensa</button>
-                            <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnClass} px-1 bg-rose-600 hover:bg-rose-500 text-white text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Error Colocación</button>
+            `;
+
+            if (!isZagueraSinSaque && !isServer) {
+                html += `
+                        <div class="grid grid-cols-3 gap-1.5 flex-1">
+                            <button onclick="registrarGameplay('BLOQUEO', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Bloqueo</button>
+                            <button onclick="registrarGameplay('BLOQUEO', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Toque Bloqueo</button>
+                            <button onclick="registrarGameplay('BLOQUEO', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Bloqueo</button>
+                        </div>
+                `;
+            }
+
+            html += `
+                        <div class="grid grid-cols-3 gap-1.5 flex-1">
+                            <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Colocación</button>
+                            <button onclick="registrarGameplay('DEFENSA', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Defensa</button>
+                            <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Colocación</button>
                         </div>
             `;
 
             if (isServer) {
                 html += `
-                        <div class="grid grid-cols-3 gap-1 border-t border-slate-800/60 pt-1.5">
-                            <button onclick="registrarGameplay('SAQUE', '++', '${pId}')" class="py-2.5 px-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Ace Saque</button>
-                            <button onclick="registrarGameplay('SAQUE', '=', '${pId}')" class="py-2.5 px-1 bg-white hover:bg-slate-200 text-black text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Saque Continuidad</button>
-                            <button onclick="registrarGameplay('SAQUE', '--', '${pId}')" class="py-2.5 px-1 bg-rose-600 hover:bg-rose-500 text-white text-[9px] font-black rounded-lg transition-all active:scale-95 text-center truncate">Error Saque</button>
+                        <div class="grid grid-cols-3 gap-1.5 flex-1 border-t border-slate-800/60 pt-2">
+                            <button onclick="registrarGameplay('SAQUE', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Ace Saque</button>
+                            <button onclick="registrarGameplay('SAQUE', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Saque Continuidad</button>
+                            <button onclick="registrarGameplay('SAQUE', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Saque</button>
                         </div>
                 `;
             }
@@ -3017,33 +3312,59 @@
             `;
         });
 
-        html += `
-                </div>
-            </div>
-        `;
+        html += `</div>`;
 
         container.innerHTML = html;
         if (window.lucide) lucide.createIcons();
+        resizeGameplayLayout();
     }
 
-    function takeNotes() {
-        const note = prompt("Escribe una nota para este punto:");
-        if (note) {
-            showToast(`📝 Nota guardada: "${note}"`);
-        }
+    // ── Ajusta dinámicamente la altura del campo de juego para ocupar todo
+    // el espacio vertical disponible tras el marcador, la barra de banquillo
+    // y la botonera inferior, sin necesidad de hacer scroll en pantalla.
+    function resizeGameplayLayout() {
+        const gameplayContent = document.getElementById('rapido-gameplay-content');
+        if (!gameplayContent || gameplayContent.classList.contains('hidden')) return;
+
+        const top = gameplayContent.getBoundingClientRect().top;
+        const bottomSafety = 16;
+        const available = window.innerHeight - top - bottomSafety;
+        gameplayContent.style.height = `${Math.max(available, 480)}px`;
     }
 
-    function clearNonScore() {
-        showToast("🧹 Se han limpiado las acciones sin puntuación de este punto");
-    }
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(resizeGameplayLayout);
+    });
+    window.addEventListener('load', () => {
+        requestAnimationFrame(resizeGameplayLayout);
+    });
 
     function swapServe() {
-        state.tenemos_saque = !state.tenemos_saque;
-        state.fase_actual = state.tenemos_saque ? 'K0' : 'K1';
+        setServePossession(!state.tenemos_saque);
+    }
+
+    // ── Control visible de posesión de saque (pestaña Ajustes) ─────────────
+    function setServePossession(nosotros) {
+        const cambia = state.tenemos_saque !== nosotros;
+        state.tenemos_saque = nosotros;
+        state.fase_actual = nosotros ? 'K0' : 'K1';
         updateFaseIndicator();
-        showToast("🔄 Posesión del saque cambiada");
         renderBotonerasAcciones();
         renderGameplayGrid();
+        renderServePossessionUI();
+        if (cambia) showToast("🔄 Posesión del saque cambiada");
+    }
+
+    function renderServePossessionUI() {
+        const btnNosotros = document.getElementById('ajustes-serve-btn-nosotros');
+        const btnRival = document.getElementById('ajustes-serve-btn-rival');
+        if (!btnNosotros || !btnRival) return;
+
+        const activeClass = 'flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 bg-emerald-600 text-white shadow-md';
+        const inactiveClass = 'flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 bg-[#1e293b] border border-slate-700 text-slate-400 hover:text-white';
+
+        btnNosotros.className = state.tenemos_saque ? activeClass : inactiveClass;
+        btnRival.className = !state.tenemos_saque ? activeClass : inactiveClass;
     }
 
     function clearPlayers() {

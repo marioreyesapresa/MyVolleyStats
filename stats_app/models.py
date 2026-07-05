@@ -58,8 +58,21 @@ class Partido(models.Model):
     modalidad = models.CharField(max_length=15, choices=MODALIDADES, default='VOLEY', verbose_name="Modalidad")
     finalizado = models.BooleanField(default=False, verbose_name="Finalizado")
 
+    # ── Configuración de reglas del set (editable desde Ajustes) ───────────
+    puntos_por_set = models.PositiveIntegerField(default=25, verbose_name="Puntos por set")
+    puntos_set_decisivo = models.PositiveIntegerField(default=15, verbose_name="Puntos del set decisivo")
+    sets_para_ganar = models.PositiveIntegerField(default=3, verbose_name="Sets para ganar el partido")
+
     def __str__(self):
         return f"{self.equipo.nombre} vs {self.rival} ({self.fecha} {self.hora})"
+
+    @property
+    def set_decisivo_numero(self):
+        """Número de set que se juega con el límite de puntos reducido (p.ej. 5º en un mejor de 5 sets)."""
+        return (self.sets_para_ganar * 2) - 1
+
+    def limite_puntos_set(self, set_numero):
+        return self.puntos_set_decisivo if int(set_numero) == self.set_decisivo_numero else self.puntos_por_set
 
     class Meta:
         verbose_name = "Partido"

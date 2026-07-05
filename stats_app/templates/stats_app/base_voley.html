@@ -80,7 +80,7 @@
     </div>
 
     <!-- Sidebar Desktop -->
-    <aside class="w-64 sidebar-dark text-white hidden md:flex flex-col p-6 space-y-8 min-h-screen border-r border-slate-900">
+    <aside id="desktop-sidebar" class="w-64 sidebar-dark text-white hidden md:flex flex-col p-6 space-y-8 min-h-screen border-r border-slate-900 transition-all duration-300 overflow-hidden flex-shrink-0">
         <div class="flex items-center space-x-2 pb-4 border-b border-slate-800">
             <i data-lucide="zap" class="text-emerald-500 w-8 h-8"></i>
             <span class="font-black tracking-tighter text-xl text-emerald-400">VOLEY STATS</span>
@@ -138,11 +138,17 @@
 
     <!-- Content Area -->
     <div class="flex-1 flex flex-col min-w-0 bg-[#0b0f19]">
+        {% block topbar %}
         <!-- Topbar -->
         <header class="bg-[#090d16] border-b border-slate-800/80 px-6 py-4 flex items-center justify-between shadow-md">
-            <div>
-                <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">home &gt; voley stats</p>
-                <h1 class="text-xl font-black uppercase text-white tracking-tight">{% block header_title %}Scout Rotation Pro{% endblock %}</h1>
+            <div class="flex items-center gap-3 min-w-0">
+                <button class="sidebar-toggle-trigger hidden md:flex items-center justify-center w-9 h-9 rounded-lg border border-slate-800 bg-[#121824] text-slate-300 hover:text-white hover:border-slate-700 transition-all active:scale-95 flex-shrink-0" title="Mostrar/Ocultar menú">
+                    <i data-lucide="panel-left" class="w-4 h-4"></i>
+                </button>
+                <div class="min-w-0">
+                    <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">home &gt; voley stats</p>
+                    <h1 class="text-xl font-black uppercase text-white tracking-tight truncate">{% block header_title %}Scout Rotation Pro{% endblock %}</h1>
+                </div>
             </div>
             
             <div class="flex items-center space-x-6 ml-auto">
@@ -155,6 +161,7 @@
                 </div>
             </div>
         </header>
+        {% endblock %}
 
         <!-- Page body -->
         <main class="flex-1 p-6 md:p-8 w-full mx-auto space-y-8 overflow-y-auto">
@@ -180,6 +187,32 @@
             closeBtnDark.addEventListener('click', () => {
                 drawerDark.classList.add('hidden');
             });
+        }
+
+        // ── Toggle de la barra lateral (Desktop) ──────────────────────────
+        const desktopSidebar = document.getElementById('desktop-sidebar');
+        const sidebarToggleTriggers = document.querySelectorAll('.sidebar-toggle-trigger');
+
+        function applySidebarState(collapsed) {
+            if (!desktopSidebar) return;
+            if (collapsed) {
+                desktopSidebar.classList.remove('w-64', 'p-6');
+                desktopSidebar.classList.add('w-0', 'p-0', 'border-r-0', 'opacity-0');
+            } else {
+                desktopSidebar.classList.remove('w-0', 'p-0', 'border-r-0', 'opacity-0');
+                desktopSidebar.classList.add('w-64', 'p-6');
+            }
+            localStorage.setItem('voley_sidebar_collapsed', collapsed ? '1' : '0');
+        }
+
+        sidebarToggleTriggers.forEach(btn => {
+            btn.addEventListener('click', () => {
+                applySidebarState(!desktopSidebar.classList.contains('w-0'));
+            });
+        });
+
+        if (localStorage.getItem('voley_sidebar_collapsed') === '1') {
+            applySidebarState(true);
         }
     </script>
 </body>

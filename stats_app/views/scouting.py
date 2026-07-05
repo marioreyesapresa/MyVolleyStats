@@ -81,6 +81,34 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
         except Exception as e:
             return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
 
+class ActualizarConfigSetAPI(LoginRequiredMixin, View):
+    def post(self, request, partido_id):
+        try:
+            data = json.loads(request.body)
+            partido = get_object_or_404(Partido, pk=partido_id)
+
+            puntos_por_set = int(data.get('puntos_por_set', partido.puntos_por_set))
+            puntos_set_decisivo = int(data.get('puntos_set_decisivo', partido.puntos_set_decisivo))
+            sets_para_ganar = int(data.get('sets_para_ganar', partido.sets_para_ganar))
+
+            if puntos_por_set < 1 or puntos_set_decisivo < 1 or sets_para_ganar < 1:
+                return JsonResponse({'status': 'error', 'mensaje': 'Los valores deben ser mayores que 0'}, status=400)
+
+            partido.puntos_por_set = puntos_por_set
+            partido.puntos_set_decisivo = puntos_set_decisivo
+            partido.sets_para_ganar = sets_para_ganar
+            partido.save()
+
+            return JsonResponse({
+                'status': 'ok',
+                'puntos_por_set': partido.puntos_por_set,
+                'puntos_set_decisivo': partido.puntos_set_decisivo,
+                'sets_para_ganar': partido.sets_para_ganar,
+                'set_decisivo_numero': partido.set_decisivo_numero,
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
+
 class EliminarAccionAPI(LoginRequiredMixin, View):
     def post(self, request):
         try:
@@ -230,7 +258,7 @@ def ObtenerStatsSetAPI(request):
         p_l = qs_s.filter(accion__in=['SAQUE', 'ATAQUE', 'BLOQUEO'], calidad='++').count() + qs_s.filter(accion='ERROR_RIVAL').count()
         p_r = qs_s.filter(Q(accion='PUNTO_RIVAL') | Q(calidad='--')).count()
         
-        limit = 15 if s == 5 else 25
+        limit = partido.limite_puntos_set(s)
         if (p_l >= limit or p_r >= limit) and abs(p_l - p_r) >= 2:
             if p_l > p_r:
                 sets_local += 1
@@ -252,6 +280,10 @@ def ObtenerStatsSetAPI(request):
         'k2_efi': k2_efi,
         'mejor_saque': mejor_saque,
         'mejor_ataque': mejor_ataque,
+        'puntos_por_set': partido.puntos_por_set,
+        'puntos_set_decisivo': partido.puntos_set_decisivo,
+        'sets_para_ganar': partido.sets_para_ganar,
+        'set_decisivo_numero': partido.set_decisivo_numero,
     })
 
 def get_stats_json(request, partido_id, set_n):

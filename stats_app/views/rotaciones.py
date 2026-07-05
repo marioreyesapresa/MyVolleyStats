@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
-from ..models import RotacionSet, Jugadora
+from ..models import RotacionSet, Jugadora, Partido
 
 class GetRotacionActualAPI(LoginRequiredMixin, View):
     def get(self, request, partido_id):
