@@ -23,11 +23,21 @@ class BaseInformePDFView(LoginRequiredMixin, View):
         if set_n != 'global':
             stats_base = stats_base.filter(set_numero=set_n)
         
+        # Get all players who actually played/disputed minutes in this match
+        from ..models import RotacionSet
+        rotaciones = RotacionSet.objects.filter(partido=partido)
+        jugadoras_activas_ids = set()
+        for rot in rotaciones:
+            for field in ['pos1_id', 'pos2_id', 'pos3_id', 'pos4_id', 'pos5_id', 'pos6_id', 'libero1_id', 'libero2_id']:
+                val = getattr(rot, field)
+                if val:
+                    jugadoras_activas_ids.add(val)
+
         fundamentos = ['SAQUE', 'RECEPCION', 'COLOCACION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
         jugadoras_stats = []
         j_ids = stats_base.values_list('jugadora_id', flat=True).distinct()
         
-        for j in Jugadora.objects.filter(id__in=j_ids):
+        for j in Jugadora.objects.filter(id__in=j_ids).filter(id__in=jugadoras_activas_ids):
             j_qs = stats_base.filter(jugadora=j)
             j_qs_f = j_qs.filter(accion__in=fundamentos)
             if j_qs_f.exists():

@@ -28,7 +28,7 @@
                         <select name="equipo" id="id_equipo" required 
                                 class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500/50 transition-all text-sm">
                             {% for choice in form.fields.equipo.queryset %}
-                                <option value="{{ choice.id }}" {% if form.equipo.value|stringformat:"s" == choice.id|stringformat:"s" or request.GET.equipo_id|stringformat:"s" == choice.id|stringformat:"s" %}selected{% endif %}>
+                                <option value="{{ choice.id }}" data-categoria="{{ choice.categoria }}" {% if form.equipo.value|stringformat:"s" == choice.id|stringformat:"s" or request.GET.equipo_id|stringformat:"s" == choice.id|stringformat:"s" %}selected{% endif %}>
                                     {{ choice }}
                                 </option>
                             {% endfor %}
@@ -91,4 +91,35 @@
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const equipoSelect = document.getElementById('id_equipo');
+        const modalidadSelect = document.getElementById('id_modalidad');
+
+        if (equipoSelect && modalidadSelect) {
+            function updateModalidad() {
+                const selectedOption = equipoSelect.options[equipoSelect.selectedIndex];
+                if (!selectedOption) return;
+                const categoria = selectedOption.getAttribute('data-categoria');
+                if (!categoria) return;
+
+                const upperCat = categoria.trim().toUpperCase();
+                if (upperCat === 'BENJAMIN' || upperCat === 'ALEVIN') {
+                    modalidadSelect.value = 'MINIVOLEY';
+                } else if (['INFANTIL', 'CADETE', 'JUVENIL', 'JUNIOR', 'SENIOR'].includes(upperCat)) {
+                    modalidadSelect.value = 'VOLEY';
+                }
+            }
+
+            // Listen to team changes
+            equipoSelect.addEventListener('change', updateModalidad);
+
+            // Execute on initial load as well if creating a new match
+            {% if not object %}
+                updateModalidad();
+            {% endif %}
+        }
+    });
+</script>
 {% endblock %}

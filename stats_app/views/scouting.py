@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 import json
-from ..models import Partido, Jugadora, RegistroEstadistica
+from ..models import Partido, Jugadora, RegistroEstadistica, RotacionSet
 
 class ModoPartidoView(LoginRequiredMixin, View):
     template_name = 'stats_app/modo_partido.html'
@@ -385,8 +385,17 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
         
         jugadoras_stats = []
         fundamentos = ['SAQUE', 'RECEPCION', 'COLOCACION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
+        # Get all players who actually played/disputed minutes in this match
+        rotaciones = RotacionSet.objects.filter(partido=partido)
+        jugadoras_activas_ids = set()
+        for rot in rotaciones:
+            for field in ['pos1_id', 'pos2_id', 'pos3_id', 'pos4_id', 'pos5_id', 'pos6_id', 'libero1_id', 'libero2_id']:
+                val = getattr(rot, field)
+                if val:
+                    jugadoras_activas_ids.add(val)
+
         j_ids = stats_base.values_list('jugadora_id', flat=True).distinct()
-        for j in Jugadora.objects.filter(id__in=j_ids):
+        for j in Jugadora.objects.filter(id__in=j_ids).filter(id__in=jugadoras_activas_ids):
             j_qs = stats_base.filter(jugadora=j)
             j_qs_f = j_qs.filter(accion__in=fundamentos)
             if j_qs_f.exists():

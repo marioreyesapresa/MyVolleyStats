@@ -328,6 +328,20 @@
 
             <!-- Bloque Derecho: Botones de Acción (Blindado) -->
             <div class="flex items-center justify-center lg:justify-end gap-3 flex-shrink-0 w-full lg:w-auto border-t lg:border-t-0 border-slate-800/80 pt-4 lg:pt-0">
+                <!-- Toggle Switch Modo Scout -->
+                <div class="flex items-center bg-[#090d16] p-1 rounded-2xl border border-slate-800 shadow-inner">
+                    <button id="btn-modo-rapido" 
+                            onclick="cambiarModoScout('rapido')" 
+                            class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md">
+                        Rápido
+                    </button>
+                    <button id="btn-modo-avanzado" 
+                            onclick="cambiarModoScout('avanzado')" 
+                            class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white">
+                        Avanzado
+                    </button>
+                </div>
+
                 <!-- Finalizar Partido Button -->
                 <button id="btn-finalizar-partido" 
                         onclick="confirmarFinalizarPartido()" 
@@ -373,76 +387,7 @@
 
         <!-- Actions grid -->
         <div id="scout-actions-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
-            <!-- Serve buttons -->
-            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Saque</span>
-                <div class="grid grid-cols-4 gap-2">
-                    <button onclick="registrar('SAQUE', '++')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Ace (++)">++</button>
-                    <button onclick="registrar('SAQUE', '+')" class="py-5 bg-emerald-500/60 hover:bg-emerald-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positivo (+)">+</button>
-                    <button onclick="registrar('SAQUE', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativo (-)">-</button>
-                    <button onclick="registrar('SAQUE', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
-                </div>
-            </div>
-
-            <!-- Reception buttons -->
-            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Recepción</span>
-                <div class="grid grid-cols-5 gap-1">
-                    <button onclick="registrar('RECEPCION', '++')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Excelente (++)">++</button>
-                    <button onclick="registrar('RECEPCION', '+')" class="py-5 bg-emerald-500/60 hover:bg-emerald-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positiva (+)">+</button>
-                    <button onclick="registrar('RECEPCION', '=')" class="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Continuidad (=)">=</button>
-                    <button onclick="registrar('RECEPCION', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativa (-)">-</button>
-                    <button onclick="registrar('RECEPCION', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
-                </div>
-            </div>
-
-            <!-- Attack buttons -->
-            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Ataque</span>
-                <div class="grid grid-cols-5 gap-1">
-                    <button onclick="registrar('ATAQUE', '++')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Punto (++)">++</button>
-                    <button onclick="registrar('ATAQUE', '+')" class="py-5 bg-emerald-500/60 hover:bg-emerald-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positivo (+)">+</button>
-                    <button onclick="registrar('ATAQUE', '=')" class="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Continuidad (=)">=</button>
-                    <button onclick="registrar('ATAQUE', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativo (-)">-</button>
-                    <button onclick="registrar('ATAQUE', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
-                </div>
-            </div>
-
-            <!-- Block buttons -->
-            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Bloqueo</span>
-                <div class="grid grid-cols-5 gap-1">
-                    <button onclick="registrar('BLOQUEO', '++')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Punto (++)">++</button>
-                    <button onclick="registrar('BLOQUEO', '+')" class="py-5 bg-emerald-500/60 hover:bg-emerald-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positivo (+)">+</button>
-                    <button onclick="registrar('BLOQUEO', '=')" class="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Continuidad (=)">=</button>
-                    <button onclick="registrar('BLOQUEO', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativo (-)">-</button>
-                    <button onclick="registrar('BLOQUEO', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
-                </div>
-            </div>
-
-            <!-- Defense buttons -->
-            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Defensa</span>
-                <div class="grid grid-cols-5 gap-1">
-                    <button onclick="registrar('DEFENSA', '++')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Perfecta (++)">++</button>
-                    <button onclick="registrar('DEFENSA', '+')" class="py-5 bg-emerald-500/60 hover:bg-emerald-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positiva (+)">+</button>
-                    <button onclick="registrar('DEFENSA', '=')" class="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Continuidad (=)">=</button>
-                    <button onclick="registrar('DEFENSA', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativa (-)">-</button>
-                    <button onclick="registrar('DEFENSA', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
-                </div>
-            </div>
-
-            <!-- Colocacion buttons -->
-            <div class="bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Colocación</span>
-                <div class="grid grid-cols-5 gap-1">
-                    <button onclick="registrar('COLOCACION', '++')" class="py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Excelente (++)">++</button>
-                    <button onclick="registrar('COLOCACION', '+')" class="py-5 bg-blue-500/60 hover:bg-blue-500/80 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Positiva (+)">+</button>
-                    <button onclick="registrar('COLOCACION', '=')" class="py-5 bg-[#1e293b] border border-slate-850 hover:bg-slate-750 text-slate-200 font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Continuidad (=)">=</button>
-                    <button onclick="registrar('COLOCACION', '-')" class="py-5 bg-orange-500 hover:bg-orange-400 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Negativa (-)">-</button>
-                    <button onclick="registrar('COLOCACION', '--')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg rounded-xl active:scale-95 transition-all shadow-md" title="Error (--)">--</button>
-                </div>
-            </div>
+            <!-- Populated dynamically by renderBotonerasAcciones() -->
         </div>
 
         <!-- Opponent buttons (Red & Orange) -->
@@ -767,7 +712,8 @@
         fase_actual: 'K1',   // default: start receiving (rival serves first)
         tenemos_saque: false, // true when we are serving
         rotacion_num: 1,       // current rotation (R1-R6 for VOLEY, R1-R4 for MINIVOLEY)
-        partido_finalizado: {% if partido.finalizado %}true{% else %}false{% endif %}
+        partido_finalizado: {% if partido.finalizado %}true{% else %}false{% endif %},
+        modo_scout: 'rapido'   // default scouting mode: rapido
     };
 
     let selectedBenchPlayerId = null;
@@ -787,6 +733,7 @@
         });
         
         updateUIHeader();
+        renderBotonerasAcciones();
         
         historialInicial.forEach(data => renderAction(data, data.calidad));
         setSet(1); // Set 1 initial load
@@ -1193,6 +1140,7 @@
             el.style.color = '#10b981';
             el.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
         }
+        renderBotonerasAcciones();
     }
 
     // Active court zone click selects that player
@@ -1809,8 +1757,12 @@
             showToast("⚠️ Set finalizado. Pasa al siguiente set para continuar registrando.");
             return;
         }
+        const isRapido = (state.modo_scout === 'rapido');
         let jug_id = state.jugadora_id; 
-        if (!jug_id && !['ERROR_RIVAL', 'PUNTO_RIVAL'].includes(accion)) { 
+        if (['ERROR_RIVAL', 'PUNTO_RIVAL'].includes(accion)) {
+            jug_id = null;
+        }
+        if (!isRapido && !jug_id && !['ERROR_RIVAL', 'PUNTO_RIVAL'].includes(accion)) { 
             showToast("⚠️ SELECCIONA JUGADORA"); 
             return; 
         }
@@ -1848,6 +1800,10 @@
                 renderAction(res, calidad); 
                 showToast("✅ Acción registrada");
 
+                if (isRapido && state.jugadora_id) {
+                    selectJugadora('null'); // clear selection for next touch
+                }
+
                 // ── Phase-transition logic after each registered action ───
                 const esPuntoNuestro    = (calidad === '++') || (accion === 'ERROR_RIVAL');
                 const esPuntoRival      = (calidad === '--') || (accion === 'PUNTO_RIVAL');
@@ -1870,14 +1826,14 @@
                 } else if (esAccionIntermedia) {
                     // Rally continúa: avanzar fase si aplica
                     if (accion === 'RECEPCION' && (calidad === '++' || calidad === '+' || calidad === '=')) {
-                        // Recepción exitosa → siguiente acción será ataque K1
-                        state.fase_actual = 'K1';
+                        // Recepción exitosa → siguiente acción será ataque K1 (o K2 en modo rápido)
+                        state.fase_actual = (state.modo_scout === 'rapido') ? 'K2' : 'K1';
                     } else if (accion === 'DEFENSA' && (calidad === '++' || calidad === '+')) {
                         // Defensa positiva → contra-ataque K2
                         state.fase_actual = 'K2';
                     }
-                    // SAQUE positivo (+) → rival recibe → podemos entrar a K2
-                    if (accion === 'SAQUE' && calidad === '+') {
+                    // SAQUE positivo (+) o neutral (=) → rival recibe → podemos entrar a K2
+                    if (accion === 'SAQUE' && (calidad === '+' || calidad === '=')) {
                         state.fase_actual = 'K2';
                     }
                 }
@@ -1976,6 +1932,7 @@
             b.style.borderColor = '#1e293b';
             b.style.color = b.id.includes('null') ? '#34d399' : '#ffffff';
         });
+        renderBotonerasAcciones();
     }
 
     function checkSetEnd(pLocal, pRival) {
@@ -2284,12 +2241,289 @@
                 showToast("🏁 Partido finalizado");
                 state.partido_finalizado = true;
                 lockScoutInterface();
+                // Redirect immediately to dashboard
+                window.location.href = "{% url 'stats_app:dashboard' %}";
             } else {
                 showToast("❌ Error al finalizar partido: " + (res.error || ''));
             }
         } catch (e) {
             showToast("❌ Error de red al finalizar el partido");
         }
+    }
+
+    // ── CONFIGURACIÓN DE BOTONERAS DE ACCIÓN (RÁPIDO vs AVANZADO) ────────────────
+    const ACCIONES_CONFIG = {
+        'SAQUE': {
+            label: 'Saque',
+            avanzado: [
+                { calidad: '++', label: '++', title: 'Ace (++)', class: 'bg-emerald-600 hover:bg-emerald-500 text-white' },
+                { calidad: '+', label: '+', title: 'Positivo (+)', class: 'bg-emerald-500/60 hover:bg-emerald-500/80 text-white' },
+                { calidad: '-', label: '-', title: 'Negativo (-)', class: 'bg-orange-500 hover:bg-orange-400 text-white' },
+                { calidad: '--', label: '--', title: 'Error (--)', class: 'bg-rose-600 hover:bg-rose-500 text-white' }
+            ]
+        },
+        'RECEPCION': {
+            label: 'Recepción',
+            avanzado: [
+                { calidad: '++', label: '++', title: 'Excelente (++)', class: 'bg-emerald-600 hover:bg-emerald-500 text-white' },
+                { calidad: '+', label: '+', title: 'Positiva (+)', class: 'bg-emerald-500/60 hover:bg-emerald-500/80 text-white' },
+                { calidad: '=', label: '=', title: 'Continuidad (=)', class: 'bg-blue-600 hover:bg-blue-500 text-white' },
+                { calidad: '-', label: '-', title: 'Negativa (-)', class: 'bg-orange-500 hover:bg-orange-400 text-white' },
+                { calidad: '--', label: '--', title: 'Error (--)', class: 'bg-rose-600 hover:bg-rose-500 text-white' }
+            ]
+        },
+        'ATAQUE': {
+            label: 'Ataque',
+            avanzado: [
+                { calidad: '++', label: '++', title: 'Punto (++)', class: 'bg-emerald-600 hover:bg-emerald-500 text-white' },
+                { calidad: '+', label: '+', title: 'Positivo (+)', class: 'bg-emerald-500/60 hover:bg-emerald-500/80 text-white' },
+                { calidad: '=', label: '=', title: 'Continuidad (=)', class: 'bg-blue-600 hover:bg-blue-500 text-white' },
+                { calidad: '-', label: '-', title: 'Negativo (-)', class: 'bg-orange-500 hover:bg-orange-400 text-white' },
+                { calidad: '--', label: '--', title: 'Error (--)', class: 'bg-rose-600 hover:bg-rose-500 text-white' }
+            ]
+        },
+        'BLOQUEO': {
+            label: 'Bloqueo',
+            avanzado: [
+                { calidad: '++', label: '++', title: 'Punto (++)', class: 'bg-emerald-600 hover:bg-emerald-500 text-white' },
+                { calidad: '+', label: '+', title: 'Positivo (+)', class: 'bg-emerald-500/60 hover:bg-emerald-500/80 text-white' },
+                { calidad: '=', label: '=', title: 'Continuidad (=)', class: 'bg-blue-600 hover:bg-blue-500 text-white' },
+                { calidad: '-', label: '-', title: 'Negativo (-)', class: 'bg-orange-500 hover:bg-orange-400 text-white' },
+                { calidad: '--', label: '--', title: 'Error (--)', class: 'bg-rose-600 hover:bg-rose-500 text-white' }
+            ]
+        },
+        'DEFENSA': {
+            label: 'Defensa',
+            avanzado: [
+                { calidad: '++', label: '++', title: 'Perfecta (++)', class: 'bg-emerald-600 hover:bg-emerald-500 text-white' },
+                { calidad: '+', label: '+', title: 'Positiva (+)', class: 'bg-emerald-500/60 hover:bg-emerald-500/80 text-white' },
+                { calidad: '=', label: '=', title: 'Continuidad (=)', class: 'bg-blue-600 hover:bg-blue-500 text-white' },
+                { calidad: '-', label: '-', title: 'Negativa (-)', class: 'bg-orange-500 hover:bg-orange-400 text-white' },
+                { calidad: '--', label: '--', title: 'Error (--)', class: 'bg-rose-600 hover:bg-rose-500 text-white' }
+            ]
+        },
+        'COLOCACION': {
+            label: 'Colocación',
+            avanzado: [
+                { calidad: '++', label: '++', title: 'Excelente (++)', class: 'bg-blue-600 hover:bg-blue-500 text-white' },
+                { calidad: '+', label: '+', title: 'Positiva (+)', class: 'bg-blue-500/60 hover:bg-blue-500/80 text-white' },
+                { calidad: '=', label: '=', title: 'Continuidad (=)', class: 'bg-[#1e293b] border border-slate-850 hover:bg-slate-750 text-slate-200' },
+                { calidad: '-', label: '-', title: 'Negativa (-)', class: 'bg-orange-500 hover:bg-orange-400 text-white' },
+                { calidad: '--', label: '--', title: 'Error (--)', class: 'bg-rose-600 hover:bg-rose-500 text-white' }
+            ]
+        }
+    };
+
+    function isPlayerInFrontRow(playerId) {
+        if (!state.rotation) return false;
+        const frontZones = ['pos2', 'pos3', 'pos4'];
+        for (const zone of frontZones) {
+            if (state.rotation[zone] && String(state.rotation[zone].id) === String(playerId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function registrarDefensaBloqueo(calidad) {
+        let frontRow = false;
+        if (state.jugadora_id) {
+            frontRow = isPlayerInFrontRow(state.jugadora_id);
+        }
+        const accion = (frontRow && (calidad === '++' || calidad === '--')) ? 'BLOQUEO' : 'DEFENSA';
+        registrar(accion, calidad);
+    }
+
+    function renderBotonerasAcciones() {
+        const grid = document.getElementById('scout-actions-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const modo = state.modo_scout;
+
+        if (modo === 'rapido') {
+            const fase = state.fase_actual;
+
+            if (fase === 'K0') {
+                // Saque
+                const card = document.createElement('div');
+                card.className = 'col-span-full bg-[#090d16] p-8 rounded-3xl border border-slate-800/80 space-y-6 shadow-inner flex flex-col justify-between';
+                card.innerHTML = `
+                    <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+                        <i data-lucide="arrow-up-circle" class="w-4 h-4 text-emerald-400"></i>
+                        <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Registro de Saque</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <button onclick="registrar('SAQUE', '++')" class="py-10 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xl md:text-2xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-2">
+                            <span class="text-[10px] uppercase tracking-widest opacity-60">Punto Directo</span>
+                            <span>ACE (++)</span>
+                        </button>
+                        <button onclick="registrar('SAQUE', '=')" class="py-10 bg-blue-600 hover:bg-blue-500 text-white font-black text-xl md:text-2xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-2">
+                            <span class="text-[10px] uppercase tracking-widest opacity-60">En Juego</span>
+                            <span>SAQUE (=)</span>
+                        </button>
+                        <button onclick="registrar('SAQUE', '--')" class="py-10 bg-rose-600 hover:bg-rose-500 text-white font-black text-xl md:text-2xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-2">
+                            <span class="text-[10px] uppercase tracking-widest opacity-60">Falla / Red / Fuera</span>
+                            <span>ERROR (--)</span>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            } else if (fase === 'K1') {
+                // Recepción
+                const card = document.createElement('div');
+                card.className = 'col-span-full bg-[#090d16] p-8 rounded-3xl border border-slate-800/80 space-y-6 shadow-inner flex flex-col justify-between';
+                card.innerHTML = `
+                    <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+                        <i data-lucide="shield" class="w-4 h-4 text-emerald-400"></i>
+                        <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Registro de Recepción</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <button onclick="registrar('RECEPCION', '++')" class="py-10 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xl md:text-2xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-2">
+                            <span class="text-[10px] uppercase tracking-widest opacity-60">Excelente / Colocación</span>
+                            <span>PERFECTA (++)</span>
+                        </button>
+                        <button onclick="registrar('RECEPCION', '=')" class="py-10 bg-blue-600 hover:bg-blue-500 text-white font-black text-xl md:text-2xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-2">
+                            <span class="text-[10px] uppercase tracking-widest opacity-60">En Juego</span>
+                            <span>RECEPCIÓN (=)</span>
+                        </button>
+                        <button onclick="registrar('RECEPCION', '--')" class="py-10 bg-rose-600 hover:bg-rose-500 text-white font-black text-xl md:text-2xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-2">
+                            <span class="text-[10px] uppercase tracking-widest opacity-60">Punto Rival Directo</span>
+                            <span>ERROR (--)</span>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            } else {
+                // Rally (K2 o cualquier otra fase de juego continuo)
+                const playerObj = state.jugadora_id ? allJugadoras.find(x => String(x.id) === String(state.jugadora_id)) : null;
+                const esColocadora = playerObj && playerObj.posicion.toUpperCase() === 'COLOCADORA';
+
+                if (esColocadora) {
+                    const cardCol = document.createElement('div');
+                    cardCol.className = 'col-span-full bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between';
+                    cardCol.innerHTML = `
+                        <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 text-blue-400"></i>
+                            <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Acción de Colocación</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <button onclick="registrar('COLOCACION', '++')" class="py-8 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
+                                <span class="text-[9px] uppercase tracking-widest opacity-60">Colocación Perfecta</span>
+                                <span>ÉXITO (++)</span>
+                            </button>
+                            <button onclick="registrar('COLOCACION', '=')" class="py-8 bg-[#1e293b] border border-slate-850 hover:bg-slate-750 text-slate-200 font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
+                                <span class="text-[9px] uppercase tracking-widest opacity-60">Pelota en Juego</span>
+                                <span>JUEGO (=)</span>
+                            </button>
+                            <button onclick="registrar('COLOCACION', '--')" class="py-8 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
+                                <span class="text-[9px] uppercase tracking-widest opacity-60">Doble / Acompañamiento</span>
+                                <span>ERROR (--)</span>
+                            </button>
+                        </div>
+                    `;
+                    grid.appendChild(cardCol);
+                }
+
+                const cardAtaque = document.createElement('div');
+                cardAtaque.className = 'col-span-full bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between';
+                cardAtaque.innerHTML = `
+                    <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+                        <i data-lucide="zap" class="w-4 h-4 text-emerald-400"></i>
+                        <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Acción de Ataque</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <button onclick="registrar('ATAQUE', '++')" class="py-8 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
+                            <span class="text-[9px] uppercase tracking-widest opacity-60">Ataque Punto</span>
+                            <span>PUNTO (++)</span>
+                        </button>
+                        <button onclick="registrar('ATAQUE', '=')" class="py-8 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
+                            <span class="text-[9px] uppercase tracking-widest opacity-60">En Juego / Continuidad</span>
+                            <span>JUEGO (=)</span>
+                        </button>
+                        <button onclick="registrar('ATAQUE', '--')" class="py-8 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
+                            <span class="text-[9px] uppercase tracking-widest opacity-60">Ataque Fallado</span>
+                            <span>ERROR (--)</span>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(cardAtaque);
+
+                const cardDef = document.createElement('div');
+                cardDef.className = 'col-span-full bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between';
+                cardDef.innerHTML = `
+                    <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+                        <i data-lucide="shield" class="w-4 h-4 text-amber-500"></i>
+                        <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Acción de Defensa / Bloqueo</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <button onclick="registrarDefensaBloqueo('++')" class="py-8 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
+                            <span class="text-[9px] uppercase tracking-widest opacity-60">Defensa Positiva / Bloqueo Punto</span>
+                            <span>ÉXITO (++)</span>
+                        </button>
+                        <button onclick="registrarDefensaBloqueo('=')" class="py-8 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
+                            <span class="text-[9px] uppercase tracking-widest opacity-60">Pelota en Juego</span>
+                            <span>JUEGO (=)</span>
+                        </button>
+                        <button onclick="registrarDefensaBloqueo('--')" class="py-8 bg-rose-600 hover:bg-rose-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
+                            <span class="text-[9px] uppercase tracking-widest opacity-60">Falla / Error</span>
+                            <span>ERROR (--)</span>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(cardDef);
+            }
+            if (window.lucide) lucide.createIcons();
+        } else {
+            Object.entries(ACCIONES_CONFIG).forEach(([accionKey, config]) => {
+                const card = document.createElement('div');
+                card.className = 'bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between';
+                
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'text-xs font-black text-slate-400 uppercase tracking-widest block';
+                labelSpan.innerText = config.label;
+                card.appendChild(labelSpan);
+
+                const buttonsContainer = document.createElement('div');
+                
+                if (accionKey === 'SAQUE') {
+                    buttonsContainer.className = 'grid grid-cols-4 gap-2';
+                } else {
+                    buttonsContainer.className = 'grid grid-cols-5 gap-1';
+                }
+
+                config.avanzado.forEach(btn => {
+                    const button = document.createElement('button');
+                    button.className = `py-5 font-black text-lg rounded-xl active:scale-95 transition-all shadow-md ${btn.class}`;
+                    button.title = btn.title;
+                    button.innerText = btn.label;
+                    button.onclick = () => registrar(accionKey, btn.calidad);
+                    buttonsContainer.appendChild(button);
+                });
+
+                card.appendChild(buttonsContainer);
+                grid.appendChild(card);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+
+    function cambiarModoScout(modo) {
+        state.modo_scout = modo;
+
+        const btnRapido = document.getElementById('btn-modo-rapido');
+        const btnAvanzado = document.getElementById('btn-modo-avanzado');
+
+        if (modo === 'rapido') {
+            btnRapido.className = 'px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md';
+            btnAvanzado.className = 'px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white';
+        } else {
+            btnRapido.className = 'px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white';
+            btnAvanzado.className = 'px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md';
+        }
+
+        renderBotonerasAcciones();
+        showToast(`⚡ Modo de scout cambiado a: ${modo === 'rapido' ? 'RÁPIDO' : 'AVANZADO'}`);
     }
 </script>
 {% endblock %}
