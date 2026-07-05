@@ -6,6 +6,7 @@ app_name = 'stats_app'
 urlpatterns = [
     # Dashboard y CRUDs de administración
     path('', views.DashboardView.as_view(), name='dashboard'),
+    path('configuracion/', views.ConfiguracionView.as_view(), name='configuracion'),
     path('equipo/nuevo/', views.EquipoCreateView.as_view(), name='equipo_nuevo'),
     path('equipo/<int:pk>/editar/', views.EquipoUpdateView.as_view(), name='equipo_editar'),
     path('equipo/<int:pk>/eliminar/', views.EquipoDeleteView.as_view(), name='equipo_eliminar'),

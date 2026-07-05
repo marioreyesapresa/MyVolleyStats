@@ -4,6 +4,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from ..models import Equipo, Jugadora, Partido
 
+class ConfiguracionView(LoginRequiredMixin, View):
+    template_name = 'stats_app/configuracion.html'
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+
 class DashboardView(LoginRequiredMixin, ListView):
     model = Partido
     template_name = 'stats_app/dashboard.html'

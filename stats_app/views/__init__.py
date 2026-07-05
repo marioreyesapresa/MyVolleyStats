@@ -8,7 +8,7 @@ from .informes import (
     DescargarResumenPDF, DescargarInformeCompletoPDF
 )
 from .administracion import (
-    DashboardView,
+    ConfiguracionView, DashboardView,
     EquipoCreateView, EquipoUpdateView, EquipoDeleteView, EquipoListView,
     JugadoraCreateView, JugadoraUpdateView, JugadoraDeleteView,
     PartidoCreateView, PartidoUpdateView, PartidoDeleteView

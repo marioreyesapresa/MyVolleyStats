@@ -4,13 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}Scout Rotation Pro | Voley Técnico{% endblock %}</title>
+    <script>
+        (function () {
+            var t = localStorage.getItem('voley_theme') || 'oscuro';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
-        .sidebar-dark { background-color: #090d16; }
-        .sidebar-active-dark { background-color: rgba(255, 255, 255, 0.08); border-left: 4px solid #10b981; color: #10b981 !important; }
+        :root, html[data-theme="oscuro"] {
+            --v-bg: #0b0f19;
+            --v-surface: #090d16;
+            --v-card: #121824;
+            --v-elevated: #1e293b;
+            --v-input: #1a202c;
+            --v-accent: #10b981;
+            --v-accent-text: #34d399;
+        }
+        html[data-theme="noche"] {
+            --v-bg: #070b14;
+            --v-surface: #0a1020;
+            --v-card: #0f172a;
+            --v-elevated: #1e3a5f;
+            --v-input: #152238;
+            --v-accent: #3b82f6;
+            --v-accent-text: #60a5fa;
+        }
+        html[data-theme="carbon"] {
+            --v-bg: #0f0f0f;
+            --v-surface: #141414;
+            --v-card: #1c1c1c;
+            --v-elevated: #2a2a2a;
+            --v-input: #252525;
+            --v-accent: #a3a3a3;
+            --v-accent-text: #d4d4d4;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--v-bg); color: #f1f5f9; }
+        .sidebar-dark { background-color: var(--v-surface); }
+        .sidebar-active-dark {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-left: 4px solid var(--v-accent);
+            color: var(--v-accent-text) !important;
+        }
+
+        .bg-\[\#0b0f19\] { background-color: var(--v-bg) !important; }
+        .bg-\[\#090d16\] { background-color: var(--v-surface) !important; }
+        .bg-\[\#121824\] { background-color: var(--v-card) !important; }
+        .bg-\[\#1e293b\] { background-color: var(--v-elevated) !important; }
+        .bg-\[\#1a202c\] { background-color: var(--v-input) !important; }
+        .bg-\[\#0f172a\] { background-color: var(--v-card) !important; }
+
+        html[data-theme="noche"] .text-emerald-400 { color: var(--v-accent-text) !important; }
+        html[data-theme="noche"] .text-emerald-500 { color: var(--v-accent) !important; }
+        html[data-theme="carbon"] .text-emerald-400 { color: var(--v-accent-text) !important; }
+        html[data-theme="carbon"] .text-emerald-500 { color: var(--v-accent) !important; }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col md:flex-row bg-[#0b0f19] text-[#f1f5f9]">
@@ -44,6 +94,10 @@
                 <a href="{% url 'stats_app:equipos_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all {% if request.resolver_match.view_name == 'stats_app:equipos_list' %}sidebar-active-dark{% else %}text-slate-400{% endif %}">
                     <i data-lucide="users" class="w-5 h-5 {% if request.resolver_match.view_name == 'stats_app:equipos_list' %}text-emerald-400{% else %}text-slate-400{% endif %}"></i>
                     <span class="font-medium text-sm">Gestión de Equipos</span>
+                </a>
+                <a href="{% url 'stats_app:configuracion' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all {% if request.resolver_match.view_name == 'stats_app:configuracion' %}sidebar-active-dark{% else %}text-slate-400{% endif %}">
+                    <i data-lucide="settings" class="w-5 h-5 {% if request.resolver_match.view_name == 'stats_app:configuracion' %}text-emerald-400{% else %}text-slate-400{% endif %}"></i>
+                    <span class="font-medium text-sm">Configuración</span>
                 </a>
                 {% if partido %}
                 <div class="h-px bg-slate-800/50 my-3"></div>
@@ -94,6 +148,10 @@
             <a href="{% url 'stats_app:equipos_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all {% if request.resolver_match.view_name == 'stats_app:equipos_list' %}sidebar-active-dark{% else %}text-slate-400{% endif %}">
                 <i data-lucide="users" class="w-5 h-5 {% if request.resolver_match.view_name == 'stats_app:equipos_list' %}text-emerald-400{% else %}text-slate-400{% endif %}"></i>
                 <span class="font-medium text-sm">Gestión de Equipos</span>
+            </a>
+            <a href="{% url 'stats_app:configuracion' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all {% if request.resolver_match.view_name == 'stats_app:configuracion' %}sidebar-active-dark{% else %}text-slate-400{% endif %}">
+                <i data-lucide="settings" class="w-5 h-5 {% if request.resolver_match.view_name == 'stats_app:configuracion' %}text-emerald-400{% else %}text-slate-400{% endif %}"></i>
+                <span class="font-medium text-sm">Configuración</span>
             </a>
             
             {% if partido %}
@@ -173,6 +231,13 @@
     <script>
         lucide.createIcons();
 
+        window.VoleyTheme = {
+            apply(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('voley_theme', theme);
+            }
+        };
+
         // Drawer logic
         const menuBtnDark = document.getElementById('mobile-menu-btn-dark');
         const drawerDark = document.getElementById('mobile-drawer-dark');
@@ -205,14 +270,20 @@
             localStorage.setItem('voley_sidebar_collapsed', collapsed ? '1' : '0');
         }
 
+        window.VoleySidebar = { apply: applySidebarState };
+
         sidebarToggleTriggers.forEach(btn => {
             btn.addEventListener('click', () => {
                 applySidebarState(!desktopSidebar.classList.contains('w-0'));
             });
         });
 
-        if (localStorage.getItem('voley_sidebar_collapsed') === '1') {
-            applySidebarState(true);
+        const savedSidebar = localStorage.getItem('voley_sidebar_collapsed');
+        if (savedSidebar !== null) {
+            applySidebarState(savedSidebar === '1');
+        } else {
+            const sidebarDefault = localStorage.getItem('voley_sidebar_collapsed_default');
+            if (sidebarDefault === '1') applySidebarState(true);
         }
     </script>
 </body>

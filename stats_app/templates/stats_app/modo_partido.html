@@ -175,8 +175,9 @@
                     <!-- Rotación Inicial R1-R6 / R1-R4 -->
                     <div class="flex-1 space-y-2">
                         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
-                            Rotación Inicial
+                            Rotación Inicial del Set
                         </label>
+                        <p class="text-[8px] text-slate-500 leading-snug">Solo al guardar el <strong class="text-slate-400">primer sexteto</strong>. No mueve jugadoras durante el partido.</p>
                         <div class="grid {% if partido.modalidad == 'MINIVOLEY' %}grid-cols-4{% else %}grid-cols-6{% endif %} gap-1" id="rot-init-selector">
                             {% if partido.modalidad == 'MINIVOLEY' %}
                                 {% for r in "1234" %}
@@ -197,7 +198,17 @@
                             {% endif %}
                         </div>
                     </div>
-                    <!-- Divisor vertical -->
+                    <div class="w-px bg-slate-800 self-stretch"></div>
+                    <!-- R actual durante el partido (solo lectura) -->
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
+                            R en Juego
+                        </label>
+                        <p class="text-[8px] text-slate-500 leading-snug">Cambia al rotar en pista o en el scout.</p>
+                        <div id="pizarra-rot-actual" class="py-2.5 px-4 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-400 font-black text-sm text-center">
+                            R1
+                        </div>
+                    </div>
                     <div class="w-px bg-slate-800 self-stretch"></div>
                     <!-- Estado Inicial K0/K1 -->
                     <div class="space-y-2">
@@ -499,6 +510,9 @@
                 </button>
             </div>
 
+            <!-- Líberos: dos rectángulos (izq / der) encima del campo -->
+            <div id="libero-quick-bar" class="flex-shrink-0 hidden grid grid-cols-2 gap-2"></div>
+
             <!-- Contenedor del Grid Dinámico de Zonas del Campo (Poblado por JS) -->
             <div id="gameplay-grid-container" class="flex-1 min-h-0">
                 <!-- Poblado dinámicamente por renderGameplayGrid() -->
@@ -670,118 +684,120 @@
         </div>
 
         <!-- 6. PESTAÑA: [File] -->
-        <div id="rapido-file-content" class="rapido-tab-content hidden space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Columna Izquierda: Saved Match files -->
-                <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
-                    <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Partidos Guardados</h3>
-                    <div class="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+        <div id="rapido-file-content" class="rapido-tab-content hidden space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Partidos del equipo -->
+                <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+                    <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Partidos del Equipo</h3>
+                    <a href="{% url 'stats_app:modo_partido' partido.id %}" class="block bg-blue-600/10 border border-blue-500/30 rounded-xl p-3.5">
+                        <div class="font-black text-xs text-white truncate">vs {{ partido.rival }} <span class="text-blue-400">(actual)</span></div>
+                        <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
+                            <span>{{ partido.fecha|date:"d/m/Y" }}</span>
+                            <span class="font-bold text-blue-400 uppercase">{{ partido.modalidad }}</span>
+                        </div>
+                    </a>
+                    <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
                         {% if partidos_guardados %}
                             {% for p in partidos_guardados %}
                                 <a href="{% url 'stats_app:modo_partido' p.id %}" class="block bg-slate-900 border border-slate-800 rounded-xl p-3.5 hover:border-slate-700 transition-all">
-                                    <div class="font-black text-xs text-white truncate">{{ p.rival }}</div>
+                                    <div class="font-black text-xs text-white truncate">vs {{ p.rival }}</div>
                                     <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
                                         <span>{{ p.fecha|date:"d/m/Y" }}</span>
-                                        <span class="font-bold text-blue-400 uppercase">{{ p.modalidad }}</span>
+                                        <span class="font-bold text-slate-400 uppercase">{{ p.modalidad }}</span>
                                     </div>
                                 </a>
                             {% endfor %}
                         {% else %}
-                            <p class="text-xs text-slate-500 text-center py-10 font-bold uppercase tracking-wider">No se han encontrado partidos guardados</p>
+                            <p class="text-xs text-slate-500 text-center py-6 font-bold uppercase tracking-wider">No hay otros partidos de este equipo</p>
                         {% endif %}
                     </div>
                 </div>
 
-                <!-- Columna Central: Botones verticales -->
-                <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-col justify-center space-y-4">
-                    <button onclick="showToast('🔍 Filtrando archivos...')" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="filter" class="w-4 h-4"></i>
-                        <span>Filtrar Partidos</span>
-                    </button>
-                    <button onclick="importFromURL()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="link" class="w-4 h-4"></i>
-                        <span>Importar desde URL</span>
-                    </button>
-                    <button onclick="showToast('☁️ Conectando con Dropbox...')" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="cloud-lightning" class="w-4 h-4"></i>
-                        <span>Descargar de Dropbox</span>
-                    </button>
-                    <button onclick="showToast('📦 Respaldando todo en Dropbox...')" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="copy" class="w-4 h-4"></i>
-                        <span>Copiar TODO a Dropbox</span>
+                <!-- Exportar -->
+                <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+                    <h3 class="text-sm font-black text-emerald-400 uppercase tracking-widest border-b border-slate-800 pb-2">Exportar</h3>
+                    <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Descargar PDF</span>
+                    </a>
+                    <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-400"></i>
+                        <span>Ver Informe Completo</span>
+                    </a>
+                    <button onclick="exportData()" class="w-full py-4 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Exportar JSON</span>
                     </button>
                 </div>
+            </div>
 
-                <!-- Columna Derecha: Bloques grandes -->
-                <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-col justify-between space-y-4">
-                    <button onclick="saveDataAdjust()" class="py-6 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex flex-col items-center justify-center gap-2 flex-1 min-h-[100px]">
-                        <i data-lucide="save" class="w-6 h-6"></i>
-                        <span>Guardar Datos</span>
+            <!-- Acciones -->
+            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <a href="{% url 'stats_app:dashboard' %}" class="py-3.5 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span>Ir al Dashboard</span>
+                    </a>
+                    <a href="{% url 'stats_app:partido_nuevo' %}" class="py-3.5 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Nuevo Partido</span>
+                    </a>
+                    <button onclick="confirmarFinalizarPartido()" class="py-3.5 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="flag" class="w-4 h-4"></i>
+                        <span>Finalizar Partido</span>
                     </button>
-                    <div class="grid grid-cols-2 gap-4">
-                        <button onclick="exportData()" class="py-4 bg-slate-900 border border-slate-800 hover:border-slate-750 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex flex-col items-center justify-center gap-1.5">
-                            <i data-lucide="download" class="w-4 h-4"></i>
-                            <span>Exportar Datos</span>
-                        </button>
-                        <button onclick="sendDataEmail()" class="py-4 bg-slate-900 border border-slate-800 hover:border-slate-750 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex flex-col items-center justify-center gap-1.5">
-                            <i data-lucide="mail" class="w-4 h-4"></i>
-                            <span>Enviar por Email</span>
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <button onclick="clearStatsRetainRoster()" class="py-4 bg-orange-950/20 hover:bg-orange-900 border-2 border-orange-850/50 hover:border-orange-650 text-orange-400 hover:text-white font-black text-[9px] uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex flex-col items-center justify-center gap-1">
-                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                            <span>Limpiar Stats -- Mantener Plantilla</span>
-                        </button>
-                        <button onclick="clearEverything()" class="py-4 bg-rose-950/20 hover:bg-rose-900 border-2 border-rose-800/30 hover:border-rose-700 text-rose-400 hover:text-white font-black text-[9px] uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex flex-col items-center justify-center gap-1">
-                            <i data-lucide="trash" class="w-4 h-4"></i>
-                            <span>Limpiar Todo</span>
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 7. PESTAÑA: [Settings] -->
-        <div id="rapido-settings-content" class="rapido-tab-content hidden space-y-6">
-            <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-6">
-                <div>
-                    <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-2">Personalización Básica</h3>
+        <div id="rapido-settings-content" class="rapido-tab-content hidden space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Partido -->
+                <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+                    <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Partido</h3>
+                    <a href="{% url 'stats_app:partido_editar' partido.id %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="pencil" class="w-4 h-4 text-blue-400"></i>
+                        <span>Editar Partido</span>
+                    </a>
+                    <button onclick="toggleModal('modal-config')" class="w-full py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Configurar Set y Alineación</span>
+                    </button>
+                    <p class="text-[10px] text-slate-500 font-bold px-1">Edita rival, fecha y modalidad. Desde el modal puedes elegir set activo y jugadoras en pista.</p>
                 </div>
-                <div class="divide-y divide-slate-800">
-                    <div onclick="showToast('Configurando Game Play Position Content')" class="flex justify-between items-center py-4 cursor-pointer hover:bg-slate-900/40 px-2 rounded-xl transition-all">
-                        <span class="text-sm text-slate-200 font-bold">Contenido de posición en pista</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
-                    </div>
-                    <div onclick="showToast('Configurando Player Alignment')" class="flex justify-between items-center py-4 cursor-pointer hover:bg-slate-900/40 px-2 rounded-xl transition-all">
-                        <span class="text-sm text-slate-200 font-bold">Alineación de jugadoras</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
-                    </div>
-                    <div onclick="showToast('Configurando Roster')" class="flex justify-between items-center py-4 cursor-pointer hover:bg-slate-900/40 px-2 rounded-xl transition-all">
-                        <span class="text-sm text-slate-200 font-bold">Plantilla</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
-                    </div>
-                    <div onclick="showToast('Configurando Summary Tables')" class="flex justify-between items-center py-4 cursor-pointer hover:bg-slate-900/40 px-2 rounded-xl transition-all">
-                        <span class="text-sm text-slate-200 font-bold">Tablas de resumen</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
-                    </div>
-                    <div onclick="showToast('Configurando Behavioral Rules')" class="flex justify-between items-center py-4 cursor-pointer hover:bg-slate-900/40 px-2 rounded-xl transition-all">
-                        <span class="text-sm text-slate-200 font-bold">Reglas de comportamiento</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
-                    </div>
-                    <div onclick="showToast('Configurando Backup')" class="flex justify-between items-center py-4 cursor-pointer hover:bg-slate-900/40 px-2 rounded-xl transition-all">
-                        <span class="text-sm text-slate-200 font-bold">Copia de seguridad</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
-                    </div>
-                    <div onclick="showToast('Configurando Colors')" class="flex justify-between items-center py-4 cursor-pointer hover:bg-slate-900/40 px-2 rounded-xl transition-all">
-                        <span class="text-sm text-slate-200 font-bold">Colores</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
-                    </div>
-                    <div onclick="showToast('Configurando Languages')" class="flex justify-between items-center py-4 cursor-pointer hover:bg-slate-900/40 px-2 rounded-xl transition-all">
-                        <span class="text-sm text-slate-200 font-bold">Idiomas</span>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
-                    </div>
+
+                <!-- Equipo -->
+                <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+                    <h3 class="text-sm font-black text-violet-400 uppercase tracking-widest border-b border-slate-800 pb-2">Equipo</h3>
+                    <a href="{% url 'stats_app:equipo_editar' partido.equipo.id %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="users" class="w-4 h-4 text-violet-400"></i>
+                        <span>Gestionar Plantilla</span>
+                    </a>
+                    <a href="{% url 'stats_app:equipos_list' %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="list" class="w-4 h-4 text-slate-400"></i>
+                        <span>Ver Todos los Equipos</span>
+                    </a>
+                    <p class="text-[10px] text-slate-500 font-bold px-1">{{ partido.equipo.nombre }} — añade, edita o elimina jugadoras del equipo.</p>
                 </div>
+            </div>
+
+            <!-- Modo de scout -->
+            <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-2">Modo de Scout</h3>
+                <div class="flex items-center bg-[#090d16] p-1 rounded-2xl border border-slate-800 shadow-inner max-w-xs mx-auto">
+                    <button id="settings-btn-modo-rapido"
+                            onclick="cambiarModoScout('rapido')"
+                            class="flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md">
+                        Rápido
+                    </button>
+                    <button id="settings-btn-modo-avanzado"
+                            onclick="cambiarModoScout('avanzado')"
+                            class="flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white">
+                        Avanzado
+                    </button>
+                </div>
+                <p class="text-[10px] text-slate-500 font-bold text-center">Rápido: cuadrícula por zonas. Avanzado: matriz completa de acciones.</p>
             </div>
         </div>
     </div>
@@ -1111,6 +1127,28 @@
     let selectedRotInit    = 1;    // Rotación inicial del set activo (R1-R6 / R1-R4)
     let selectedEstadoInicial = 'K1'; // Estado inicial del set: 'K0' (saque) o 'K1' (recepción)
 
+    // Normaliza IDs de jugadora (template = string, API = number)
+    function pid(id) {
+        return (id === null || id === undefined || id === '') ? null : String(id);
+    }
+    function samePlayer(a, b) {
+        return pid(a) === pid(b);
+    }
+
+    function rotStorageKey(suffix) {
+        return `partido_${state.partido_id}_set_${state.set_numero}_${suffix}`;
+    }
+    function saveRotacionActual(r) {
+        state.rotacion_num = r;
+        localStorage.setItem(rotStorageKey('rotacion_actual'), r);
+        updateRotBadge();
+    }
+    function saveRotacionInicial(r) {
+        selectedRotInit = r;
+        localStorage.setItem(rotStorageKey('rotacion_inicial'), r);
+        selectRotInit(r);
+    }
+
     // Pre-cargar historial inicial
     const historialInicial = {{ historial_inicial|safe }};
 
@@ -1127,7 +1165,8 @@
         state.prefs.vibracion        = getBool('voley_pref_vibracion', true);
         state.prefs.confirmarBorrado = getBool('voley_pref_confirmar_borrado', true);
 
-        const savedModo = localStorage.getItem(`voley_modo_scout_${state.partido_id}`);
+        const savedModo = localStorage.getItem(`voley_modo_scout_${state.partido_id}`)
+            || localStorage.getItem('voley_modo_scout_default');
         if (savedModo === 'rapido' || savedModo === 'avanzado') {
             state.modo_scout = savedModo;
         }
@@ -1296,17 +1335,20 @@
         selectEstadoInicial(savedEstado);  // aplica estado a UI y a state
         // ─────────────────────────────────────────────────
 
-        // ── Restore rotation from localStorage if previously saved ─────────
-        let savedRot = parseInt(
-            localStorage.getItem(`partido_${state.partido_id}_set_${num}_rotacion_init`) || '1'
+        // ── Restore rotation: inicial (referencia) y actual (en juego) ──
+        const legacyRot = localStorage.getItem(rotStorageKey('rotacion_init'));
+        let savedInicial = parseInt(
+            localStorage.getItem(rotStorageKey('rotacion_inicial')) || legacyRot || '1'
         );
-        if (MODALIDAD.toUpperCase() === 'MINIVOLEY' && savedRot > 4) {
-            savedRot = 1;
+        let savedActual = parseInt(
+            localStorage.getItem(rotStorageKey('rotacion_actual')) || legacyRot || String(savedInicial)
+        );
+        if (MODALIDAD.toUpperCase() === 'MINIVOLEY') {
+            if (savedInicial > 4) savedInicial = 1;
+            if (savedActual > 4) savedActual = 1;
         }
-        state.rotacion_num = savedRot;
-        selectedRotInit    = savedRot;
-        // Pre-select the correct button in the selector UI
-        selectRotInit(savedRot);
+        saveRotacionInicial(savedInicial);
+        saveRotacionActual(savedActual);
         // ─────────────────────────────────────────────────
         updateFaseIndicator();
         updateRotBadge();
@@ -1384,6 +1426,7 @@
                     // 2. Update rotation position
                     const newPositions = {
                         set_numero: state.set_numero,
+                        solo_actual: true,
                         pos1: state.rotation.pos1 ? state.rotation.pos1.id : '',
                         pos2: state.rotation.pos2 ? state.rotation.pos2.id : '',
                         pos3: state.rotation.pos3 ? state.rotation.pos3.id : '',
@@ -1423,6 +1466,7 @@
 
                         showToast("✅ Cambio registrado");
                         await renderActivePlayers();
+                        await loadRotation();
                         toggleModal('modal-config');
                         updateFlashboard();
                     } else {
@@ -1625,14 +1669,14 @@
             await renderActivePlayers();
             if (state.rotation) {
                 // Copy backend rotation to local tempLineup state
-                tempLineup.pos1 = state.rotation.pos1 ? state.rotation.pos1.id : null;
-                tempLineup.pos2 = state.rotation.pos2 ? state.rotation.pos2.id : null;
-                tempLineup.pos3 = state.rotation.pos3 ? state.rotation.pos3.id : null;
-                tempLineup.pos4 = state.rotation.pos4 ? state.rotation.pos4.id : null;
-                tempLineup.pos5 = state.rotation.pos5 ? state.rotation.pos5.id : null;
-                tempLineup.pos6 = state.rotation.pos6 ? state.rotation.pos6.id : null;
-                tempLineup.libero1 = state.rotation.libero1 ? state.rotation.libero1.id : null;
-                tempLineup.libero2 = state.rotation.libero2 ? state.rotation.libero2.id : null;
+                tempLineup.pos1 = state.rotation.pos1 ? pid(state.rotation.pos1.id) : null;
+                tempLineup.pos2 = state.rotation.pos2 ? pid(state.rotation.pos2.id) : null;
+                tempLineup.pos3 = state.rotation.pos3 ? pid(state.rotation.pos3.id) : null;
+                tempLineup.pos4 = state.rotation.pos4 ? pid(state.rotation.pos4.id) : null;
+                tempLineup.pos5 = state.rotation.pos5 ? pid(state.rotation.pos5.id) : null;
+                tempLineup.pos6 = state.rotation.pos6 ? pid(state.rotation.pos6.id) : null;
+                tempLineup.libero1 = state.rotation.libero1 ? pid(state.rotation.libero1.id) : null;
+                tempLineup.libero2 = state.rotation.libero2 ? pid(state.rotation.libero2.id) : null;
             } else {
                 clearTempLineupStateOnly();
             }
@@ -1666,7 +1710,7 @@
     }
 
     function selectBenchPlayer(id) {
-        selectedBenchPlayerId = id;
+        selectedBenchPlayerId = pid(id);
         drawBenchPlayers();
     }
 
@@ -1676,14 +1720,19 @@
             return;
         }
 
-        // If this player is already assigned in another zone, remove them from that zone
+        // If this player is already assigned in another zone or como líbero, quitarla
         for (let i = 1; i <= 6; i++) {
-            if (tempLineup[`pos${i}`] === selectedBenchPlayerId) {
+            if (samePlayer(tempLineup[`pos${i}`], selectedBenchPlayerId)) {
                 tempLineup[`pos${i}`] = null;
             }
         }
+        for (let n = 1; n <= 2; n++) {
+            if (samePlayer(tempLineup[`libero${n}`], selectedBenchPlayerId)) {
+                tempLineup[`libero${n}`] = null;
+            }
+        }
 
-        // Assign player to the selected zone
+        // Assign player to the selected zone (replaces whoever was there)
         tempLineup[`pos${zoneNum}`] = selectedBenchPlayerId;
         selectedBenchPlayerId = null;
 
@@ -1750,14 +1799,16 @@
         if (!container) return;
         container.innerHTML = '';
         
-        // Players currently assigned to a zone
-        const assignedIds = Object.values(tempLineup).filter(Boolean);
+        // Players currently assigned to a zone or líbero
+        const assignedIds = new Set(
+            Object.values(tempLineup).filter(Boolean).map(pid)
+        );
         
         allJugadoras.forEach(j => {
             // Skip players already on court
-            if (assignedIds.includes(j.id)) return;
+            if (assignedIds.has(pid(j.id))) return;
             
-            const isActive = (selectedBenchPlayerId === j.id);
+            const isActive = samePlayer(selectedBenchPlayerId, j.id);
             const activeClasses = isActive 
                 ? 'border-blue-500 bg-blue-950/40 text-blue-400 ring-2 ring-blue-500/50' 
                 : 'border-slate-800 hover:border-slate-700 bg-[#161b26] text-white';
@@ -1791,15 +1842,16 @@
     }
 
     function assignPlayerToZone(playerId, zoneNum) {
+        const normalizedId = pid(playerId);
         // Remove player from any other zone they may occupy
         for (let i = 1; i <= 6; i++) {
-            if (tempLineup[`pos${i}`] === playerId) {
+            if (samePlayer(tempLineup[`pos${i}`], normalizedId)) {
                 tempLineup[`pos${i}`] = null;
             }
         }
         // If the target zone already had someone, they go back to bench automatically
         // (drawBenchPlayers will show them since they won't be in tempLineup anymore)
-        tempLineup[`pos${zoneNum}`] = playerId;
+        tempLineup[`pos${zoneNum}`] = normalizedId;
         selectedBenchPlayerId = null;
         drawCourtTempLineup();
         drawBenchPlayers();
@@ -1827,19 +1879,20 @@
     }
     
     function assignLibero(playerId, liberoNum) {
+        const normalizedId = pid(playerId);
         // Remove from positions pos1-pos6
         for (let i = 1; i <= 6; i++) {
-            if (tempLineup[`pos${i}`] === playerId) {
+            if (samePlayer(tempLineup[`pos${i}`], normalizedId)) {
                 tempLineup[`pos${i}`] = null;
             }
         }
         // Remove from other libero slot
         const otherLib = (liberoNum === 1 ? 2 : 1);
-        if (tempLineup[`libero${otherLib}`] === playerId) {
+        if (samePlayer(tempLineup[`libero${otherLib}`], normalizedId)) {
             tempLineup[`libero${otherLib}`] = null;
         }
         
-        tempLineup[`libero${liberoNum}`] = playerId;
+        tempLineup[`libero${liberoNum}`] = normalizedId;
         selectedBenchPlayerId = null;
         
         drawCourtTempLineup();
@@ -1946,8 +1999,10 @@
             showToast("⚠️ El partido está finalizado. No se puede modificar la alineación.");
             return;
         }
+        const esPrimerSexteto = !state.rotation;
         const body = {
             set_numero: state.set_numero,
+            solo_actual: !esPrimerSexteto,
             pos1: tempLineup.pos1 || '',
             pos2: tempLineup.pos2 || '',
             pos3: tempLineup.pos3 || '',
@@ -1986,15 +2041,17 @@
                     `partido_${state.partido_id}_set_${state.set_numero}_estado_init`,
                     selectedEstadoInicial
                 );
-                // ── Solo actualizar estado estadístico (R1-R6) — NUNCA rotar posiciones ──
-                state.rotacion_num = selectedRotInit;
-                localStorage.setItem(
-                    `partido_${state.partido_id}_set_${state.set_numero}_rotacion_init`,
-                    selectedRotInit
-                );
-                updateRotBadge();
+                if (esPrimerSexteto) {
+                    // Primer sexteto: la R seleccionada abajo es la de inicio Y la actual
+                    saveRotacionInicial(selectedRotInit);
+                    saveRotacionActual(selectedRotInit);
+                } else {
+                    // Sustitución / edición en pista: no tocar la R en juego
+                    saveRotacionActual(state.rotacion_num);
+                }
                 const estadoLabel = selectedEstadoInicial === 'K0' ? 'Saque (K0)' : 'Recepción (K1)';
-                showToast(`✅ Alineación guardada — R${selectedRotInit} — ${estadoLabel}`);
+                const rotLabel = esPrimerSexteto ? `R${selectedRotInit}` : `R${state.rotacion_num} (sin cambiar)`;
+                showToast(`✅ Alineación guardada — ${rotLabel} — ${estadoLabel}`);
                 loadRotation();   // refresca pizarra mostrando exactamente lo guardado
             } else {
                 showToast("❌ Error al guardar alineación");
@@ -2053,12 +2110,12 @@
         }
         
         // Synchronize tempLineup positions
-        tempLineup.pos1 = state.rotation.pos1 ? state.rotation.pos1.id : null;
-        tempLineup.pos2 = state.rotation.pos2 ? state.rotation.pos2.id : null;
-        tempLineup.pos3 = state.rotation.pos3 ? state.rotation.pos3.id : null;
-        tempLineup.pos4 = state.rotation.pos4 ? state.rotation.pos4.id : null;
-        tempLineup.pos5 = state.rotation.pos5 ? state.rotation.pos5.id : null;
-        tempLineup.pos6 = state.rotation.pos6 ? state.rotation.pos6.id : null;
+        tempLineup.pos1 = state.rotation.pos1 ? pid(state.rotation.pos1.id) : null;
+        tempLineup.pos2 = state.rotation.pos2 ? pid(state.rotation.pos2.id) : null;
+        tempLineup.pos3 = state.rotation.pos3 ? pid(state.rotation.pos3.id) : null;
+        tempLineup.pos4 = state.rotation.pos4 ? pid(state.rotation.pos4.id) : null;
+        tempLineup.pos5 = state.rotation.pos5 ? pid(state.rotation.pos5.id) : null;
+        tempLineup.pos6 = state.rotation.pos6 ? pid(state.rotation.pos6.id) : null;
     }
 
     // Rotate manual
@@ -2075,21 +2132,17 @@
         // 1. Modificar el estado local de rotación R1-R4 / R1-R6 ANTES de llamar a las funciones de repintado
         if (dir === 'horario') {
             if (MODALIDAD.toUpperCase() === 'MINIVOLEY') {
-                state.rotacion_num = ((parseInt(state.rotacion_num) - 2 + 4) % 4) + 1;
+                saveRotacionActual(((parseInt(state.rotacion_num) - 2 + 4) % 4) + 1);
             } else {
-                state.rotacion_num = ((parseInt(state.rotacion_num) - 2 + 6) % 6) + 1;
+                saveRotacionActual(((parseInt(state.rotacion_num) - 2 + 6) % 6) + 1);
             }
         } else {
             if (MODALIDAD.toUpperCase() === 'MINIVOLEY') {
-                state.rotacion_num = (parseInt(state.rotacion_num) % 4) + 1;
+                saveRotacionActual((parseInt(state.rotacion_num) % 4) + 1);
             } else {
-                state.rotacion_num = (parseInt(state.rotacion_num) % 6) + 1;
+                saveRotacionActual((parseInt(state.rotacion_num) % 6) + 1);
             }
         }
-        localStorage.setItem(
-            `partido_${state.partido_id}_set_${state.set_numero}_rotacion_init`,
-            state.rotacion_num
-        );
         
         // 2. Desplazar las posiciones locales en el frontend
         shiftRotationLocally(dir);
@@ -2143,6 +2196,9 @@
 
         const gpRot = document.getElementById('gameplay-rot-indicator');
         if (gpRot) gpRot.textContent = `ROTACIÓN: R${state.rotacion_num}`;
+
+        const pizarraRot = document.getElementById('pizarra-rot-actual');
+        if (pizarraRot) pizarraRot.textContent = `R${state.rotacion_num}`;
     }
 
     // ── Indicador compacto de Fase (K) para la pestaña Juego del modo rápido ──
@@ -2164,14 +2220,10 @@
         
         // 1. Modificar el estado local de rotación R1-R4 / R1-R6 ANTES de llamar a las funciones de repintado
         if (MODALIDAD.toUpperCase() === 'MINIVOLEY') {
-            state.rotacion_num = ((parseInt(state.rotacion_num) - 2 + 4) % 4) + 1;
+            saveRotacionActual(((parseInt(state.rotacion_num) - 2 + 4) % 4) + 1);
         } else {
-            state.rotacion_num = ((parseInt(state.rotacion_num) - 2 + 6) % 6) + 1;
+            saveRotacionActual(((parseInt(state.rotacion_num) - 2 + 6) % 6) + 1);
         }
-        localStorage.setItem(
-            `partido_${state.partido_id}_set_${state.set_numero}_rotacion_init`,
-            state.rotacion_num
-        );
         
         // 2. Desplazar las posiciones locales en el frontend
         shiftRotationLocally('horario');
@@ -3112,27 +3164,44 @@
         }
     }
 
+    function syncModoScoutButtons(modo) {
+        const activeClass = 'px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md';
+        const inactiveClass = 'px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white';
+        const settingsActiveClass = 'flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md';
+        const settingsInactiveClass = 'flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white';
+
+        const btnRapido = document.getElementById('btn-modo-rapido');
+        const btnAvanzado = document.getElementById('btn-modo-avanzado');
+        const settingsRapido = document.getElementById('settings-btn-modo-rapido');
+        const settingsAvanzado = document.getElementById('settings-btn-modo-avanzado');
+
+        if (modo === 'rapido') {
+            if (btnRapido) btnRapido.className = activeClass;
+            if (btnAvanzado) btnAvanzado.className = inactiveClass;
+            if (settingsRapido) settingsRapido.className = settingsActiveClass;
+            if (settingsAvanzado) settingsAvanzado.className = settingsInactiveClass;
+        } else {
+            if (btnRapido) btnRapido.className = inactiveClass;
+            if (btnAvanzado) btnAvanzado.className = activeClass;
+            if (settingsRapido) settingsRapido.className = settingsInactiveClass;
+            if (settingsAvanzado) settingsAvanzado.className = settingsActiveClass;
+        }
+    }
+
     function cambiarModoScout(modo) {
         state.modo_scout = modo;
         localStorage.setItem(`voley_modo_scout_${state.partido_id}`, modo);
 
-        const btnRapido = document.getElementById('btn-modo-rapido');
-        const btnAvanzado = document.getElementById('btn-modo-avanzado');
         const containerAvanzado = document.getElementById('scout-avanzado-container');
         const containerRapido = document.getElementById('scout-rapido-container');
+        syncModoScoutButtons(modo);
 
         if (modo === 'rapido') {
-            if (btnRapido) btnRapido.className = 'px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md';
-            if (btnAvanzado) btnAvanzado.className = 'px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white';
-            
             if (containerAvanzado) containerAvanzado.classList.add('hidden');
             if (containerRapido) containerRapido.classList.remove('hidden');
             
             switchRapidoTab('gameplay');
         } else {
-            if (btnRapido) btnRapido.className = 'px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white';
-            if (btnAvanzado) btnAvanzado.className = 'px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md';
-            
             if (containerAvanzado) containerAvanzado.classList.remove('hidden');
             if (containerRapido) containerRapido.classList.add('hidden');
             
@@ -3167,6 +3236,9 @@
         }
         if (tabName === 'adjust') {
             renderAjustesPrefs();
+        }
+        if (tabName === 'settings') {
+            syncModoScoutButtons(state.modo_scout);
         }
         if (window.lucide) lucide.createIcons();
     }
@@ -3231,6 +3303,130 @@
         registrar(accion, calidad);
     }
 
+    function getLiberosForGameplay() {
+        if (!PERMITE_LIBERO || !state.rotation) return { l1: null, l2: null };
+        const mk = (n) => {
+            const lib = state.rotation[`libero${n}`];
+            if (!lib) return null;
+            const pj = allJugadoras.find(x => String(x.id) === String(lib.id));
+            return { n, id: lib.id, dorsal: lib.dorsal, nombre: pj ? pj.nombre : `L${n}` };
+        };
+        return { l1: mk(1), l2: mk(2) };
+    }
+
+    function buildLiberoBarCardHtml(lib) {
+        if (!lib) {
+            return `<div class="rounded-xl border border-dashed border-slate-800/60 bg-slate-900/20 min-h-[4.5rem]"></div>`;
+        }
+        const btnSm = 'w-full py-2 px-0.5 text-[9px] sm:text-[10px] font-black rounded-lg transition-all active:scale-95 text-center leading-tight';
+        return `
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-2 py-1.5 flex flex-col gap-1.5 min-w-0">
+                <div class="flex items-center gap-2 border-b border-amber-500/20 pb-1">
+                    <div class="flex-shrink-0 text-center w-10 sm:w-12">
+                        <span class="text-[8px] font-black text-amber-400/80 uppercase tracking-wider block">L${lib.n}</span>
+                        <span class="text-xs sm:text-sm font-black text-amber-300">#${lib.dorsal}</span>
+                    </div>
+                    <span class="text-[8px] sm:text-[9px] font-bold text-amber-400/80 truncate flex-1">${lib.nombre}</span>
+                </div>
+                <div class="grid grid-cols-3 grid-rows-2 gap-1 min-w-0">
+                    <button onclick="registrarGameplay('RECEPCION', '++', '${lib.id}')" class="${btnSm} bg-emerald-600 hover:bg-emerald-500 text-white">Rec++</button>
+                    <button onclick="registrarGameplay('RECEPCION', '+', '${lib.id}')" class="${btnSm} bg-emerald-600/70 hover:bg-emerald-500 text-white">Rec+</button>
+                    <button onclick="registrarGameplay('RECEPCION', '--', '${lib.id}')" class="${btnSm} bg-rose-600 hover:bg-rose-500 text-white">Rec−</button>
+                    <button onclick="registrarGameplay('DEFENSA', '++', '${lib.id}')" class="${btnSm} bg-emerald-600 hover:bg-emerald-500 text-white">Def++</button>
+                    <button onclick="registrarGameplay('DEFENSA', '+', '${lib.id}')" class="${btnSm} bg-emerald-600/70 hover:bg-emerald-500 text-white">Def+</button>
+                    <button onclick="registrarGameplay('DEFENSA', '--', '${lib.id}')" class="${btnSm} bg-rose-600 hover:bg-rose-500 text-white">Def−</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderLiberoQuickBar() {
+        const container = document.getElementById('libero-quick-bar');
+        if (!container) return;
+
+        const { l1, l2 } = getLiberosForGameplay();
+        if (!l1 && !l2) {
+            container.classList.add('hidden');
+            container.innerHTML = '';
+            return;
+        }
+
+        container.classList.remove('hidden');
+        const soloUna = (l1 && !l2) || (!l1 && l2);
+        container.className = soloUna
+            ? 'flex-shrink-0 grid grid-cols-1 gap-2'
+            : 'flex-shrink-0 grid grid-cols-2 gap-2';
+
+        if (l1 && l2) {
+            container.innerHTML = buildLiberoBarCardHtml(l1) + buildLiberoBarCardHtml(l2);
+        } else {
+            container.innerHTML = buildLiberoBarCardHtml(l1 || l2);
+        }
+    }
+
+    function buildZoneCardHtml(z, btnBase) {
+        const player = state.rotation[`pos${z}`];
+        let pId = '';
+        let pLabel = 'Anónimo (EQ)';
+        if (player) {
+            pId = player.id;
+            const pj = allJugadoras.find(x => String(x.id) === String(player.id));
+            const nombre = pj ? pj.nombre : 'Jugadora';
+            pLabel = `#${player.dorsal} ${nombre}`;
+        }
+        const isServer = (z === 1);
+        const isZagueraSinSaque = (z === 5 || z === 6);
+        const zoneTitle = isServer ? 'Saque (Zona 1)' : `Zona ${z}`;
+
+        let html = `
+            <div class="bg-[#121824] rounded-2xl p-3 md:p-4 border border-slate-800 flex flex-col h-full min-h-0">
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-2 mb-2.5 flex-shrink-0">
+                    <span class="text-[10px] md:text-xs font-black text-blue-400 uppercase tracking-wider">${zoneTitle}</span>
+                    <span class="text-xs md:text-sm font-black text-white truncate max-w-[130px]">${pLabel}</span>
+                </div>
+                <div class="flex flex-col gap-2 flex-1">
+                    <div class="grid grid-cols-3 gap-1.5 flex-1">
+                        <button onclick="registrarGameplay('ATAQUE', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Ataque</button>
+                        <button onclick="registrarGameplay('ATAQUE', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Continuidad</button>
+                        <button onclick="registrarGameplay('ATAQUE', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Ataque</button>
+                    </div>
+        `;
+
+        if (!isZagueraSinSaque && !isServer) {
+            html += `
+                    <div class="grid grid-cols-3 gap-1.5 flex-1">
+                        <button onclick="registrarGameplay('BLOQUEO', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Bloqueo</button>
+                        <button onclick="registrarGameplay('BLOQUEO', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Toque Bloqueo</button>
+                        <button onclick="registrarGameplay('BLOQUEO', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Bloqueo</button>
+                    </div>
+            `;
+        }
+
+        html += `
+                    <div class="grid grid-cols-3 gap-1.5 flex-1">
+                        <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Colocación</button>
+                        <button onclick="registrarGameplay('DEFENSA', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Defensa</button>
+                        <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Colocación</button>
+                    </div>
+        `;
+
+        if (isServer) {
+            html += `
+                    <div class="grid grid-cols-3 gap-1.5 flex-1 border-t border-slate-800/60 pt-2">
+                        <button onclick="registrarGameplay('SAQUE', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Ace Saque</button>
+                        <button onclick="registrarGameplay('SAQUE', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Saque Continuidad</button>
+                        <button onclick="registrarGameplay('SAQUE', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Saque</button>
+                    </div>
+            `;
+        }
+
+        html += `
+                </div>
+            </div>
+        `;
+        return html;
+    }
+
     function renderGameplayGrid() {
         const container = document.getElementById('gameplay-grid-container');
         if (!container) return;
@@ -3241,81 +3437,20 @@
                     Carga o define una alineación en la pestaña "Pizarra de Rotación" para jugar
                 </div>
             `;
+            renderLiberoQuickBar();
             return;
         }
 
-        // Campo unificado (sin sub-recuadros): fila delantera (4,3,2) + fila zaguera (5,6,Saque=1)
         const zonasOrdenadas = [4, 3, 2, 5, 6, 1];
         const btnBase = 'flex-1 flex items-center justify-center px-1.5 text-[11px] sm:text-xs md:text-sm font-black rounded-xl transition-all active:scale-95 text-center leading-tight';
 
         let html = `<div class="grid grid-cols-3 grid-rows-2 gap-3 h-full">`;
-
-        zonasOrdenadas.forEach(z => {
-            const player = state.rotation[`pos${z}`];
-            let pId = '';
-            let pLabel = 'Anónimo (EQ)';
-            if (player) {
-                pId = player.id;
-                const pj = allJugadoras.find(x => String(x.id) === String(player.id));
-                const nombre = pj ? pj.nombre : 'Jugadora';
-                pLabel = `#${player.dorsal} ${nombre}`;
-            }
-            const isServer = (z === 1);
-            const isZagueraSinSaque = (z === 5 || z === 6);
-            const zoneTitle = isServer ? 'Saque (Zona 1)' : `Zona ${z}`;
-
-            html += `
-                <div class="bg-[#121824] rounded-2xl p-3 md:p-4 border border-slate-800 flex flex-col h-full min-h-0">
-                    <div class="flex justify-between items-center border-b border-slate-800/80 pb-2 mb-2.5 flex-shrink-0">
-                        <span class="text-[10px] md:text-xs font-black text-blue-400 uppercase tracking-wider">${zoneTitle}</span>
-                        <span class="text-xs md:text-sm font-black text-white truncate max-w-[130px]">${pLabel}</span>
-                    </div>
-                    <div class="flex flex-col gap-2 flex-1">
-                        <div class="grid grid-cols-3 gap-1.5 flex-1">
-                            <button onclick="registrarGameplay('ATAQUE', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Ataque</button>
-                            <button onclick="registrarGameplay('ATAQUE', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Continuidad</button>
-                            <button onclick="registrarGameplay('ATAQUE', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Ataque</button>
-                        </div>
-            `;
-
-            if (!isZagueraSinSaque && !isServer) {
-                html += `
-                        <div class="grid grid-cols-3 gap-1.5 flex-1">
-                            <button onclick="registrarGameplay('BLOQUEO', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Bloqueo</button>
-                            <button onclick="registrarGameplay('BLOQUEO', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Toque Bloqueo</button>
-                            <button onclick="registrarGameplay('BLOQUEO', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Bloqueo</button>
-                        </div>
-                `;
-            }
-
-            html += `
-                        <div class="grid grid-cols-3 gap-1.5 flex-1">
-                            <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Colocación</button>
-                            <button onclick="registrarGameplay('DEFENSA', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Defensa</button>
-                            <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Colocación</button>
-                        </div>
-            `;
-
-            if (isServer) {
-                html += `
-                        <div class="grid grid-cols-3 gap-1.5 flex-1 border-t border-slate-800/60 pt-2">
-                            <button onclick="registrarGameplay('SAQUE', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Ace Saque</button>
-                            <button onclick="registrarGameplay('SAQUE', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Saque Continuidad</button>
-                            <button onclick="registrarGameplay('SAQUE', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Saque</button>
-                        </div>
-                `;
-            }
-
-            html += `
-                    </div>
-                </div>
-            `;
-        });
-
+        zonasOrdenadas.forEach(z => { html += buildZoneCardHtml(z, btnBase); });
         html += `</div>`;
 
         container.innerHTML = html;
         if (window.lucide) lucide.createIcons();
+        renderLiberoQuickBar();
         resizeGameplayLayout();
     }
 
@@ -3374,40 +3509,46 @@
         }
     }
 
-    function saveDataAdjust() {
-        showToast("💾 Datos sincronizados con el servidor");
-    }
-
     function confirmarFinalSet() {
         if (confirm("¿Estás seguro de que quieres finalizar y guardar este set?")) {
             guardarFinSet();
         }
     }
 
-    function importFromURL() {
-        const url = prompt("Escribe la URL del archivo a importar:");
-        if (url) {
-            showToast(`📥 Importando desde: ${url}...`);
-        }
-    }
-
-    function exportData() {
-        showToast("📤 Datos exportados a JSON");
-    }
-
-    function sendDataEmail() {
-        showToast("✉️ Enviando reporte por email...");
-    }
-
-    function clearStatsRetainRoster() {
-        if (confirm("¿Seguro que quieres borrar estadísticas de este set y mantener la alineación?")) {
-            showToast("🗑️ Estadísticas limpiadas");
-        }
-    }
-
-    function clearEverything() {
-        if (confirm("⚠️ CUIDADO: ¿Seguro que quieres limpiar todo (incluyendo jugadoras en pista)?")) {
-            showToast("🗑️ Todo limpio");
+    async function exportData() {
+        const maxSet = state.reglas?.setDecisivoNumero || 5;
+        const sets = {};
+        try {
+            for (let s = 1; s <= maxSet; s++) {
+                const r = await fetch(`/api/stats/${state.partido_id}/${s}/`);
+                if (!r.ok) continue;
+                const data = await r.json();
+                if (data.status !== 'ok') continue;
+                const hasData = Object.values(data.stats || {}).some(f => f.total > 0);
+                if (hasData) sets[s] = data;
+            }
+            if (Object.keys(sets).length === 0) {
+                showToast('⚠️ No hay estadísticas para exportar');
+                return;
+            }
+            const payload = {
+                partido_id: state.partido_id,
+                equipo: "{{ partido.equipo.nombre|escapejs }}",
+                rival: "{{ partido.rival|escapejs }}",
+                fecha: "{{ partido.fecha|date:'Y-m-d' }}",
+                exportado_en: new Date().toISOString(),
+                sets
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `partido_${state.partido_id}_stats.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📤 JSON exportado correctamente');
+        } catch (e) {
+            showToast('❌ Error al exportar JSON');
         }
     }
 </script>

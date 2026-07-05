@@ -37,7 +37,10 @@ class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
             print(f"DEBUG: Data recibida: {data}")
 
             def update_rot(es_inicial):
-                rot = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=es_inicial).first()
+                qs = RotacionSet.objects.filter(
+                    partido_id=partido_id, set_numero=set_n, es_inicial=es_inicial
+                )
+                rot = qs.order_by('-id').first() if not es_inicial else qs.first()
                 if not rot:
                     rot = RotacionSet(partido_id=partido_id, set_numero=set_n, es_inicial=es_inicial)
                 
@@ -52,8 +55,13 @@ class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
                 rot.save()
                 return rot
 
-            update_rot(True)
-            update_rot(False)
+            # Durante el partido (sustituciones, edición en pista) solo se actualiza
+            # la rotación actual; la alineación inicial (es_inicial=True) se conserva.
+            if data.get('solo_actual'):
+                update_rot(False)
+            else:
+                update_rot(True)
+                update_rot(False)
             
             return JsonResponse({'status': 'ok'})
         except Exception as e:

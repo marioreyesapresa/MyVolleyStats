@@ -1,0 +1,169 @@
+{% extends 'stats_app/base_voley.html' %}
+
+{% block title %}Configuración | Voley Stats{% endblock %}
+{% block header_title %}Configuración de la App{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-3xl">
+    <p class="text-sm text-slate-400">Personaliza la apariencia y el comportamiento del scout en vivo. Los cambios se guardan en este navegador.</p>
+
+    <!-- Apariencia -->
+    <section class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+        <h2 class="text-sm font-black text-emerald-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex items-center gap-2">
+            <i data-lucide="palette" class="w-4 h-4"></i>
+            Apariencia
+        </h2>
+        <p class="text-xs text-slate-500">Elige el tema de color de la interfaz.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="theme-picker">
+            <button type="button" data-theme="oscuro" onclick="selectTheme('oscuro')" class="theme-option rounded-2xl border-2 border-transparent p-4 text-left transition-all hover:scale-[1.02] active:scale-95">
+                <div class="flex gap-1.5 mb-3">
+                    <span class="w-8 h-8 rounded-lg bg-[#0b0f19] border border-slate-700"></span>
+                    <span class="w-8 h-8 rounded-lg bg-[#121824] border border-slate-700"></span>
+                    <span class="w-8 h-8 rounded-lg bg-emerald-600"></span>
+                </div>
+                <span class="text-sm font-black text-white">Oscuro</span>
+                <span class="block text-[10px] text-slate-500 mt-0.5">Tema por defecto</span>
+            </button>
+            <button type="button" data-theme="noche" onclick="selectTheme('noche')" class="theme-option rounded-2xl border-2 border-transparent p-4 text-left transition-all hover:scale-[1.02] active:scale-95">
+                <div class="flex gap-1.5 mb-3">
+                    <span class="w-8 h-8 rounded-lg bg-[#070b14] border border-blue-900/50"></span>
+                    <span class="w-8 h-8 rounded-lg bg-[#0f172a] border border-blue-900/50"></span>
+                    <span class="w-8 h-8 rounded-lg bg-blue-600"></span>
+                </div>
+                <span class="text-sm font-black text-white">Azul Noche</span>
+                <span class="block text-[10px] text-slate-500 mt-0.5">Tonos azul profundo</span>
+            </button>
+            <button type="button" data-theme="carbon" onclick="selectTheme('carbon')" class="theme-option rounded-2xl border-2 border-transparent p-4 text-left transition-all hover:scale-[1.02] active:scale-95">
+                <div class="flex gap-1.5 mb-3">
+                    <span class="w-8 h-8 rounded-lg bg-[#0f0f0f] border border-neutral-700"></span>
+                    <span class="w-8 h-8 rounded-lg bg-[#1c1c1c] border border-neutral-700"></span>
+                    <span class="w-8 h-8 rounded-lg bg-neutral-400"></span>
+                </div>
+                <span class="text-sm font-black text-white">Carbón</span>
+                <span class="block text-[10px] text-slate-500 mt-0.5">Grises neutros</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Scout en vivo -->
+    <section class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-5">
+        <h2 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex items-center gap-2">
+            <i data-lucide="zap" class="w-4 h-4"></i>
+            Scout en Vivo
+        </h2>
+
+        <label class="flex items-center justify-between cursor-pointer gap-4">
+            <div>
+                <span class="text-sm font-bold text-slate-200">Modo de scout por defecto</span>
+                <p class="text-[10px] text-slate-500 mt-0.5">Se aplica al abrir un partido nuevo (si no tienes preferencia guardada para ese partido).</p>
+            </div>
+            <div class="flex items-center bg-[#090d16] p-1 rounded-xl border border-slate-800 shadow-inner flex-shrink-0">
+                <button type="button" id="cfg-modo-rapido" onclick="setScoutDefault('rapido')" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">Rápido</button>
+                <button type="button" id="cfg-modo-avanzado" onclick="setScoutDefault('avanzado')" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">Avanzado</button>
+            </div>
+        </label>
+
+        <label class="flex items-center justify-between cursor-pointer gap-4">
+            <span class="text-sm font-bold text-slate-200">Auto-rotación al ganar el saque</span>
+            <div class="relative flex-shrink-0">
+                <input type="checkbox" id="cfg-auto-rotacion" class="sr-only peer" onchange="setAppPref('voley_pref_auto_rotacion', this.checked)">
+                <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+            </div>
+        </label>
+
+        <label class="flex items-center justify-between cursor-pointer gap-4">
+            <span class="text-sm font-bold text-slate-200">Vibración táctil al registrar</span>
+            <div class="relative flex-shrink-0">
+                <input type="checkbox" id="cfg-vibracion" class="sr-only peer" onchange="setAppPref('voley_pref_vibracion', this.checked)">
+                <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+            </div>
+        </label>
+
+        <label class="flex items-center justify-between cursor-pointer gap-4">
+            <span class="text-sm font-bold text-slate-200">Confirmar antes de deshacer / restar punto</span>
+            <div class="relative flex-shrink-0">
+                <input type="checkbox" id="cfg-confirmar" class="sr-only peer" onchange="setAppPref('voley_pref_confirmar_borrado', this.checked)">
+                <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+            </div>
+        </label>
+    </section>
+
+    <!-- Interfaz -->
+    <section class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+        <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex items-center gap-2">
+            <i data-lucide="panel-left" class="w-4 h-4"></i>
+            Interfaz
+        </h2>
+        <label class="flex items-center justify-between cursor-pointer gap-4">
+            <span class="text-sm font-bold text-slate-200">Barra lateral oculta por defecto</span>
+            <div class="relative flex-shrink-0">
+                <input type="checkbox" id="cfg-sidebar-collapsed" class="sr-only peer" onchange="setSidebarDefault(this.checked)">
+                <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+            </div>
+        </label>
+    </section>
+</div>
+
+<script>
+    function getBoolPref(key, def) {
+        const v = localStorage.getItem(key);
+        return v === null ? def : (v === '1');
+    }
+
+    function setAppPref(key, value) {
+        localStorage.setItem(key, value ? '1' : '0');
+    }
+
+    function highlightThemeOption(theme) {
+        document.querySelectorAll('.theme-option').forEach(btn => {
+            const active = btn.dataset.theme === theme;
+            btn.classList.toggle('border-emerald-500', active);
+            btn.classList.toggle('bg-emerald-500/5', active);
+            btn.classList.toggle('border-transparent', !active);
+        });
+    }
+
+    function selectTheme(theme) {
+        if (window.VoleyTheme) window.VoleyTheme.apply(theme);
+        highlightThemeOption(theme);
+    }
+
+    function syncScoutDefaultButtons(modo) {
+        const active = 'px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all bg-blue-600 text-white shadow-md';
+        const inactive = 'px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all text-slate-400 hover:text-white';
+        const rapido = document.getElementById('cfg-modo-rapido');
+        const avanzado = document.getElementById('cfg-modo-avanzado');
+        if (rapido) rapido.className = modo === 'rapido' ? active : inactive;
+        if (avanzado) avanzado.className = modo === 'avanzado' ? active : inactive;
+    }
+
+    function setScoutDefault(modo) {
+        localStorage.setItem('voley_modo_scout_default', modo);
+        syncScoutDefaultButtons(modo);
+    }
+
+    function setSidebarDefault(collapsed) {
+        localStorage.setItem('voley_sidebar_collapsed_default', collapsed ? '1' : '0');
+        if (window.VoleySidebar) window.VoleySidebar.apply(collapsed);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const theme = localStorage.getItem('voley_theme') || 'oscuro';
+        highlightThemeOption(theme);
+
+        document.getElementById('cfg-auto-rotacion').checked = getBoolPref('voley_pref_auto_rotacion', true);
+        document.getElementById('cfg-vibracion').checked = getBoolPref('voley_pref_vibracion', true);
+        document.getElementById('cfg-confirmar').checked = getBoolPref('voley_pref_confirmar_borrado', true);
+
+        const scoutDefault = localStorage.getItem('voley_modo_scout_default') || 'rapido';
+        syncScoutDefaultButtons(scoutDefault);
+
+        const sidebarDefault = localStorage.getItem('voley_sidebar_collapsed_default');
+        document.getElementById('cfg-sidebar-collapsed').checked = sidebarDefault === '1';
+    });
+</script>
+{% endblock %}
