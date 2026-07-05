@@ -4,6 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from ..models import Equipo, Jugadora, Partido
 
+
 class ConfiguracionView(LoginRequiredMixin, View):
     template_name = 'stats_app/configuracion.html'
 
@@ -17,36 +18,64 @@ class DashboardView(LoginRequiredMixin, ListView):
     context_object_name = 'partidos'
 
     def get_queryset(self):
-        return Partido.objects.all().order_by('-fecha', '-hora')
+        return Partido.objects.filter(equipo__entrenador=self.request.user).order_by('-fecha', '-hora')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['equipos'] = Equipo.objects.all().order_by('nombre')
+        context['equipos'] = Equipo.objects.filter(entrenador=self.request.user).order_by('nombre')
         return context
 
-# CRUD EQUIPO
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CRUD EQUIPO — cada entrenador solo ve/edita/elimina sus propios equipos
+# ─────────────────────────────────────────────────────────────────────────────
 class EquipoCreateView(LoginRequiredMixin, CreateView):
     model = Equipo
     fields = ['nombre', 'temporada', 'categoria']
     template_name = 'stats_app/admin/equipo_form.html'
 
+    def form_valid(self, form):
+        form.instance.entrenador = self.request.user
+        return super().form_valid(form)
+
     def get_success_url(self):
         return reverse_lazy('stats_app:equipos_list')
+
 
 class EquipoUpdateView(LoginRequiredMixin, UpdateView):
     model = Equipo
     fields = ['nombre', 'temporada', 'categoria']
     template_name = 'stats_app/admin/equipo_form.html'
 
+    def get_queryset(self):
+        return Equipo.objects.filter(entrenador=self.request.user)
+
     def get_success_url(self):
         return reverse_lazy('stats_app:equipos_list')
+
 
 class EquipoDeleteView(LoginRequiredMixin, DeleteView):
     model = Equipo
     template_name = 'stats_app/admin/equipo_confirm_delete.html'
     success_url = reverse_lazy('stats_app:dashboard')
 
-# CRUD JUGADORA
+    def get_queryset(self):
+        return Equipo.objects.filter(entrenador=self.request.user)
+
+
+class EquipoListView(LoginRequiredMixin, ListView):
+    model = Equipo
+    template_name = 'stats_app/equipos_list.html'
+    context_object_name = 'equipos'
+
+    def get_queryset(self):
+        return Equipo.objects.filter(entrenador=self.request.user).order_by('nombre')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CRUD JUGADORA — el desplegable de equipo y las consultas se restringen
+# siempre a equipos propiedad del usuario autenticado
+# ─────────────────────────────────────────────────────────────────────────────
 class JugadoraCreateView(LoginRequiredMixin, CreateView):
     model = Jugadora
     fields = ['equipo', 'nombre', 'apellidos', 'dorsal', 'posicion', 'fecha_nacimiento']
@@ -56,6 +85,7 @@ class JugadoraCreateView(LoginRequiredMixin, CreateView):
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         form.fields['fecha_nacimiento'].required = True
+        form.fields['equipo'].queryset = Equipo.objects.filter(entrenador=self.request.user)
         return form
 
     def get_initial(self):
@@ -64,6 +94,7 @@ class JugadoraCreateView(LoginRequiredMixin, CreateView):
         if equipo_id:
             initial['equipo'] = equipo_id
         return initial
+
 
 class JugadoraUpdateView(LoginRequiredMixin, UpdateView):
     model = Jugadora
@@ -71,22 +102,38 @@ class JugadoraUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'stats_app/admin/jugadora_form.html'
     success_url = reverse_lazy('stats_app:dashboard')
 
+    def get_queryset(self):
+        return Jugadora.objects.filter(equipo__entrenador=self.request.user)
+
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         form.fields['fecha_nacimiento'].required = True
+        form.fields['equipo'].queryset = Equipo.objects.filter(entrenador=self.request.user)
         return form
+
 
 class JugadoraDeleteView(LoginRequiredMixin, DeleteView):
     model = Jugadora
     template_name = 'stats_app/admin/jugadora_confirm_delete.html'
     success_url = reverse_lazy('stats_app:dashboard')
 
-# CRUD PARTIDO
+    def get_queryset(self):
+        return Jugadora.objects.filter(equipo__entrenador=self.request.user)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CRUD PARTIDO — idéntica lógica de aislamiento
+# ─────────────────────────────────────────────────────────────────────────────
 class PartidoCreateView(LoginRequiredMixin, CreateView):
     model = Partido
     fields = ['equipo', 'fecha', 'hora', 'rival', 'local', 'lugar', 'modalidad']
     template_name = 'stats_app/admin/partido_form.html'
     success_url = reverse_lazy('stats_app:dashboard')
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['equipo'].queryset = Equipo.objects.filter(entrenador=self.request.user)
+        return form
 
     def get_initial(self):
         initial = super().get_initial()
@@ -95,21 +142,26 @@ class PartidoCreateView(LoginRequiredMixin, CreateView):
             initial['equipo'] = equipo_id
         return initial
 
+
 class PartidoUpdateView(LoginRequiredMixin, UpdateView):
     model = Partido
     fields = ['equipo', 'fecha', 'hora', 'rival', 'local', 'lugar', 'modalidad']
     template_name = 'stats_app/admin/partido_form.html'
     success_url = reverse_lazy('stats_app:dashboard')
 
+    def get_queryset(self):
+        return Partido.objects.filter(equipo__entrenador=self.request.user)
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['equipo'].queryset = Equipo.objects.filter(entrenador=self.request.user)
+        return form
+
+
 class PartidoDeleteView(LoginRequiredMixin, DeleteView):
     model = Partido
     template_name = 'stats_app/admin/partido_confirm_delete.html'
     success_url = reverse_lazy('stats_app:dashboard')
 
-class EquipoListView(LoginRequiredMixin, ListView):
-    model = Equipo
-    template_name = 'stats_app/equipos_list.html'
-    context_object_name = 'equipos'
-
     def get_queryset(self):
-        return Equipo.objects.all().order_by('nombre')
+        return Partido.objects.filter(equipo__entrenador=self.request.user)

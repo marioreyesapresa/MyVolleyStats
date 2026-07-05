@@ -3,8 +3,10 @@ from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet
 
 @admin.register(Equipo)
 class EquipoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'categoria', 'temporada')
-    search_fields = ('nombre', 'categoria', 'temporada')
+    list_display = ('nombre', 'categoria', 'temporada', 'entrenador')
+    list_filter = ('entrenador', 'categoria')
+    search_fields = ('nombre', 'categoria', 'temporada', 'entrenador__username')
+    autocomplete_fields = ('entrenador',)
 
 @admin.register(Jugadora)
 class JugadoraAdmin(admin.ModelAdmin):

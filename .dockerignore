@@ -1,0 +1,80 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .dockerignore — evita subir al contexto de build archivos innecesarios,
+# secretos o datos locales. Cloud Run construye desde este contexto, así que
+# cualquier cosa listada aquí NUNCA llega a la imagen ni al registro.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+.git
+.gitignore
+.dockerignore
+
+# ── Secretos y configuración local ───────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Base de datos local ───────────────────────────────────────────────────────
+db.sqlite3
+db.sqlite3.bak*
+*.sqlite3
+
+# ── Entornos virtuales Python ─────────────────────────────────────────────────
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ── Compilados / cachés Python ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# ── Estáticos generados (se regeneran en el build con collectstatic) ─────────
+/staticfiles/
+/mediafiles/
+/media/
+static_root/
+
+# ── Distribución / empaquetado ────────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+
+# ── Tests y cobertura ─────────────────────────────────────────────────────────
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+
+# ── Documentación / metadatos del repo ────────────────────────────────────────
+README.md
+*.md
+LICENSE
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+._*
+
+# ── Editores / IDEs ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── PDFs generados en runtime ─────────────────────────────────────────────────
+*.pdf
+
+# ── Cursor / herramientas de IA locales ───────────────────────────────────────
+.cursor/

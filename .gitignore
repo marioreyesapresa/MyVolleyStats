@@ -5,11 +5,14 @@
 # ── Secretos y configuración local ───────────────────────────────────────────
 .env
 .env.*
-!.env.example          # sí subir el template (sin valores reales)
+!.env.example
+gcp-sa-key.json
+*-sa-key.json          # sí subir el template (sin valores reales)
 
 # ── Base de datos ─────────────────────────────────────────────────────────────
 # La BD SQLite contiene datos reales de usuarios y partidos → NUNCA al repo
 db.sqlite3
+db.sqlite3.bak*
 *.sqlite3
 
 # ── Entorno virtual Python ────────────────────────────────────────────────────

@@ -1,9 +1,10 @@
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse, Http404
 from django.db.models import Q
+from django.views.decorators.http import require_POST
 import json
 from ..models import Partido, Jugadora, RegistroEstadistica, RotacionSet
 from ..services.reporting import (
@@ -13,13 +14,23 @@ from ..services.reporting import (
     rotation_matrix,
 )
 
+
+def _partido_del_entrenador(request, partido_id):
+    """Devuelve el partido solo si pertenece a un equipo del usuario autenticado.
+
+    Lanza Http404 en caso contrario, de forma indistinguible de "no existe":
+    así no se filtra a un entrenador si un ID de partido de otro es válido.
+    """
+    return get_object_or_404(Partido, pk=partido_id, equipo__entrenador=request.user)
+
+
 class ModoPartidoView(LoginRequiredMixin, View):
     template_name = 'stats_app/modo_partido.html'
 
     def get(self, request, pk):
-        partido = get_object_or_404(Partido, pk=pk)
+        partido = _partido_del_entrenador(request, pk)
         jugadoras = Jugadora.objects.filter(equipo=partido.equipo).order_by('dorsal')
-        
+
         acciones = [
             ('SAQUE', 'Saque'),
             ('RECEPCION', 'Recepción'),
@@ -28,7 +39,7 @@ class ModoPartidoView(LoginRequiredMixin, View):
             ('BLOQUEO', 'Bloqueo'),
             ('DEFENSA', 'Defensa'),
         ]
-        
+
         historial = RegistroEstadistica.objects.filter(partido=partido, set_numero=1).order_by('-id')
         historial_data = []
         for reg in historial:
@@ -62,8 +73,8 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
             set_num = data.get('set_numero', 1)
             rotacion_num = data.get('rotacion_num', 1)
 
-            partido = get_object_or_404(Partido, pk=partido_id)
-            jugadora = get_object_or_404(Jugadora, pk=jugadora_id) if jugadora_id else None
+            partido = _partido_del_entrenador(request, partido_id)
+            jugadora = get_object_or_404(Jugadora, pk=jugadora_id, equipo=partido.equipo) if jugadora_id else None
 
             registro = RegistroEstadistica.objects.create(
                 partido=partido,
@@ -84,14 +95,16 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
                 'accion_texto': f"{registro.get_accion_display()} {registro.calidad if registro.calidad else ''}".strip(),
                 'total_acciones_set': total_set
             })
+        except Http404:
+            raise
         except Exception as e:
             return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
 
 class ActualizarConfigSetAPI(LoginRequiredMixin, View):
     def post(self, request, partido_id):
         try:
+            partido = _partido_del_entrenador(request, partido_id)
             data = json.loads(request.body)
-            partido = get_object_or_404(Partido, pk=partido_id)
 
             puntos_por_set = int(data.get('puntos_por_set', partido.puntos_por_set))
             puntos_set_decisivo = int(data.get('puntos_set_decisivo', partido.puntos_set_decisivo))
@@ -112,6 +125,8 @@ class ActualizarConfigSetAPI(LoginRequiredMixin, View):
                 'sets_para_ganar': partido.sets_para_ganar,
                 'set_decisivo_numero': partido.set_decisivo_numero,
             })
+        except Http404:
+            raise
         except Exception as e:
             return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
 
@@ -120,46 +135,53 @@ class EliminarAccionAPI(LoginRequiredMixin, View):
         try:
             data = json.loads(request.body)
             registro_id = data.get('id')
-            registro = get_object_or_404(RegistroEstadistica, pk=registro_id)
+            registro = get_object_or_404(
+                RegistroEstadistica, pk=registro_id, partido__equipo__entrenador=request.user
+            )
             registro.delete()
             return JsonResponse({'status': 'ok', 'mensaje': 'Registro eliminado'})
+        except Http404:
+            raise
         except Exception as e:
             return JsonResponse({'status': 'error', 'mensaje': str(e)}, status=400)
 
-@csrf_exempt
+
+@login_required
+@require_POST
 def RegistrarCambioAPI(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        partido = get_object_or_404(Partido, id=data.get('partido_id'))
-        jug_sale = get_object_or_404(Jugadora, id=data.get('sale_id'))
-        jug_entra = get_object_or_404(Jugadora, id=data.get('entra_id'))
-        set_num = data.get('set_numero', 1)
-        rotacion_num = data.get('rotacion_num', 1)
+    data = json.loads(request.body)
+    partido = _partido_del_entrenador(request, data.get('partido_id'))
+    jug_sale = get_object_or_404(Jugadora, id=data.get('sale_id'), equipo=partido.equipo)
+    jug_entra = get_object_or_404(Jugadora, id=data.get('entra_id'), equipo=partido.equipo)
+    set_num = data.get('set_numero', 1)
+    rotacion_num = data.get('rotacion_num', 1)
 
-        registro = RegistroEstadistica.objects.create(
-            partido=partido,
-            jugadora=jug_entra, 
-            accion='SUSTITUCION',
-            calidad='=',
-            set_numero=set_num,
-            tipo_fase='K1',
-            rotacion_num=rotacion_num
-        )
+    registro = RegistroEstadistica.objects.create(
+        partido=partido,
+        jugadora=jug_entra,
+        accion='SUSTITUCION',
+        calidad='=',
+        set_numero=set_num,
+        tipo_fase='K1',
+        rotacion_num=rotacion_num
+    )
 
-        return JsonResponse({
-            'status': 'ok',
-            'id': registro.id,
-            'accion_texto': f"🔄 CAMBIO: #{jug_sale.dorsal} > #{jug_entra.dorsal}",
-            'dorsal': jug_entra.dorsal
-        })
-    return JsonResponse({'status': 'error'}, status=400)
+    return JsonResponse({
+        'status': 'ok',
+        'id': registro.id,
+        'accion_texto': f"🔄 CAMBIO: #{jug_sale.dorsal} > #{jug_entra.dorsal}",
+        'dorsal': jug_entra.dorsal
+    })
 
-@csrf_exempt
+
+@login_required
+@require_POST
 def ObtenerStatsSetAPI(request):
     data = json.loads(request.body)
-    partido_id = data.get('partido_id')
+    partido = _partido_del_entrenador(request, data.get('partido_id'))
+    partido_id = partido.id
     set_num = data.get('set_numero', 1)
-    
+
     stats_base = RegistroEstadistica.objects.filter(partido_id=partido_id, set_numero=set_num)
     fundamentos = ['SAQUE', 'RECEPCION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
     equipo_stats = {}
@@ -255,7 +277,6 @@ def ObtenerStatsSetAPI(request):
     )
 
     # Calculate global sets won
-    partido = get_object_or_404(Partido, id=partido_id)
     all_sets = RegistroEstadistica.objects.filter(partido=partido).values_list('set_numero', flat=True).distinct()
     sets_local = 0
     sets_rival = 0
@@ -294,11 +315,14 @@ def ObtenerStatsSetAPI(request):
         'rotaciones': rotation_matrix(partido, set_num),
     })
 
+
+@login_required
 def get_stats_json(request, partido_id, set_n):
+    partido = _partido_del_entrenador(request, partido_id)
     fundamentos = ['SAQUE', 'RECEPCION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
     stats = {}
     
-    qs_set = RegistroEstadistica.objects.filter(partido_id=partido_id, set_numero=set_n).select_related('jugadora')
+    qs_set = RegistroEstadistica.objects.filter(partido=partido, set_numero=set_n).select_related('jugadora')
     jug_stats = {}
     for r in qs_set:
         if not r.jugadora: continue
@@ -317,7 +341,7 @@ def get_stats_json(request, partido_id, set_n):
         elif r.calidad == '--': jug_stats[jid]['funds'][fund]['mm'] += 1
 
     for fund in fundamentos:
-        qs = RegistroEstadistica.objects.filter(partido_id=partido_id, set_numero=set_n, accion=fund)
+        qs = RegistroEstadistica.objects.filter(partido=partido, set_numero=set_n, accion=fund)
         total = qs.count()
         if total > 0:
             pp = qs.filter(calidad='++').count()
@@ -402,7 +426,7 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
     template_name = 'stats_app/post_match_report.html'
 
     def get(self, request, pk):
-        partido = get_object_or_404(Partido, pk=pk)
+        partido = _partido_del_entrenador(request, pk)
         set_filtro = request.GET.get('set', 'global')
         reporte = build_full_report(partido, set_filtro)
 
@@ -452,9 +476,11 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
 class FinalizarPartidoAPI(LoginRequiredMixin, View):
     def post(self, request, partido_id):
         try:
-            partido = get_object_or_404(Partido, id=partido_id)
+            partido = _partido_del_entrenador(request, partido_id)
             partido.finalizado = True
             partido.save()
             return JsonResponse({'status': 'success', 'mensaje': 'Partido finalizado correctamente'})
+        except Http404:
+            raise
         except Exception as e:
             return JsonResponse({'status': 'error', 'error': str(e)}, status=500)

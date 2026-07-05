@@ -247,18 +247,21 @@ Configurables desde **Ajustes** en modo partido o vía API:
 ## 🗄️ Modelo de datos
 
 ```
-Equipo
-  └── Jugadora (1:N)
-  └── Partido (1:N)
-        ├── RegistroEstadistica (acciones de scout)
-        └── RotacionSet (alineación por set, inicial y actual)
+User (entrenador)
+  └── Equipo (1:N) — aislado por entrenador
+        └── Jugadora (1:N)
+        └── Partido (1:N)
+              ├── RegistroEstadistica (acciones de scout)
+              └── RotacionSet (alineación por set, inicial y actual)
 ```
+
+`Equipo.entrenador` es la raíz del aislamiento multi-usuario: todo lo demás hereda la propiedad a través de sus relaciones (`equipo__entrenador`, `partido__equipo__entrenador`).
 
 ### Entidades principales
 
 | Modelo | Campos clave |
 |--------|--------------|
-| **Equipo** | nombre, temporada, categoría |
+| **Equipo** | entrenador, nombre, temporada, categoría |
 | **Jugadora** | equipo, dorsal, nombre, apellidos, posición, fecha_nacimiento |
 | **Partido** | equipo, fecha, hora, rival, local, lugar, modalidad, finalizado, reglas del set |
 | **RegistroEstadistica** | partido, jugadora, set, fase (K1/K2), acción, calidad, rotación activa |
@@ -364,11 +367,14 @@ voley_stats/
 │   │   └── informes.py           # PDFs y estadísticas finales
 │   ├── templatetags/
 │   │   └── pdf_filters.py        # Filtros para plantillas PDF
-│   └── templates/stats_app/
-│       ├── modo_partido.html     # Scout en vivo (UI principal)
-│       ├── post_match_report.html
-│       ├── informe_completo_pdf.html
-│       └── informe_resumen_pdf.html
+│   ├── templates/stats_app/
+│   │   ├── modo_partido.html     # Scout en vivo (UI principal)
+│   │   ├── post_match_report.html
+│   │   ├── informe_completo_pdf.html
+│   │   └── informe_resumen_pdf.html
+│   └── tests.py                  # Tests de aislamiento multi-entrenador
+├── Dockerfile                    # Build multi-stage para Cloud Run
+├── .dockerignore
 ├── .env.example
 ├── .gitignore
 ├── manage.py
@@ -392,16 +398,66 @@ voley_stats/
 
 ---
 
-## 🌐 Producción
+## 🌐 Producción — Google Cloud Run + Neon (PostgreSQL)
 
-Recomendaciones básicas para desplegar:
+La aplicación es **multi-entrenador**: cada `Equipo` pertenece a un usuario (`entrenador`), y todas las consultas (equipos, jugadoras, partidos, estadísticas, rotaciones) se filtran automáticamente por `request.user`. Un entrenador nunca puede ver ni modificar los datos de otro (comprobado con tests automáticos en `stats_app/tests.py`).
 
-1. Establece `DEBUG=False` y una `SECRET_KEY` única en `.env`
-2. Configura `ALLOWED_HOSTS` con tu dominio
-3. Migra a **PostgreSQL** (variable `DATABASE_URL` preparada en `.env.example`)
-4. Ejecuta `python manage.py collectstatic`
-5. Sirve la app con Gunicorn/uWSGI detrás de Nginx o similar
-6. Usa HTTPS y copias de seguridad periódicas de la base de datos
+### Variables de entorno en producción
+
+| Variable | Valor típico en Cloud Run |
+|----------|---------------------------|
+| `SECRET_KEY` | Secreto único, gestionado con **Secret Manager** |
+| `DJANGO_DEBUG` | `False` |
+| `ALLOWED_HOSTS` | `tu-servicio-xxxxx.a.run.app,tudominio.com` |
+| `CSRF_TRUSTED_ORIGINS` | `https://tu-servicio-xxxxx.a.run.app,https://tudominio.com` |
+| `DATABASE_URL` | Cadena de conexión de **Neon** (`postgres://usuario:pass@host/db?sslmode=require`) |
+
+Con `DJANGO_DEBUG=False`, `settings.py` activa automáticamente: `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_BROWSER_XSS_FILTER`, `SECURE_CONTENT_TYPE_NOSNIFF`, HSTS y cookies `HttpOnly`.
+
+### Despliegue paso a paso
+
+```bash
+# 1. Crear la base de datos en Neon y copiar su connection string (pooled)
+
+# 2. Construir la imagen (el build usa un SECRET_KEY ficticio solo para collectstatic)
+docker build -t voley-stats .
+
+# 3. Probar en local con variables de producción
+docker run -p 8080:8080 \
+  -e SECRET_KEY="clave-real-de-produccion" \
+  -e DJANGO_DEBUG=False \
+  -e ALLOWED_HOSTS=127.0.0.1,localhost \
+  -e DATABASE_URL="postgres://usuario:pass@host/db?sslmode=require" \
+  -e PORT=8080 \
+  voley-stats
+
+# 4. Aplicar migraciones contra Neon (una vez, desde un job o localmente
+#    apuntando a DATABASE_URL de producción)
+DATABASE_URL="postgres://..." python manage.py migrate
+DATABASE_URL="postgres://..." python manage.py createsuperuser
+
+# 5. Desplegar en Cloud Run
+gcloud run deploy voley-stats \
+  --source . \
+  --region europe-west1 \
+  --allow-unauthenticated \
+  --set-env-vars DJANGO_DEBUG=False,ALLOWED_HOSTS=...,CSRF_TRUSTED_ORIGINS=... \
+  --set-secrets SECRET_KEY=voley-secret-key:latest,DATABASE_URL=voley-database-url:latest
+```
+
+> Guarda `SECRET_KEY` y `DATABASE_URL` en **Secret Manager** (`--set-secrets`), nunca como `--set-env-vars` en texto plano.
+
+### Archivos de infraestructura
+
+| Archivo | Función |
+|---------|---------|
+| `Dockerfile` | Build multi-stage (`builder` + `runtime`), imagen ligera basada en `python:3.12-slim`, sirve con Gunicorn en `$PORT` |
+| `.dockerignore` | Excluye `env/`, `db.sqlite3`, `.env`, tests y metadatos del contexto de build |
+| `requirements.txt` | Incluye `dj-database-url`, `psycopg[binary]`, `whitenoise`, `gunicorn` para producción |
+
+### Migración de datos existentes a multi-entrenador
+
+Si vienes de una versión sin `Equipo.entrenador`, las migraciones `0008`–`0010` añaden el campo de forma segura: primero nullable, después un backfill automático (asigna los equipos huérfanos al primer superusuario) y por último la restricción `NOT NULL`. Tras desplegar, revisa en `/admin/` que cada equipo tenga el entrenador correcto.
 
 ---
 

@@ -3,15 +3,21 @@ import traceback
 from django.shortcuts import get_object_or_404
 from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from ..models import RotacionSet, Jugadora, Partido
+
+
+def _partido_del_entrenador(request, partido_id):
+    return get_object_or_404(Partido, pk=partido_id, equipo__entrenador=request.user)
+
 
 class GetRotacionActualAPI(LoginRequiredMixin, View):
     def get(self, request, partido_id):
+        partido = _partido_del_entrenador(request, partido_id)
         set_n = request.GET.get('set', 1)
-        rotacion = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=False).order_by('-id').first()
+        rotacion = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=False).order_by('-id').first()
         if not rotacion:
-            rotacion = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=True).first()
+            rotacion = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=True).first()
         
         if not rotacion:
             return JsonResponse({'error': 'No hay alineación inicial'}, status=404)
@@ -31,18 +37,31 @@ class GetRotacionActualAPI(LoginRequiredMixin, View):
 class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
     def post(self, request, partido_id):
         try:
+            partido = _partido_del_entrenador(request, partido_id)
             data = json.loads(request.body)
             set_n = data.get('set_numero', 1)
-            print(f"DEBUG: Guardando alineación para partido {partido_id}, set {set_n}")
-            print(f"DEBUG: Data recibida: {data}")
+
+            # Todas las jugadoras referenciadas deben pertenecer al equipo del partido.
+            posiciones_ids = [
+                data.get('pos1'), data.get('pos2'), data.get('pos3'),
+                data.get('pos4'), data.get('pos5'), data.get('pos6'),
+                data.get('libero1'), data.get('libero2'),
+            ]
+            ids_validos = {v for v in posiciones_ids if v}
+            if ids_validos:
+                encontradas = set(
+                    Jugadora.objects.filter(id__in=ids_validos, equipo=partido.equipo).values_list('id', flat=True)
+                )
+                if encontradas != {int(i) for i in ids_validos}:
+                    return JsonResponse({'error': 'Jugadora no válida para este equipo'}, status=400)
 
             def update_rot(es_inicial):
                 qs = RotacionSet.objects.filter(
-                    partido_id=partido_id, set_numero=set_n, es_inicial=es_inicial
+                    partido=partido, set_numero=set_n, es_inicial=es_inicial
                 )
                 rot = qs.order_by('-id').first() if not es_inicial else qs.first()
                 if not rot:
-                    rot = RotacionSet(partido_id=partido_id, set_numero=set_n, es_inicial=es_inicial)
+                    rot = RotacionSet(partido=partido, set_numero=set_n, es_inicial=es_inicial)
                 
                 rot.pos1_id = data.get('pos1') if data.get('pos1') else None
                 rot.pos2_id = data.get('pos2') if data.get('pos2') else None
@@ -64,6 +83,8 @@ class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
                 update_rot(False)
             
             return JsonResponse({'status': 'ok'})
+        except Http404:
+            raise
         except Exception as e:
             error_msg = f"ERROR CRÍTICO: {str(e)}\n{traceback.format_exc()}"
             print(error_msg)
@@ -71,16 +92,15 @@ class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
 
 class RotarManualAPI(LoginRequiredMixin, View):
     def post(self, request, partido_id):
+        partido = _partido_del_entrenador(request, partido_id)
         data = json.loads(request.body)
         set_n = data.get('set_numero', 1)
         direccion = data.get('direccion', 'adelante')
-        
-        partido = get_object_or_404(Partido, pk=partido_id)
         modalidad = partido.modalidad
         
-        actual = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=False).order_by('-id').first()
+        actual = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=False).order_by('-id').first()
         if not actual:
-            actual = RotacionSet.objects.filter(partido_id=partido_id, set_numero=set_n, es_inicial=True).first()
+            actual = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=True).first()
         
         if not actual: return JsonResponse({'error': 'No hay rotación'}, status=404)
         
@@ -124,7 +144,7 @@ class RotarManualAPI(LoginRequiredMixin, View):
                 new_p1 = p6
 
         RotacionSet.objects.create(
-            partido_id=partido_id, set_numero=set_n, es_inicial=False,
+            partido=partido, set_numero=set_n, es_inicial=False,
             pos1_id=new_p1, pos2_id=new_p2, pos3_id=new_p3, pos4_id=new_p4, pos5_id=new_p5, pos6_id=new_p6,
             libero1_id=actual.libero1_id, libero2_id=actual.libero2_id
         )
@@ -138,7 +158,7 @@ class ActualizarPosicionJugadoraAPI(LoginRequiredMixin, View):
         nueva_pos = data.get('posicion')
         
         try:
-            jugadora = Jugadora.objects.get(id=jugadora_id)
+            jugadora = Jugadora.objects.get(id=jugadora_id, equipo__entrenador=request.user)
             jugadora.posicion = nueva_pos
             jugadora.save()
             return JsonResponse({'status': 'ok', 'mensaje': f'Posición de {jugadora.nombre} actualizada'})

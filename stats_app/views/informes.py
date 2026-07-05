@@ -72,7 +72,7 @@ class BaseInformePDFView(LoginRequiredMixin, View):
 
 class DescargarResumenPDF(BaseInformePDFView):
     def get(self, request, pk):
-        partido = get_object_or_404(Partido, pk=pk)
+        partido = get_object_or_404(Partido, pk=pk, equipo__entrenador=request.user)
         set_n = request.GET.get('set', 'global')
         stats = self.get_stats_data(partido, set_n)
         
@@ -93,7 +93,7 @@ class DescargarResumenPDF(BaseInformePDFView):
 
 class DescargarInformeCompletoPDF(BaseInformePDFView):
     def get(self, request, pk):
-        partido = get_object_or_404(Partido, pk=pk)
+        partido = get_object_or_404(Partido, pk=pk, equipo__entrenador=request.user)
         set_n = request.GET.get('set', 'global')
         reporte = build_full_report(partido, set_n)
 

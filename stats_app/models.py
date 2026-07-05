@@ -1,6 +1,14 @@
+from django.conf import settings
 from django.db import models
 
 class Equipo(models.Model):
+    entrenador = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='equipos',
+        verbose_name="Entrenador",
+        help_text="Usuario propietario del equipo. Garantiza el aislamiento de datos entre entrenadores.",
+    )
     nombre = models.CharField(max_length=100, verbose_name="Nombre del Equipo")
     temporada = models.CharField(max_length=50, verbose_name="Temporada (ej. 2025/2026)")
     CATEGORIAS_CHOICES = [

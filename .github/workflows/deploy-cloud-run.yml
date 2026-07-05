@@ -1,0 +1,48 @@
+# Despliegue automático a Cloud Run en cada push a main.
+#
+# Configuración única requerida en GitHub:
+#   Settings → Secrets and variables → Actions → New repository secret
+#   Nombre: GCP_SA_KEY
+#   Valor:  JSON de la cuenta de servicio github-deploy (ver README sección Despliegue)
+
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: voley-stats-prod
+  REGION: europe-west1
+  SERVICE: voley-stats
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          source: .
+          flags: >-
+            --allow-unauthenticated
+            --memory=512Mi
+            --timeout=60
+            --set-env-vars=DJANGO_DEBUG=False,ALLOWED_HOSTS=voley-stats-127334410815.europe-west1.run.app,CSRF_TRUSTED_ORIGINS=https://voley-stats-127334410815.europe-west1.run.app
+            --set-secrets=SECRET_KEY=voley-secret-key:latest,DATABASE_URL=voley-database-url:latest
