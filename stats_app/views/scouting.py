@@ -34,12 +34,14 @@ class ModoPartidoView(LoginRequiredMixin, View):
             })
 
         permite_libero = partido.equipo.categoria in ['CADETE', 'JUVENIL', 'JUNIOR', 'SENIOR']
+        partidos_guardados = Partido.objects.filter(equipo=partido.equipo).exclude(pk=partido.pk).order_by('-fecha')
         return render(request, self.template_name, {
             'partido': partido,
             'jugadoras': jugadoras,
             'matrix_actions': acciones,
             'historial_inicial': json.dumps(historial_data),
-            'permite_libero': permite_libero
+            'permite_libero': permite_libero,
+            'partidos_guardados': partidos_guardados
         })
 
 class RegistrarAccionAPI(LoginRequiredMixin, View):
