@@ -266,6 +266,74 @@ def build_full_report(partido, set_filter='global'):
         'resumen_sets': summary,
         'detalle_sets': detalle_sets,
         'set_filter': set_filter,
+        'destacadas': build_destacadas(detalle_sets),
+    }
+
+
+def build_destacadas(detalle_sets, min_ataques=3):
+    """Líderes del set o partido para el bloque destacado del PDF."""
+    agg = {}
+    for sd in detalle_sets:
+        for j in sd['jugadoras']:
+            jid = j['id']
+            if jid not in agg:
+                agg[jid] = {
+                    'dorsal': j['dorsal'],
+                    'nombre': j['nombre'],
+                    'puntos': 0,
+                    'saque_aces': 0,
+                    'ataque_swings': 0,
+                    'ataque_kills': 0,
+                    'ataque_err': 0,
+                }
+            a = agg[jid]
+            a['puntos'] += j['puntos']
+            a['saque_aces'] += j['saque_aces']
+            a['ataque_swings'] += j['ataque_swings']
+            a['ataque_kills'] += j['ataque_kills']
+            a['ataque_err'] += j['ataque_err']
+
+    players = list(agg.values())
+    titulo = 'DESTACADAS DEL PARTIDO' if len(detalle_sets) > 1 else 'DESTACADAS DEL SET'
+
+    max_anotadora = None
+    if players:
+        top = max(players, key=lambda p: p['puntos'])
+        if top['puntos'] > 0:
+            max_anotadora = {
+                'dorsal': top['dorsal'],
+                'nombre': top['nombre'],
+                'puntos': top['puntos'],
+            }
+
+    lider_saque = None
+    if players:
+        top = max(players, key=lambda p: p['saque_aces'])
+        if top['saque_aces'] > 0:
+            lider_saque = {
+                'dorsal': top['dorsal'],
+                'nombre': top['nombre'],
+                'aces': top['saque_aces'],
+            }
+
+    mejor_ataque = None
+    candidatas = [p for p in players if p['ataque_swings'] >= min_ataques]
+    if candidatas:
+        for p in candidatas:
+            p['_efi'] = (p['ataque_kills'] - p['ataque_err']) / p['ataque_swings']
+        top = max(candidatas, key=lambda p: (p['_efi'], p['ataque_swings']))
+        mejor_ataque = {
+            'dorsal': top['dorsal'],
+            'nombre': top['nombre'],
+            'pct': round(top['_efi'] * 100),
+            'intentos': top['ataque_swings'],
+        }
+
+    return {
+        'titulo': titulo,
+        'max_anotadora': max_anotadora,
+        'lider_saque': lider_saque,
+        'mejor_ataque': mejor_ataque,
     }
 
 

@@ -1,30 +1,136 @@
+{% load pdf_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Informe Completo - {{ partido.rival }}</title>
     <style>
-        @page { size: A4 landscape; margin: 0.8cm; }
-        body { font-family: Helvetica, Arial, sans-serif; font-size: 8px; color: #111; }
-        .header { border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 12px; }
-        .title { font-size: 14px; font-weight: bold; text-transform: uppercase; }
-        .subtitle { font-size: 9px; color: #555; margin-top: 4px; }
+        @page { size: A4 landscape; margin: 0.7cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 8px; color: #1e293b; }
 
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #999; padding: 3px 4px; text-align: center; }
-        th { background-color: #e8e8e8; font-weight: bold; font-size: 7px; }
-        .left { text-align: left; font-weight: bold; }
-        .totals td { background-color: #f0f0f0; font-weight: bold; }
-        .kill { background-color: #d4edda; }
-        .err { background-color: #f8d7da; }
-        .neg { color: #c00; font-weight: bold; }
+        .header { border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 10px; }
+        .title { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #0f172a; }
+        .subtitle { font-size: 9px; color: #64748b; margin-top: 4px; }
 
-        .set-block { margin-top: 14px; page-break-inside: avoid; }
+        table { border-collapse: collapse; }
+        th, td { border: 1px solid #cbd5e1; padding: 4px 5px; text-align: center; vertical-align: middle; }
+        th { background-color: #e2e8f0; font-weight: bold; font-size: 7px; color: #334155; }
+        th.left, td.left { text-align: left; }
+
+        /* Resumen + destacadas en UNA sola tabla (evita tablas anidadas en ReportLab) */
+        table.top-combined { width: 100%; margin-bottom: 6px; table-layout: fixed; }
+        table.top-combined th, table.top-combined td { padding: 4px 3px; }
+        table.top-combined th.col-set { width: 7%; }
+        table.top-combined th.col-score { width: 10%; }
+        table.top-combined th.col-team { width: 22%; text-align: left; white-space: normal; line-height: 1.25; }
+        table.top-combined th.col-efic { width: 10%; }
+        table.top-combined th.hl-head {
+            background-color: #f8fafc;
+            color: #64748b;
+            font-size: 7px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-left: 1px solid #e2e8f0;
+        }
+        table.top-combined td.hl-col {
+            background-color: #fafafa;
+            border-left: 1px solid #e2e8f0;
+            vertical-align: middle;
+            padding: 5px 2px;
+        }
+        table.top-combined .hl-label {
+            font-size: 6.5px;
+            color: #64748b;
+            line-height: 1.25;
+        }
+        table.top-combined .hl-player {
+            font-size: 8px;
+            font-weight: bold;
+            color: #0f172a;
+            line-height: 1.3;
+        }
+        table.top-combined .hl-stat {
+            font-size: 7.5px;
+            font-weight: bold;
+            color: #15803d;
+            line-height: 1.25;
+        }
+        table.top-combined .hl-stat-blue {
+            font-size: 7.5px;
+            font-weight: bold;
+            color: #1d4ed8;
+            line-height: 1.25;
+        }
+        table.top-combined .hl-meta {
+            font-size: 6px;
+            color: #94a3b8;
+            font-weight: normal;
+        }
+        table.top-combined .hl-empty {
+            font-size: 7px;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* Tabla detalle */
+        table.detail { width: 100%; }
+        table.detail th { font-size: 6.5px; }
+        table.detail td { font-size: 8px; }
+        table.detail tr.row-even td { background-color: #f8fafc; }
+        table.detail tr.row-odd td { background-color: #ffffff; }
+
+        /* Números con color en texto (sin fondo de columna) */
+        .num-good { color: #15803d; font-weight: bold; }
+        .num-bad { color: #b91c1c; font-weight: bold; }
+        .num-neutral { color: #64748b; }
+        .num-saldo-pos { color: #15803d; font-weight: bold; }
+        .num-saldo-neg { color: #b91c1c; font-weight: bold; }
+        .num-empty { color: #cbd5e1; }
+
+        /* Cabeceras de grupo sin fondo verde/rojo */
+        th.th-good { color: #15803d; }
+        th.th-bad { color: #b91c1c; }
+
+        /* Fila TOTAL EQUIPO */
+        tr.totals td {
+            background-color: #1e293b !important;
+            color: #f8fafc;
+            font-weight: bold;
+            font-size: 8.5px;
+            border-color: #334155;
+        }
+        tr.totals .num-good { color: #86efac; }
+        tr.totals .num-bad { color: #fca5a5; }
+        tr.totals .num-saldo-pos { color: #86efac; }
+        tr.totals .num-saldo-neg { color: #fca5a5; }
+        tr.totals .num-empty { color: #64748b; }
+
+        .set-block { margin-top: 12px; }
         .set-block + .set-block { page-break-before: always; }
-        .set-title { background-color: #333; color: #fff; padding: 6px 8px; font-weight: bold; font-size: 9px; margin-bottom: 0; }
+        .set-title {
+            background-color: #334155;
+            color: #fff;
+            padding: 6px 10px;
+            font-weight: bold;
+            font-size: 9px;
+        }
 
-        .legend { margin-top: 12px; font-size: 7px; color: #555; border-top: 1px solid #ccc; padding-top: 8px; line-height: 1.5; }
-        .section-title { font-size: 9px; font-weight: bold; margin: 10px 0 4px; text-transform: uppercase; }
+        .section-title {
+            font-size: 9px;
+            font-weight: bold;
+            margin: 8px 0 4px;
+            text-transform: uppercase;
+            color: #475569;
+        }
+
+        .legend {
+            margin-top: 10px;
+            font-size: 7px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 6px;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
@@ -37,28 +143,65 @@
     </div>
 
     <div class="section-title">Resumen por sets</div>
-    <table>
+    <table class="top-combined">
         <thead>
             <tr>
-                <th class="left">Set</th>
-                <th>Marcador</th>
-                <th>{{ partido.equipo.nombre|truncatechars:14 }} % Recep.</th>
-                <th>{{ partido.rival|truncatechars:14 }} % Recep.</th>
-                <th>% Efic. saque</th>
+                <th class="left col-set">Set</th>
+                <th class="col-score">Marcador</th>
+                <th class="col-team left">{{ partido.equipo.nombre }}<br/><span style="font-weight:normal;">% Recepción</span></th>
+                <th class="col-team left">{{ partido.rival }}<br/><span style="font-weight:normal;">% Recepción</span></th>
+                <th class="col-efic">% Efic. saque</th>
+                <th colspan="3" class="hl-head">{{ destacadas.titulo }}</th>
             </tr>
         </thead>
         <tbody>
-            {% for s in resumen_sets %}
-            <tr>
-                <td class="left">SET {{ s.set_num }}</td>
-                <td><strong>{{ s.score_local }} – {{ s.score_rival }}</strong></td>
-                <td>{% if s.sideout_pct != None %}{{ s.sideout_pct }}%{% else %}—{% endif %}</td>
-                <td>{% if s.rival_sideout_pct != None %}{{ s.rival_sideout_pct }}%{% else %}—{% endif %}</td>
-                <td>{% if s.breakpoint_pct != None %}{{ s.breakpoint_pct }}%{% else %}—{% endif %}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5">Sin datos</td></tr>
-            {% endfor %}
+            {% if resumen_sets %}
+                {% for s in resumen_sets %}
+                <tr>
+                    <td class="left">SET {{ s.set_num }}</td>
+                    <td><strong>{{ s.score_local }} – {{ s.score_rival }}</strong></td>
+                    <td class="left">{% if s.sideout_pct != None %}{{ s.sideout_pct }}%{% else %}—{% endif %}</td>
+                    <td class="left">{% if s.rival_sideout_pct != None %}{{ s.rival_sideout_pct }}%{% else %}—{% endif %}</td>
+                    <td>{% if s.breakpoint_pct != None %}{{ s.breakpoint_pct }}%{% else %}—{% endif %}</td>
+                    {% if forloop.first %}
+                    <td class="hl-col" rowspan="{{ resumen_sets|length }}">
+                        <span class="hl-label">&#127919; Máxima anotadora</span><br/>
+                        {% if destacadas.max_anotadora %}
+                        <span class="hl-player">#{{ destacadas.max_anotadora.dorsal }} {{ destacadas.max_anotadora.nombre }}</span><br/>
+                        <span class="hl-stat">{{ destacadas.max_anotadora.puntos }} Pts</span>
+                        {% else %}<span class="hl-empty">—</span>{% endif %}
+                    </td>
+                    <td class="hl-col" rowspan="{{ resumen_sets|length }}">
+                        <span class="hl-label">&#127952; Líder de saque</span><br/>
+                        {% if destacadas.lider_saque %}
+                        <span class="hl-player">#{{ destacadas.lider_saque.dorsal }} {{ destacadas.lider_saque.nombre }}</span><br/>
+                        <span class="hl-stat">{{ destacadas.lider_saque.aces }} Aces</span>
+                        {% else %}<span class="hl-empty">—</span>{% endif %}
+                    </td>
+                    <td class="hl-col" rowspan="{{ resumen_sets|length }}">
+                        <span class="hl-label">&#128737; Eficacia en ataque</span><br/>
+                        {% if destacadas.mejor_ataque %}
+                        <span class="hl-player">#{{ destacadas.mejor_ataque.dorsal }} {{ destacadas.mejor_ataque.nombre }}</span><br/>
+                        <span class="hl-stat-blue">{{ destacadas.mejor_ataque.pct }}% <span class="hl-meta">({{ destacadas.mejor_ataque.intentos }} int.)</span></span>
+                        {% else %}<span class="hl-empty">Mín. 3 int.</span>{% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="5">Sin datos</td>
+                    <td class="hl-col">
+                        <span class="hl-label">&#127919; Máxima anotadora</span><br/><span class="hl-empty">—</span>
+                    </td>
+                    <td class="hl-col">
+                        <span class="hl-label">&#127952; Líder de saque</span><br/><span class="hl-empty">—</span>
+                    </td>
+                    <td class="hl-col">
+                        <span class="hl-label">&#128737; Eficacia en ataque</span><br/><span class="hl-empty">—</span>
+                    </td>
+                </tr>
+            {% endif %}
         </tbody>
     </table>
 
@@ -68,7 +211,7 @@
             SET {{ set_data.set_num }} — Marcador {{ set_data.score }}
             {% if set_data.sideout_pct != None %} · Efic. recepción {{ set_data.sideout_pct }}%{% endif %}
         </div>
-        <table>
+        <table class="detail">
             <thead>
                 <tr>
                     <th class="left" rowspan="2">Jugadora</th>
@@ -84,64 +227,84 @@
                     <th colspan="3">Saque</th>
                 </tr>
                 <tr>
-                    <th>Int.</th><th class="kill">Pts</th><th class="err">Err.</th><th>Efic.%</th>
-                    <th class="kill">Pts</th><th>Toq.</th><th class="err">Err.</th>
-                    <th>Asist.</th><th class="err">Err.</th>
-                    <th>Def.</th><th class="err">Err.</th>
-                    <th>Nº</th><th class="err">Err.</th>
-                    <th>Tot.</th><th class="kill">Ace</th><th class="err">Err.</th>
+                    <th>Int.</th>
+                    <th class="th-good">Pts</th>
+                    <th class="th-bad">Err.</th>
+                    <th>Efic.%</th>
+                    <th class="th-good">Pts</th>
+                    <th>Toq.</th>
+                    <th class="th-bad">Err.</th>
+                    <th>Asist.</th>
+                    <th class="th-bad">Err.</th>
+                    <th>Def.</th>
+                    <th class="th-bad">Err.</th>
+                    <th>Nº</th>
+                    <th class="th-bad">Err.</th>
+                    <th>Tot.</th>
+                    <th class="th-good">Ace</th>
+                    <th class="th-bad">Err.</th>
                 </tr>
             </thead>
             <tbody>
                 {% for j in set_data.jugadoras %}
-                <tr>
+                <tr class="{% if forloop.counter|divisibleby:2 %}row-even{% else %}row-odd{% endif %}">
                     <td class="left">#{{ j.dorsal }} {{ j.nombre }}</td>
-                    <td>{{ j.acciones }}</td>
-                    <td class="kill">{{ j.puntos }}</td>
-                    <td class="err">{{ j.errores }}</td>
-                    <td {% if j.balance < 0 %}class="neg"{% endif %}>{{ j.balance }}</td>
-                    <td>{{ j.ataque_swings }}</td>
-                    <td class="kill">{{ j.ataque_kills }}</td>
-                    <td class="err">{{ j.ataque_err }}</td>
-                    <td>{% if j.ataque_pct != None %}{{ j.ataque_pct|floatformat:3 }}{% else %}—{% endif %}</td>
-                    <td class="kill">{{ j.bloqueo_pts }}</td>
-                    <td>{{ j.bloqueo_toques }}</td>
-                    <td class="err">{{ j.bloqueo_err }}</td>
-                    <td>{{ j.asistencias }}</td>
-                    <td class="err">{{ j.colocacion_err }}</td>
-                    <td>{{ j.defensas }}</td>
-                    <td class="err">{{ j.defensa_err }}</td>
-                    <td>{{ j.recepciones }}</td>
-                    <td class="err">{{ j.recepcion_err }}</td>
-                    <td>{{ j.saques }}</td>
-                    <td class="kill">{{ j.saque_aces }}</td>
-                    <td class="err">{{ j.saque_err }}</td>
+                    <td>{% if j.acciones %}{{ j.acciones }}{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{% if j.puntos %}<span class="num-good">{{ j.puntos }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{% if j.errores %}<span class="num-bad">{{ j.errores }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>
+                        {% if j.balance > 0 %}<span class="num-saldo-pos">+{{ j.balance }}</span>
+                        {% elif j.balance < 0 %}<span class="num-saldo-neg">{{ j.balance }}</span>
+                        {% else %}<span class="num-empty">—</span>{% endif %}
+                    </td>
+                    <td>{{ j.ataque_swings|pdf_cell }}</td>
+                    <td>{% if j.ataque_kills %}<span class="num-good">{{ j.ataque_kills }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{% if j.ataque_err %}<span class="num-bad">{{ j.ataque_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.ataque_pct|pdf_efic_pct }}</td>
+                    <td>{% if j.bloqueo_pts %}<span class="num-good">{{ j.bloqueo_pts }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.bloqueo_toques|pdf_cell }}</td>
+                    <td>{% if j.bloqueo_err %}<span class="num-bad">{{ j.bloqueo_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.asistencias|pdf_cell }}</td>
+                    <td>{% if j.colocacion_err %}<span class="num-bad">{{ j.colocacion_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.defensas|pdf_cell }}</td>
+                    <td>{% if j.defensa_err %}<span class="num-bad">{{ j.defensa_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.recepciones|pdf_cell }}</td>
+                    <td>{% if j.recepcion_err %}<span class="num-bad">{{ j.recepcion_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.saques|pdf_cell }}</td>
+                    <td>{% if j.saque_aces %}<span class="num-good">{{ j.saque_aces }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{% if j.saque_err %}<span class="num-bad">{{ j.saque_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
                 </tr>
                 {% endfor %}
                 {% if set_data.totales %}
+                {% with t=set_data.totales %}
                 <tr class="totals">
                     <td class="left">TOTAL EQUIPO</td>
-                    <td>{{ set_data.totales.acciones }}</td>
-                    <td>{{ set_data.totales.puntos }}</td>
-                    <td>{{ set_data.totales.errores }}</td>
-                    <td>{{ set_data.totales.balance }}</td>
-                    <td>{{ set_data.totales.ataque_swings }}</td>
-                    <td>{{ set_data.totales.ataque_kills }}</td>
-                    <td>{{ set_data.totales.ataque_err }}</td>
-                    <td>{% if set_data.totales.ataque_pct != None %}{{ set_data.totales.ataque_pct|floatformat:3 }}{% else %}—{% endif %}</td>
-                    <td>{{ set_data.totales.bloqueo_pts }}</td>
-                    <td>{{ set_data.totales.bloqueo_toques }}</td>
-                    <td>{{ set_data.totales.bloqueo_err }}</td>
-                    <td>{{ set_data.totales.asistencias }}</td>
-                    <td>{{ set_data.totales.colocacion_err }}</td>
-                    <td>{{ set_data.totales.defensas }}</td>
-                    <td>{{ set_data.totales.defensa_err }}</td>
-                    <td>{{ set_data.totales.recepciones }}</td>
-                    <td>{{ set_data.totales.recepcion_err }}</td>
-                    <td>{{ set_data.totales.saques }}</td>
-                    <td>{{ set_data.totales.saque_aces }}</td>
-                    <td>{{ set_data.totales.saque_err }}</td>
+                    <td>{{ t.acciones|pdf_cell:"1" }}</td>
+                    <td><span class="num-good">{{ t.puntos|pdf_cell:"1" }}</span></td>
+                    <td><span class="num-bad">{{ t.errores|pdf_cell:"1" }}</span></td>
+                    <td>
+                        {% if t.balance > 0 %}<span class="num-saldo-pos">+{{ t.balance }}</span>
+                        {% elif t.balance < 0 %}<span class="num-saldo-neg">{{ t.balance }}</span>
+                        {% else %}0{% endif %}
+                    </td>
+                    <td>{{ t.ataque_swings|pdf_cell:"1" }}</td>
+                    <td><span class="num-good">{{ t.ataque_kills|pdf_cell:"1" }}</span></td>
+                    <td><span class="num-bad">{{ t.ataque_err|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.ataque_pct|pdf_efic_pct }}</td>
+                    <td><span class="num-good">{{ t.bloqueo_pts|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.bloqueo_toques|pdf_cell:"1" }}</td>
+                    <td><span class="num-bad">{{ t.bloqueo_err|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.asistencias|pdf_cell:"1" }}</td>
+                    <td><span class="num-bad">{{ t.colocacion_err|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.defensas|pdf_cell:"1" }}</td>
+                    <td><span class="num-bad">{{ t.defensa_err|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.recepciones|pdf_cell:"1" }}</td>
+                    <td><span class="num-bad">{{ t.recepcion_err|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.saques|pdf_cell:"1" }}</td>
+                    <td><span class="num-good">{{ t.saque_aces|pdf_cell:"1" }}</span></td>
+                    <td><span class="num-bad">{{ t.saque_err|pdf_cell:"1" }}</span></td>
                 </tr>
+                {% endwith %}
                 {% endif %}
             </tbody>
         </table>
@@ -149,10 +312,9 @@
     {% endfor %}
 
     <div class="legend">
-        <strong>Saldo</strong> = Puntos (++) − Errores (−−).
-        <strong>Puntos</strong> = acciones ++ · <strong>Errores</strong> = acciones −−.
-        Verde = puntos/aces · Rojo = errores.
-        <strong>Efic. recepción %</strong> = side-out al recibir · <strong>Efic. saque %</strong> = puntos con nuestro saque.
+        <strong>Saldo</strong> = Puntos (++) − Errores (−−). Los ceros en jugadoras se omiten (—) para facilitar la lectura.
+        <strong>Efic.% ataque</strong> = porcentaje entero (puntos − errores) ÷ intentos.
+        Verde = acierto · Rojo = error · Fila oscura = totales del equipo.
         Generado por Voley Stats — {{ fecha }}
     </div>
 </body>

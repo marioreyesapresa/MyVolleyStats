@@ -103,6 +103,7 @@ class DescargarInformeCompletoPDF(BaseInformePDFView):
             'set_n': set_n,
             'resumen_sets': reporte['resumen_sets'],
             'detalle_sets': reporte['detalle_sets'],
+            'destacadas': reporte['destacadas'],
         }
         pdf = render_to_pdf('stats_app/informe_completo_pdf.html', context)
         if pdf is None:
