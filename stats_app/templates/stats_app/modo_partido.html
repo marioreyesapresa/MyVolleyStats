@@ -716,9 +716,13 @@
                 <!-- Exportar -->
                 <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
                     <h3 class="text-sm font-black text-emerald-400 uppercase tracking-widest border-b border-slate-800 pb-2">Exportar</h3>
-                    <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i>
-                        <span>Descargar PDF</span>
+                    <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-3 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
+                        <span>Resumen PDF (rápido)</span>
+                    </a>
+                    <a href="{% url 'stats_app:descargar_informe_completo' partido.id %}?set=global" class="py-3 bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Informe completo PDF</span>
                     </a>
                     <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
                         <i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-400"></i>
@@ -803,116 +807,93 @@
     </div>
 </div>
 
-<!-- Tab: Indicadores del Set -->
+<!-- Tab: Indicadores del Set (estadísticas rápidas en vivo) -->
 <div id="tab-metricas-content" class="tab-content hidden w-full -mt-6 md:-mt-8">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-        <!-- ═══ LEFT COLUMN: 65% (8 cols) ═══════════════════════════════ -->
-        <div class="lg:col-span-8 space-y-5">
+        <!-- ═══ MAIN: tabla rápida + KPIs ═══════════════════════════════ -->
+        <div class="lg:col-span-8 space-y-4">
 
-            <!-- Chart: Rendimiento en Vivo -->
-            <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-4">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="text-sm font-black uppercase tracking-wider text-white">Rendimiento en Vivo</h3>
-                        <p class="text-slate-500 text-[10px] mt-0.5">Evolución de efectividad y tendencias del set.</p>
-                    </div>
-                    <div class="flex items-center space-x-4 text-[9px] font-black text-slate-500 uppercase">
-                        <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>K1</span>
-                        <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-blue-500 mr-1.5"></span>K2</span>
-                    </div>
+            <!-- KPIs del set actual -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-[#121824] rounded-2xl p-3 border border-slate-800 text-center">
+                    <span class="text-[8px] font-black text-slate-500 uppercase tracking-wider block">Marcador Set</span>
+                    <span id="quick-score" class="text-lg font-black text-white">0 – 0</span>
                 </div>
-
-                <div class="bg-[#090d16] rounded-2xl px-4 pt-4 pb-8 border border-slate-800 relative shadow-inner h-56">
-                    <div class="absolute inset-0 grid grid-cols-4 grid-rows-3 opacity-5 pointer-events-none">
-                        <div class="border-r border-b border-white"></div><div class="border-r border-b border-white"></div>
-                        <div class="border-r border-b border-white"></div><div class="border-b border-white"></div>
-                        <div class="border-r border-b border-white"></div><div class="border-r border-b border-white"></div>
-                        <div class="border-r border-b border-white"></div><div class="border-b border-white"></div>
-                    </div>
-                    <svg class="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <defs>
-                            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stop-color="#10b981" stop-opacity="0.4"/>
-                                <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
-                            </linearGradient>
-                        </defs>
-                        <path d="M 0 80 Q 25 30 50 45 T 100 10" fill="url(#g1)" stroke="#10b981" stroke-width="3" />
-                        <path d="M 0 90 Q 20 60 50 70 T 100 40" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-dasharray="3 2" opacity="0.7" />
-                    </svg>
-                    <div class="absolute bottom-2 left-4 right-4 flex justify-between text-[8px] font-black text-slate-600 uppercase tracking-widest">
-                        <span>Inicio</span><span>Medio Set</span><span>Match Point</span>
-                    </div>
+                <div class="bg-[#121824] rounded-2xl p-3 border border-emerald-900/40 text-center">
+                    <span class="text-[8px] font-black text-emerald-600 uppercase tracking-wider block">Efic. recepción %</span>
+                    <span id="quick-sideout" class="text-lg font-black text-emerald-400">—</span>
+                </div>
+                <div class="bg-[#121824] rounded-2xl p-3 border border-blue-900/40 text-center">
+                    <span class="text-[8px] font-black text-blue-500 uppercase tracking-wider block">Efic. saque %</span>
+                    <span id="quick-break" class="text-lg font-black text-blue-400">—</span>
+                </div>
+                <div class="bg-[#121824] rounded-2xl p-3 border border-slate-800 text-center">
+                    <span class="text-[8px] font-black text-slate-500 uppercase tracking-wider block">K1 / K2</span>
+                    <span id="quick-k1k2" class="text-lg font-black text-white"><span id="quick-k1-inline">0</span>% / <span id="quick-k2-inline">0</span>%</span>
                 </div>
             </div>
 
-            <!-- Matrix: Eficacia por Rotación Activa -->
-            <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-4">
-                <div class="flex justify-between items-center">
+            <!-- Tabla rápida por jugadora (decisiones en banquillo) -->
+            <div class="bg-[#121824] rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
+                <div class="px-4 py-3 border-b border-slate-800 flex justify-between items-center">
                     <div>
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Eficacia por Rotación Activa</h3>
-                        <p class="text-[9px] text-slate-600 mt-0.5">K1 / K2 por posición del colocador en el set actual</p>
+                        <h3 class="text-sm font-black uppercase tracking-wider text-white">Rendimiento por Jugadora</h3>
+                        <p class="text-[9px] text-slate-500 mt-0.5">Set actual · Filas en rojo = candidatas a cambio</p>
                     </div>
-                    <span class="text-[9px] font-black text-slate-600 uppercase tracking-wider">R1 → R6</span>
+                    <span id="quick-set-label" class="text-[9px] font-black text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 uppercase">Set 1</span>
                 </div>
-                <div id="rotation-matrix" class="grid grid-cols-6 gap-3">
-                    <!-- 6 rotation blocks rendered by JS -->
-                    {% for i in "123456" %}
-                    <div class="rot-block bg-[#090d16] rounded-2xl p-3 border border-slate-800 flex flex-col items-center space-y-2" data-pos="{{ forloop.counter }}">
-                        <span class="text-[9px] font-black text-slate-500 uppercase tracking-wider">R{{ forloop.counter }}</span>
-                        <div class="w-full space-y-1">
-                            <div class="flex justify-between items-center">
-                                <span class="text-[7px] font-bold text-emerald-500">K1</span>
-                                <span class="rot-k1 text-[9px] font-black text-white">—</span>
-                            </div>
-                            <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="rot-k1-bar h-full bg-emerald-500 rounded-full transition-all" style="width:0%"></div>
-                            </div>
-                            <div class="flex justify-between items-center mt-1">
-                                <span class="text-[7px] font-bold text-blue-500">K2</span>
-                                <span class="rot-k2 text-[9px] font-black text-white">—</span>
-                            </div>
-                            <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="rot-k2-bar h-full bg-blue-500 rounded-full transition-all" style="width:0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
+                <div class="px-4 py-2 bg-[#090d16]/60 border-b border-slate-800 text-[9px] text-slate-500 leading-relaxed">
+                    <span class="text-slate-400 font-bold">Saldo</span> = Puntos (++) − Errores (−−).
+                    <span class="text-emerald-400">Verde</span> = positivo ·
+                    <span class="text-rose-400">Rojo</span> = negativo o candidata a cambio.
+                    <span class="text-slate-600">| Atq P/E = puntos/error ataque · Efic.% = (pts−err)/intentos</span>
+                </div>
+                <div class="overflow-x-auto max-h-[52vh] overflow-y-auto">
+                    <table class="w-full text-left border-collapse min-w-[640px]">
+                        <thead class="sticky top-0 z-10 bg-[#090d16]">
+                            <tr class="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-800">
+                                <th class="p-2 pl-4">#</th>
+                                <th class="p-2">Nombre</th>
+                                <th class="p-2 text-center" title="Puntos (++) − Errores (−−)">Saldo</th>
+                                <th class="p-2 text-center">Puntos</th>
+                                <th class="p-2 text-center">Errores</th>
+                                <th class="p-2 text-center">Atq P/E</th>
+                                <th class="p-2 text-center">Efic.%</th>
+                                <th class="p-2 text-center">Recep.</th>
+                                <th class="p-2 text-center">Ace/Err</th>
+                                <th class="p-2 text-center">Bloq.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quick-stats-body" class="text-[10px] sm:text-xs divide-y divide-slate-800/50">
+                            <tr><td colspan="10" class="p-6 text-center text-slate-600 italic">Sin datos en este set</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- ═══ RIGHT COLUMN: 35% (4 cols) ══════════════════════════════ -->
+        <!-- ═══ SIDEBAR ═════════════════════════════════════════════════ -->
         <div class="lg:col-span-4 space-y-4">
 
-            <!-- BLOQUE 1: Líderes del Set (compact) -->
             <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Líderes del Set</h3>
-
                 <div class="flex items-center space-x-3 py-1.5">
-                    <div class="p-2 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20 flex-none">
-                        <i data-lucide="crown" class="w-4 h-4"></i>
-                    </div>
+                    <div class="p-2 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20 flex-none"><i data-lucide="crown" class="w-4 h-4"></i></div>
                     <div class="min-w-0 flex-1">
-                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">MVP</span>
+                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">MVP Ataque</span>
                         <p id="mvp-label" class="text-xs font-black text-white truncate">--</p>
                     </div>
                 </div>
-
                 <div class="flex items-center space-x-3 py-1.5">
-                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20 flex-none">
-                        <i data-lucide="zap" class="w-4 h-4"></i>
-                    </div>
+                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20 flex-none"><i data-lucide="zap" class="w-4 h-4"></i></div>
                     <div class="min-w-0 flex-1">
                         <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Mejor Sacadora</span>
                         <p id="lider-saque-label" class="text-xs font-black text-white truncate">--</p>
                     </div>
                 </div>
-
                 <div class="flex items-center space-x-3 py-1.5">
-                    <div class="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20 flex-none">
-                        <i data-lucide="target" class="w-4 h-4"></i>
-                    </div>
+                    <div class="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20 flex-none"><i data-lucide="target" class="w-4 h-4"></i></div>
                     <div class="min-w-0 flex-1">
                         <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Mejor Atacante</span>
                         <p id="lider-ataque-label" class="text-xs font-black text-white truncate">--</p>
@@ -920,7 +901,6 @@
                 </div>
             </div>
 
-            <!-- BLOQUE 2: Alerta Táctica (compact) -->
             <div id="alerta-card" class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2 transition-colors duration-300">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Alerta Táctica</h3>
                 <div class="bg-rose-950/20 p-3 rounded-xl border border-rose-900/25 flex items-start space-x-2.5">
@@ -940,15 +920,11 @@
                 </div>
             </div>
 
-            <!-- BLOQUE 3: Eficacia K1/K2 (compact) -->
             <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-3">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Eficacia de Complejos</h3>
                 <div class="space-y-1">
                     <div class="flex justify-between items-center">
-                        <div class="flex items-center space-x-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <span class="text-[9px] font-black text-slate-400 uppercase">K1 Recep.+Ataque</span>
-                        </div>
+                        <span class="text-[9px] font-black text-slate-400 uppercase">K1 Recep.+Ataque</span>
                         <span id="k1-pct-label" class="text-[10px] font-black text-emerald-400">0%</span>
                     </div>
                     <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -957,43 +933,53 @@
                 </div>
                 <div class="space-y-1">
                     <div class="flex justify-between items-center">
-                        <div class="flex items-center space-x-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                            <span class="text-[9px] font-black text-slate-400 uppercase">K2 Saque+Bloq.+Def.</span>
-                        </div>
+                        <span class="text-[9px] font-black text-slate-400 uppercase">K2 Saque+Bloq.+Def.</span>
                         <span id="k2-pct-label" class="text-[10px] font-black text-blue-400">0%</span>
                     </div>
                     <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                         <div id="k2-bar" class="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-700" style="width:0%"></div>
                     </div>
                 </div>
-                <p class="text-[8px] text-slate-700 italic">(++ − --) / Total acciones del complejo</p>
             </div>
 
-            <!-- BLOQUE 4: Registro de Parones -->
-            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2 flex-1">
+            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-3">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Eficacia por Rotación</h3>
+                <div id="rotation-matrix" class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {% for i in "123456" %}
+                    <div class="rot-block bg-[#090d16] rounded-xl p-2 border border-slate-800 text-center" data-pos="{{ forloop.counter }}">
+                        <span class="text-[8px] font-black text-slate-500">R{{ forloop.counter }}</span>
+                        <div class="rot-k1 text-[10px] font-black text-emerald-400 mt-1">—</div>
+                        <div class="rot-k2 text-[9px] font-black text-blue-400">—</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2">
                 <div class="flex justify-between items-center pb-1 border-b border-slate-800">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Registro de Parones</h3>
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Parones</h3>
                     <button onclick="registrarTimeout()" class="text-[8px] font-black text-slate-500 hover:text-amber-400 uppercase tracking-wider flex items-center space-x-1 transition-colors">
                         <i data-lucide="plus" class="w-3 h-3"></i><span>T. Muerto</span>
                     </button>
                 </div>
-                <div id="parones-list" class="space-y-1.5 max-h-44 overflow-y-auto pr-0.5 scrollbar-hide">
-                    <p id="parones-empty" class="text-[9px] text-slate-600 italic text-center py-3">Sin parones registrados</p>
+                <div id="parones-list" class="space-y-1.5 max-h-32 overflow-y-auto pr-0.5 scrollbar-hide">
+                    <p id="parones-empty" class="text-[9px] text-slate-600 italic text-center py-2">Sin parones</p>
                 </div>
             </div>
 
-            <!-- PDF Reports Shortcuts -->
             <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Informes</h3>
                 <div class="grid grid-cols-2 gap-2">
-                    <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-3 text-white text-[10px] font-black rounded-xl active:scale-95 transition-all uppercase tracking-wider text-center flex items-center justify-center border border-slate-700 shadow-md">
-                        <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5 text-emerald-400"></i>PDF
+                    <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-3 text-white text-[10px] font-black rounded-xl active:scale-95 transition-all uppercase tracking-wider text-center flex items-center justify-center border border-slate-700">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>Resumen
                     </a>
-                    <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black rounded-xl active:scale-95 transition-all uppercase tracking-wider text-center flex items-center justify-center shadow-md">
-                        <i data-lucide="bar-chart-3" class="w-3.5 h-3.5 mr-1.5"></i>Informe
+                    <a href="{% url 'stats_app:descargar_informe_completo' partido.id %}?set=global" class="py-3 bg-emerald-700 hover:bg-emerald-600 text-white text-[10px] font-black rounded-xl active:scale-95 transition-all uppercase tracking-wider text-center flex items-center justify-center shadow-md">
+                        <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5"></i>PDF completo
                     </a>
                 </div>
+                <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="block py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black rounded-xl active:scale-95 transition-all uppercase tracking-wider text-center">
+                    Ver en pantalla
+                </a>
             </div>
         </div>
     </div>
@@ -2757,7 +2743,7 @@
                 // Mejor sacadora
                 if (res.mejor_saque) {
                     document.getElementById('lider-saque-label').innerText =
-                        `#${res.mejor_saque.dorsal} ${res.mejor_saque.nombre} (${res.mejor_saque.pp} aces)`;
+                        `#${res.mejor_saque.dorsal} ${res.mejor_saque.nombre} (${res.mejor_saque.pp} directos)`;
                 } else {
                     document.getElementById('lider-saque-label').innerText = '--';
                 }
@@ -2812,6 +2798,60 @@
                 document.getElementById('k1-bar').style.width = `${k1}%`;
                 document.getElementById('k2-pct-label').innerText = `${k2}%`;
                 document.getElementById('k2-bar').style.width = `${k2}%`;
+
+                // ── Tabla rápida + KPIs del informe en vivo ───────────────
+                const ir = res.informe_rapido;
+                if (ir) {
+                    const qs = document.getElementById('quick-score');
+                    const qso = document.getElementById('quick-sideout');
+                    const qb = document.getElementById('quick-break');
+                    const qsl = document.getElementById('quick-set-label');
+                    if (qs) qs.innerText = `${ir.score_local} – ${ir.score_rival}`;
+                    if (qso) qso.innerText = ir.sideout_pct != null ? `${ir.sideout_pct}%` : '—';
+                    if (qb) qb.innerText = ir.breakpoint_pct != null ? `${ir.breakpoint_pct}%` : '—';
+                    if (qsl) qsl.innerText = `Set ${ir.set_num}`;
+                    const k1i = document.getElementById('quick-k1-inline');
+                    const k2i = document.getElementById('quick-k2-inline');
+                    if (k1i) k1i.innerText = k1;
+                    if (k2i) k2i.innerText = k2;
+
+                    const tbody = document.getElementById('quick-stats-body');
+                    if (tbody && ir.tabla_rapida) {
+                        if (ir.tabla_rapida.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="10" class="p-6 text-center text-slate-600 italic">Sin datos en este set</td></tr>';
+                        } else {
+                            tbody.innerHTML = ir.tabla_rapida.map(j => {
+                                const hit = j.ataque_pct != null ? j.ataque_pct.toFixed(3) : '—';
+                                const rowCls = j.alerta ? 'bg-rose-950/30' : 'hover:bg-slate-800/30';
+                                const balCls = j.balance < 0 ? 'text-rose-400' : j.balance > 0 ? 'text-emerald-400' : 'text-slate-400';
+                                return `<tr class="${rowCls} transition-colors">
+                                    <td class="p-2 pl-4 font-black text-white">#${j.dorsal}</td>
+                                    <td class="p-2 font-bold text-slate-300 truncate max-w-[100px]">${j.nombre}</td>
+                                    <td class="p-2 text-center font-black ${balCls}">${j.balance > 0 ? '+' : ''}${j.balance}</td>
+                                    <td class="p-2 text-center font-bold text-emerald-400">${j.puntos}</td>
+                                    <td class="p-2 text-center font-bold text-rose-400">${j.errores}</td>
+                                    <td class="p-2 text-center text-slate-300">${j.ataque_kills}/${j.ataque_err}</td>
+                                    <td class="p-2 text-center text-slate-400">${hit}</td>
+                                    <td class="p-2 text-center text-slate-300">${j.recepciones}<span class="text-rose-400">/${j.recepcion_err}</span></td>
+                                    <td class="p-2 text-center text-slate-300"><span class="text-emerald-400">${j.saque_aces}</span>/<span class="text-rose-400">${j.saque_err}</span></td>
+                                    <td class="p-2 text-center text-slate-300">${j.bloqueo_pts}</td>
+                                </tr>`;
+                            }).join('');
+                        }
+                    }
+                }
+
+                // ── Matriz de rotaciones ──────────────────────────────────
+                if (res.rotaciones) {
+                    res.rotaciones.forEach(rot => {
+                        const block = document.querySelector(`.rot-block[data-pos="${rot.rotacion}"]`);
+                        if (!block) return;
+                        const k1el = block.querySelector('.rot-k1');
+                        const k2el = block.querySelector('.rot-k2');
+                        if (k1el) k1el.innerText = rot.acciones > 0 ? `${rot.k1}%` : '—';
+                        if (k2el) k2el.innerText = rot.acciones > 0 ? `${rot.k2}%` : '—';
+                    });
+                }
             }
         } catch(e) {
             console.error("Error al actualizar flashboard: ", e);

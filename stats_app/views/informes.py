@@ -7,6 +7,7 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 from datetime import datetime
 from ..models import Partido, Jugadora, RegistroEstadistica
+from ..services.reporting import build_full_report
 
 def render_to_pdf(template_src, context_dict={}):
     template = get_template(template_src)
@@ -94,15 +95,19 @@ class DescargarInformeCompletoPDF(BaseInformePDFView):
     def get(self, request, pk):
         partido = get_object_or_404(Partido, pk=pk)
         set_n = request.GET.get('set', 'global')
-        stats = self.get_stats_data(partido, set_n)
-        
+        reporte = build_full_report(partido, set_n)
+
         context = {
             'partido': partido,
-            'jugadoras_stats_list': stats,
             'fecha': datetime.now().strftime("%d/%m/%Y"),
-            'set_n': set_n
+            'set_n': set_n,
+            'resumen_sets': reporte['resumen_sets'],
+            'detalle_sets': reporte['detalle_sets'],
         }
         pdf = render_to_pdf('stats_app/informe_completo_pdf.html', context)
+        if pdf is None:
+            return HttpResponse('Error al generar el PDF', status=500)
         response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="Informe_{partido.rival}.pdf"'
+        sufijo = f'_Set{set_n}' if set_n != 'global' else ''
+        response['Content-Disposition'] = f'attachment; filename="Informe_Completo_{partido.rival}{sufijo}.pdf"'
         return response

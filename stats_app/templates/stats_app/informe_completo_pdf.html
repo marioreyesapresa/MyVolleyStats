@@ -4,102 +4,156 @@
     <meta charset="UTF-8">
     <title>Informe Completo - {{ partido.rival }}</title>
     <style>
-        @page { size: A4 landscape; margin: 0.5cm; }
-        body { font-family: 'Helvetica', sans-serif; font-size: 8px; color: #1e293b; }
-        
-        /* Header con Identificación de Set */
-        .header { text-align: center; margin-bottom: 12px; border-bottom: 3px solid #2563eb; padding-bottom: 10px; }
-        .title { font-size: 16px; font-weight: 900; text-transform: uppercase; color: #1e293b; }
-        .set-badge { display: inline-block; background-color: #2563eb; color: white; padding: 2px 10px; border-radius: 4px; font-size: 10px; margin-top: 5px; text-transform: uppercase; font-weight: 900; }
-        
-        .stats-table { width: 100%; border-collapse: collapse; margin-top: 5px; table-layout: fixed; }
-        
-        /* Aumento de Padding para lectura de élite */
-        .stats-table th { background-color: #f8fafc; padding: 10px 4px; border: 1px solid #e2e8f0; font-weight: 900; text-transform: uppercase; font-size: 7px; color: #64748b; }
-        .stats-table td { padding: 10px 4px; border: 1px solid #e2e8f0; text-align: center; font-family: 'Courier', monospace; font-size: 9px; }
-        
-        .player-cell { text-align: left !important; font-weight: bold; background-color: #f8fafc; font-family: 'Helvetica', sans-serif !important; font-size: 10px; width: 14%; }
-        .balance-cell { font-size: 13px; font-weight: 900; width: 5%; }
-        
-        /* Resaltado de EFI */
-        .efi-cell { font-weight: 900; color: #1e40af; font-size: 11px; width: 7%; background-color: #eff6ff; border-left: 2px solid #2563eb !important; }
-        
-        .scouting-format { color: #334155; letter-spacing: 1px; width: 13.5%; }
-        .success { color: #059669; font-weight: bold; }
-        .error { color: #dc2626; font-weight: bold; }
-        
-        .legend { margin-top: 20px; font-size: 7.5px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; line-height: 1.4; }
+        @page { size: A4 landscape; margin: 0.8cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 8px; color: #111; }
+        .header { border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 12px; }
+        .title { font-size: 14px; font-weight: bold; text-transform: uppercase; }
+        .subtitle { font-size: 9px; color: #555; margin-top: 4px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #999; padding: 3px 4px; text-align: center; }
+        th { background-color: #e8e8e8; font-weight: bold; font-size: 7px; }
+        .left { text-align: left; font-weight: bold; }
+        .totals td { background-color: #f0f0f0; font-weight: bold; }
+        .kill { background-color: #d4edda; }
+        .err { background-color: #f8d7da; }
+        .neg { color: #c00; font-weight: bold; }
+
+        .set-block { margin-top: 14px; page-break-inside: avoid; }
+        .set-block + .set-block { page-break-before: always; }
+        .set-title { background-color: #333; color: #fff; padding: 6px 8px; font-weight: bold; font-size: 9px; margin-bottom: 0; }
+
+        .legend { margin-top: 12px; font-size: 7px; color: #555; border-top: 1px solid #ccc; padding-top: 8px; line-height: 1.5; }
+        .section-title { font-size: 9px; font-weight: bold; margin: 10px 0 4px; text-transform: uppercase; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="title">Scouting Técnico: {{ partido.equipo.nombre }} vs {{ partido.rival }}</div>
-        <div class="set-badge">
-            {% if set_n == 'global' %}INFORME GLOBAL DEL PARTIDO{% else %}ANÁLISIS DETALLADO: SET {{ set_n }}{% endif %}
+        <div class="title">Informe completo — {{ partido.equipo.nombre }} vs {{ partido.rival }}</div>
+        <div class="subtitle">
+            {% if set_n == 'global' %}Partido completo{% else %}Set {{ set_n }}{% endif %}
+            · {{ fecha }}
         </div>
-        <div style="font-size: 9px; color: #64748b; margin-top: 5px;">Fecha del Encuentro: {{ fecha }} | Analítica Voley App Pro</div>
     </div>
 
-    <table class="stats-table">
+    <div class="section-title">Resumen por sets</div>
+    <table>
         <thead>
             <tr>
-                <th>Jugadora</th>
-                <th>BAL</th>
-                <th>SAQUE</th>
-                <th>RECEPCIÓN</th>
-                <th style="background-color: #f0f9ff;">ATAQUE</th>
-                <th>BLOQUEO</th>
-                <th>DEFENSA</th>
-                <th style="background-color: #dbeafe; color: #1e3a8a;">EFI (%)</th>
+                <th class="left">Set</th>
+                <th>Marcador</th>
+                <th>{{ partido.equipo.nombre|truncatechars:14 }} % Recep.</th>
+                <th>{{ partido.rival|truncatechars:14 }} % Recep.</th>
+                <th>% Efic. saque</th>
             </tr>
         </thead>
         <tbody>
-            {% for j in jugadoras_stats_list %}
+            {% for s in resumen_sets %}
             <tr>
-                <td class="player-cell">#{{ j.dorsal }} {{ j.nombre }}</td>
-                <td class="balance-cell" style="color: {% if j.balance > 0 %}#059669{% elif j.balance < 0 %}#dc2626{% else %}#64748b{% endif %};">
-                    {{ j.balance }}
-                </td>
-                
-                <!-- Saque -->
-                <td class="scouting-format">
-                    <span class="success">{{ j.desglose.SAQUE.pp|default:0 }}</span>/<span style="color: #2563eb;">{{ j.desglose.SAQUE.p|default:0 }}</span>/{{ j.desglose.SAQUE.m|default:0 }}/<span class="error">{{ j.desglose.SAQUE.mm|default:0 }}</span>
-                </td>
-                
-                <!-- Recepción -->
-                <td class="scouting-format">
-                    <span class="success">{{ j.desglose.RECEPCION.pp|default:0 }}</span>/<span style="color: #2563eb;">{{ j.desglose.RECEPCION.p|default:0 }}</span>/{{ j.desglose.RECEPCION.m|default:0 }}/<span class="error">{{ j.desglose.RECEPCION.mm|default:0 }}</span>
-                </td>
-                
-                <!-- Ataque -->
-                <td class="scouting-format" style="background-color: #f0f9ff; font-weight: bold;">
-                    <span class="success">{{ j.desglose.ATAQUE.pp|default:0 }}</span>/<span style="color: #2563eb;">{{ j.desglose.ATAQUE.p|default:0 }}</span>/{{ j.desglose.ATAQUE.m|default:0 }}/<span class="error">{{ j.desglose.ATAQUE.mm|default:0 }}</span>
-                </td>
-
-                <!-- Bloqueo -->
-                <td class="scouting-format">
-                    <span class="success">{{ j.desglose.BLOQUEO.pp|default:0 }}</span>/<span style="color: #2563eb;">{{ j.desglose.BLOQUEO.p|default:0 }}</span>/{{ j.desglose.BLOQUEO.m|default:0 }}/<span class="error">{{ j.desglose.BLOQUEO.mm|default:0 }}</span>
-                </td>
-
-                <!-- Defensa -->
-                <td class="scouting-format">
-                    <span class="success">{{ j.desglose.DEFENSA.pp|default:0 }}</span>/<span style="color: #2563eb;">{{ j.desglose.DEFENSA.p|default:0 }}</span>/{{ j.desglose.DEFENSA.m|default:0 }}/<span class="error">{{ j.desglose.DEFENSA.mm|default:0 }}</span>
-                </td>
-                
-                <!-- Eficacia Resaltada -->
-                <td class="efi-cell">{{ j.efi_global }}%</td>
+                <td class="left">SET {{ s.set_num }}</td>
+                <td><strong>{{ s.score_local }} – {{ s.score_rival }}</strong></td>
+                <td>{% if s.sideout_pct != None %}{{ s.sideout_pct }}%{% else %}—{% endif %}</td>
+                <td>{% if s.rival_sideout_pct != None %}{{ s.rival_sideout_pct }}%{% else %}—{% endif %}</td>
+                <td>{% if s.breakpoint_pct != None %}{{ s.breakpoint_pct }}%{% else %}—{% endif %}</td>
             </tr>
+            {% empty %}
+            <tr><td colspan="5">Sin datos</td></tr>
             {% endfor %}
         </tbody>
     </table>
 
+    {% for set_data in detalle_sets %}
+    <div class="set-block">
+        <div class="set-title">
+            SET {{ set_data.set_num }} — Marcador {{ set_data.score }}
+            {% if set_data.sideout_pct != None %} · Efic. recepción {{ set_data.sideout_pct }}%{% endif %}
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th class="left" rowspan="2">Jugadora</th>
+                    <th rowspan="2">Toques</th>
+                    <th rowspan="2">Puntos</th>
+                    <th rowspan="2">Errores</th>
+                    <th rowspan="2">Saldo</th>
+                    <th colspan="4">Ataque</th>
+                    <th colspan="3">Bloqueo</th>
+                    <th colspan="2">Coloc.</th>
+                    <th colspan="2">Defensa</th>
+                    <th colspan="2">Recepción</th>
+                    <th colspan="3">Saque</th>
+                </tr>
+                <tr>
+                    <th>Int.</th><th class="kill">Pts</th><th class="err">Err.</th><th>Efic.%</th>
+                    <th class="kill">Pts</th><th>Toq.</th><th class="err">Err.</th>
+                    <th>Asist.</th><th class="err">Err.</th>
+                    <th>Def.</th><th class="err">Err.</th>
+                    <th>Nº</th><th class="err">Err.</th>
+                    <th>Tot.</th><th class="kill">Ace</th><th class="err">Err.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for j in set_data.jugadoras %}
+                <tr>
+                    <td class="left">#{{ j.dorsal }} {{ j.nombre }}</td>
+                    <td>{{ j.acciones }}</td>
+                    <td class="kill">{{ j.puntos }}</td>
+                    <td class="err">{{ j.errores }}</td>
+                    <td {% if j.balance < 0 %}class="neg"{% endif %}>{{ j.balance }}</td>
+                    <td>{{ j.ataque_swings }}</td>
+                    <td class="kill">{{ j.ataque_kills }}</td>
+                    <td class="err">{{ j.ataque_err }}</td>
+                    <td>{% if j.ataque_pct != None %}{{ j.ataque_pct|floatformat:3 }}{% else %}—{% endif %}</td>
+                    <td class="kill">{{ j.bloqueo_pts }}</td>
+                    <td>{{ j.bloqueo_toques }}</td>
+                    <td class="err">{{ j.bloqueo_err }}</td>
+                    <td>{{ j.asistencias }}</td>
+                    <td class="err">{{ j.colocacion_err }}</td>
+                    <td>{{ j.defensas }}</td>
+                    <td class="err">{{ j.defensa_err }}</td>
+                    <td>{{ j.recepciones }}</td>
+                    <td class="err">{{ j.recepcion_err }}</td>
+                    <td>{{ j.saques }}</td>
+                    <td class="kill">{{ j.saque_aces }}</td>
+                    <td class="err">{{ j.saque_err }}</td>
+                </tr>
+                {% endfor %}
+                {% if set_data.totales %}
+                <tr class="totals">
+                    <td class="left">TOTAL EQUIPO</td>
+                    <td>{{ set_data.totales.acciones }}</td>
+                    <td>{{ set_data.totales.puntos }}</td>
+                    <td>{{ set_data.totales.errores }}</td>
+                    <td>{{ set_data.totales.balance }}</td>
+                    <td>{{ set_data.totales.ataque_swings }}</td>
+                    <td>{{ set_data.totales.ataque_kills }}</td>
+                    <td>{{ set_data.totales.ataque_err }}</td>
+                    <td>{% if set_data.totales.ataque_pct != None %}{{ set_data.totales.ataque_pct|floatformat:3 }}{% else %}—{% endif %}</td>
+                    <td>{{ set_data.totales.bloqueo_pts }}</td>
+                    <td>{{ set_data.totales.bloqueo_toques }}</td>
+                    <td>{{ set_data.totales.bloqueo_err }}</td>
+                    <td>{{ set_data.totales.asistencias }}</td>
+                    <td>{{ set_data.totales.colocacion_err }}</td>
+                    <td>{{ set_data.totales.defensas }}</td>
+                    <td>{{ set_data.totales.defensa_err }}</td>
+                    <td>{{ set_data.totales.recepciones }}</td>
+                    <td>{{ set_data.totales.recepcion_err }}</td>
+                    <td>{{ set_data.totales.saques }}</td>
+                    <td>{{ set_data.totales.saque_aces }}</td>
+                    <td>{{ set_data.totales.saque_err }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+
     <div class="legend">
-        <strong>FORMATO DE SCOUTING:</strong> ( ++ / + / - / -- ). 
-        <strong>++</strong>: Acción Perfecta/Punto | <strong>+</strong>: Positiva/Continuidad | <strong>-</strong>: Negativa/Mala | <strong>--</strong>: Error Directo.
-        <br>
-        <strong>EFICACIA REAL (EFI):</strong> Balance de acciones terminales ((++) - (--)) dividido por el volumen total de intervenciones. Suelo: 0%.
-        <br>
-        <span style="font-style: italic; color: #94a3b8;">Este documento es para uso interno del staff técnico de {{ partido.equipo.nombre }}.</span>
+        <strong>Saldo</strong> = Puntos (++) − Errores (−−).
+        <strong>Puntos</strong> = acciones ++ · <strong>Errores</strong> = acciones −−.
+        Verde = puntos/aces · Rojo = errores.
+        <strong>Efic. recepción %</strong> = side-out al recibir · <strong>Efic. saque %</strong> = puntos con nuestro saque.
+        Generado por Voley Stats — {{ fecha }}
     </div>
 </body>
 </html>

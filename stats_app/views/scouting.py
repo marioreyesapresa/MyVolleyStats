@@ -6,6 +6,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 import json
 from ..models import Partido, Jugadora, RegistroEstadistica, RotacionSet
+from ..services.reporting import (
+    build_quick_set_report,
+    build_full_report,
+    calc_set_score,
+    rotation_matrix,
+)
 
 class ModoPartidoView(LoginRequiredMixin, View):
     template_name = 'stats_app/modo_partido.html'
@@ -284,6 +290,8 @@ def ObtenerStatsSetAPI(request):
         'puntos_set_decisivo': partido.puntos_set_decisivo,
         'sets_para_ganar': partido.sets_para_ganar,
         'set_decisivo_numero': partido.set_decisivo_numero,
+        'informe_rapido': build_quick_set_report(partido, set_num),
+        'rotaciones': rotation_matrix(partido, set_num),
     })
 
 def get_stats_json(request, partido_id, set_n):
@@ -395,20 +403,29 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
 
     def get(self, request, pk):
         partido = get_object_or_404(Partido, pk=pk)
-        
         set_filtro = request.GET.get('set', 'global')
+        reporte = build_full_report(partido, set_filtro)
+
+        sets_disponibles = (
+            RegistroEstadistica.objects.filter(partido=partido)
+            .values_list('set_numero', flat=True)
+            .distinct()
+            .order_by('set_numero')
+        )
+
+        # Gráficos (origen global o del set filtrado)
         stats_base = RegistroEstadistica.objects.filter(partido=partido)
         if set_filtro != 'global':
             stats_base = stats_base.filter(set_numero=set_filtro)
-        
-        sets_disponibles = RegistroEstadistica.objects.filter(partido=partido).values_list('set_numero', flat=True).distinct().order_by('set_numero')
+
         labels_sets, p_merito, p_err_rival, p_rival = [], [], [], []
         for s in sets_disponibles:
             labels_sets.append(f"Set {s}")
+            local, rival = calc_set_score(partido, s)
             qs_s = RegistroEstadistica.objects.filter(partido=partido, set_numero=s)
             p_merito.append(qs_s.filter(accion__in=['SAQUE', 'ATAQUE', 'BLOQUEO'], calidad='++').count())
             p_err_rival.append(qs_s.filter(accion='ERROR_RIVAL').count())
-            p_rival.append(qs_s.filter(Q(accion='PUNTO_RIVAL') | Q(calidad='--')).count())
+            p_rival.append(rival)
 
         origen_puntos = {
             'Ataque': stats_base.filter(accion='ATAQUE', calidad='++').count(),
@@ -416,56 +433,19 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
             'Bloqueo': stats_base.filter(accion='BLOQUEO', calidad='++').count(),
             'Error Rival': stats_base.filter(accion='ERROR_RIVAL').count(),
         }
-        
-        jugadoras_stats = []
-        fundamentos = ['SAQUE', 'RECEPCION', 'COLOCACION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
-        # Get all players who actually played/disputed minutes in this match
-        rotaciones = RotacionSet.objects.filter(partido=partido)
-        jugadoras_activas_ids = set()
-        for rot in rotaciones:
-            for field in ['pos1_id', 'pos2_id', 'pos3_id', 'pos4_id', 'pos5_id', 'pos6_id', 'libero1_id', 'libero2_id']:
-                val = getattr(rot, field)
-                if val:
-                    jugadoras_activas_ids.add(val)
-
-        j_ids = stats_base.values_list('jugadora_id', flat=True).distinct()
-        for j in Jugadora.objects.filter(id__in=j_ids).filter(id__in=jugadoras_activas_ids):
-            j_qs = stats_base.filter(jugadora=j)
-            j_qs_f = j_qs.filter(accion__in=fundamentos)
-            if j_qs_f.exists():
-                puntos = j_qs_f.filter(calidad='++').count()
-                errores = j_qs_f.filter(calidad='--').count()
-                j_data = {
-                    'id': j.id, 'dorsal': j.dorsal, 'nombre': j.nombre,
-                    'puntos': puntos, 'errores': errores, 'balance': puntos - errores,
-                    'continuidad': j_qs_f.filter(calidad='+').count(),
-                    'efi_global': round(((puntos - errores) / j_qs_f.count()) * 100, 1) if j_qs_f.count() > 0 else 0,
-                    'desglose': {}
-                }
-                for fund in fundamentos:
-                    f_qs = j_qs.filter(accion=fund)
-                    if f_qs.exists():
-                        pp = f_qs.filter(calidad='++').count()
-                        p = f_qs.filter(calidad='+').count()
-                        eq = f_qs.filter(calidad='=').count()
-                        m = f_qs.filter(calidad='-').count()
-                        mm = f_qs.filter(calidad='--').count()
-                        tot = pp + p + eq + m + mm
-                        j_data['desglose'][fund] = {
-                            'pp': pp, 'p': p, 'eq': eq, 'm': m, 'mm': mm, 'total': tot,
-                            'efi': round(max(0, ((pp - mm) / tot) * 100)) if tot > 0 else 0
-                        }
-                jugadoras_stats.append(j_data)
-        
-        jugadoras_stats.sort(key=lambda x: x['balance'], reverse=True)
 
         context = {
-            'partido': partido, 'set_actual': set_filtro, 'sets_disponibles': sets_disponibles,
-            'labels_sets': json.dumps(labels_sets), 'puntos_merito': json.dumps(p_merito),
-            'puntos_err_rival': json.dumps(p_err_rival), 'puntos_rival': json.dumps(p_rival),
-            'origen_labels': json.dumps(list(origen_puntos.keys())), 'origen_data': json.dumps(list(origen_puntos.values())),
-            'jugadoras_stats': json.dumps(jugadoras_stats), 'jugadoras_stats_list': jugadoras_stats,
-            'fundamentos': json.dumps(fundamentos)
+            'partido': partido,
+            'set_actual': set_filtro,
+            'sets_disponibles': sets_disponibles,
+            'resumen_sets': reporte['resumen_sets'],
+            'detalle_sets': reporte['detalle_sets'],
+            'labels_sets': json.dumps(labels_sets),
+            'puntos_merito': json.dumps(p_merito),
+            'puntos_err_rival': json.dumps(p_err_rival),
+            'puntos_rival': json.dumps(p_rival),
+            'origen_labels': json.dumps(list(origen_puntos.keys())),
+            'origen_data': json.dumps(list(origen_puntos.values())),
         }
         return render(request, self.template_name, context)
 

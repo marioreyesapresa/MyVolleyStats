@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/partido/<int:partido_id>/config-set/', views.ActualizarConfigSetAPI.as_view(), name='api_actualizar_config_set'),
     path('partido/<int:pk>/stats-final/', views.PartidoStatsFinalView.as_view(), name='partido_stats_final'),
     path('partido/<int:pk>/descargar-resumen/', views.DescargarResumenPDF.as_view(), name='descargar_resumen_pdf'),
+    path('partido/<int:pk>/descargar-informe-completo/', views.DescargarInformeCompletoPDF.as_view(), name='descargar_informe_completo'),
     
     # Rotaciones
     path('api/rotacion/get/<int:partido_id>/', views.GetRotacionActualAPI.as_view(), name='api_get_rotacion'),
