@@ -414,6 +414,26 @@ La aplicación es **multi-entrenador**: cada `Equipo` pertenece a un usuario (`e
 
 Con `DJANGO_DEBUG=False`, `settings.py` activa automáticamente: `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_BROWSER_XSS_FILTER`, `SECURE_CONTENT_TYPE_NOSNIFF`, HSTS y cookies `HttpOnly`.
 
+### Flujo de ramas (CI/CD)
+
+| Rama | Uso | ¿Despliega a producción? |
+|------|-----|--------------------------|
+| **`develop`** | Desarrollo diario, pruebas y features | **No** |
+| **`main`** | Código estable listo para producción | **Sí** (automático vía GitHub Actions) |
+
+```bash
+# Trabajar en develop (sin despliegues)
+git checkout develop
+# ... cambios, commits ...
+git push origin develop
+
+# Cuando esté listo para producción, fusionar en main
+git checkout main
+git pull origin main
+git merge develop
+git push origin main   # ← esto sí dispara el deploy a Cloud Run
+```
+
 ### Despliegue paso a paso
 
 ```bash
