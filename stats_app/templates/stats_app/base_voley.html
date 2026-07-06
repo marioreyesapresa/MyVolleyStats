@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}Scout Rotation Pro | Voley Técnico{% endblock %}</title>
+    {% include 'partials/pwa_meta.html' %}
     <script>
         (function () {
             var t = localStorage.getItem('voley_theme') || 'oscuro';
@@ -286,5 +287,6 @@
             if (sidebarDefault === '1') applySidebarState(true);
         }
     </script>
+    {% include 'partials/pwa_register.html' %}
 </body>
 </html>

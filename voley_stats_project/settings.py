@@ -179,6 +179,17 @@ USE_TZ = True
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Archivos estáticos — servidos por WhiteNoise (sin Nginx) en Cloud Run
+#
+# El backend con manifest (`CompressedManifestStaticFilesStorage`) exige que
+# `collectstatic` se haya ejecutado antes: sin el `staticfiles.json` que
+# genera, cualquier `{% static %}` lanza `ValueError: Missing staticfiles
+# manifest entry`. Eso es aceptable —deseable, incluso— en producción (fuerza
+# a no desplegar sin haber generado los assets con hash), pero rompería el
+# desarrollo local y la suite de tests si se usara también con `DEBUG=True`,
+# ya que nadie ejecuta `collectstatic` antes de un `manage.py test`. Por eso
+# el backend de manifest solo se activa cuando `DEBUG=False`; en desarrollo
+# se usa el `StaticFilesStorage` plano de Django, que sirve los ficheros
+# directamente sin necesitar un manifest previo.
 # ─────────────────────────────────────────────────────────────────────────────
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -189,7 +200,10 @@ STORAGES = {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
     },
     'staticfiles': {
-        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
     },
 }
 

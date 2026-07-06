@@ -1,0 +1,17 @@
+<script>
+    // Registro del Service Worker: silencioso y a prueba de fallos. Si el
+    // navegador no soporta Service Workers (o el registro falla por
+    // cualquier motivo: red, HTTP sin TLS, etc.) la app sigue funcionando
+    // con total normalidad, simplemente sin la capacidad de instalación PWA.
+    (function registrarServiceWorker() {
+        if (!('serviceWorker' in navigator)) return;
+
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/service-worker.js').then(function (registro) {
+                console.log('[PWA] Service Worker registrado. Scope:', registro.scope);
+            }).catch(function (error) {
+                console.warn('[PWA] No se pudo registrar el Service Worker (la app sigue funcionando con normalidad):', error);
+            });
+        });
+    })();
+</script>

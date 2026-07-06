@@ -1,0 +1,16 @@
+{% load static %}
+<!-- PWA: manifest + metadatos de instalación para iOS/Android -->
+<link rel="manifest" href="{% static 'stats_app/manifest.json' %}">
+<meta name="theme-color" content="#0f172a">
+
+<!-- iOS Safari no lee bien el manifest.json para "Añadir a pantalla de
+     inicio": necesita estas etiquetas explícitas para ejecutarse a pantalla
+     completa (standalone) sin la barra de direcciones/navegación. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ScoutRotation">
+<link rel="apple-touch-icon" href="{% static 'stats_app/icons/apple-touch-icon.png' %}">
+
+<!-- Android/Chrome usa los iconos del manifest, pero se declara también
+     como favicon de forma explícita para navegadores que no lo resuelven. -->
+<link rel="icon" type="image/png" sizes="192x192" href="{% static 'stats_app/icons/icon-192.png' %}">
