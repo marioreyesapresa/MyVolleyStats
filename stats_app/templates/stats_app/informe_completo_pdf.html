@@ -123,6 +123,16 @@
             color: #475569;
         }
 
+        .racha-line {
+            font-size: 8px;
+            margin: 6px 0 0;
+            color: #334155;
+        }
+
+        table.zona-table { width: 55%; margin-bottom: 4px; }
+        table.zona-table th { font-size: 6.5px; }
+        table.zona-table td { font-size: 8px; }
+
         .legend {
             margin-top: 10px;
             font-size: 7px;
@@ -306,6 +316,59 @@
                 </tr>
                 {% endwith %}
                 {% endif %}
+            </tbody>
+        </table>
+
+        {% if set_data.racha_maxima.racha >= 2 %}
+        <p class="racha-line">
+            &#128293; Racha máxima del set: <strong>{{ set_data.racha_maxima.racha }}</strong> puntos seguidos
+            {% if set_data.racha_maxima.lado == 'nosotros' %}a favor{% else %}del rival{% endif %}
+        </p>
+        {% endif %}
+
+        <div class="section-title">Rendimiento por Zona — Set {{ set_data.set_num }}</div>
+        <table class="detail zona-table">
+            <thead>
+                <tr>
+                    <th class="left">Zona</th>
+                    <th>Ataque Int.</th>
+                    <th>Ataque %</th>
+                    <th>Bloqueo Int.</th>
+                    <th>Bloqueo %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for z in set_data.zonas %}
+                <tr class="{% if forloop.counter|divisibleby:2 %}row-even{% else %}row-odd{% endif %}">
+                    <td class="left">Zona {{ z.zona }}{% if z.zona == 1 %} (Saque){% endif %}</td>
+                    <td>{{ z.ataque_total|pdf_cell }}</td>
+                    <td>{% if z.ataque_pct != None %}{{ z.ataque_pct }}%{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{% if z.es_red %}{{ z.bloqueo_total|pdf_cell }}{% else %}<span class="num-empty">·</span>{% endif %}</td>
+                    <td>{% if z.es_red and z.bloqueo_pct != None %}{{ z.bloqueo_pct }}%{% elif z.es_red %}<span class="num-empty">—</span>{% else %}<span class="num-empty">·</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-title">Eficacia por Rotación — Set {{ set_data.set_num }}</div>
+        <table class="detail zona-table">
+            <thead>
+                <tr>
+                    <th class="left">Rotación</th>
+                    <th>Acciones</th>
+                    <th>K1 Recep.+Ataque</th>
+                    <th>K2 Saque+Bloq.+Def.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in set_data.rotacion %}
+                <tr class="{% if forloop.counter|divisibleby:2 %}row-even{% else %}row-odd{% endif %}">
+                    <td class="left">R{{ r.rotacion }}</td>
+                    <td>{{ r.acciones|pdf_cell }}</td>
+                    <td>{% if r.acciones %}{{ r.k1 }}%{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{% if r.acciones %}{{ r.k2 }}%{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>

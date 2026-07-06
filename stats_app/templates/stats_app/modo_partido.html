@@ -513,6 +513,10 @@
                 <!-- Poblado dinámicamente por renderGameplayGrid() -->
             </div>
 
+            <!-- Colocación: barra fija compartida (no depende de la zona), asignada
+                 automáticamente a la colocadora en pista. Poblada por renderColocacionBar() -->
+            <div id="colocacion-bar-container" class="flex-shrink-0"></div>
+
             <!-- Botonera Inferior: Score point for Us / Them -->
             <div class="flex-shrink-0 grid grid-cols-2 gap-4">
                 <button onclick="registrar('ERROR_RIVAL', '')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2">
@@ -858,10 +862,12 @@
                                 <th class="p-2 text-center">Recep.</th>
                                 <th class="p-2 text-center">Ace/Err</th>
                                 <th class="p-2 text-center">Bloq.</th>
+                                <th class="p-2 text-center">Coloc.</th>
+                                <th class="p-2 text-center">Def.</th>
                             </tr>
                         </thead>
                         <tbody id="quick-stats-body" class="text-[10px] sm:text-xs divide-y divide-slate-800/50">
-                            <tr><td colspan="10" class="p-6 text-center text-slate-600 italic">Sin datos en este set</td></tr>
+                            <tr><td colspan="12" class="p-6 text-center text-slate-600 italic">Sin datos en este set</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -892,6 +898,18 @@
                     <div class="min-w-0 flex-1">
                         <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Mejor Atacante</span>
                         <p id="lider-ataque-label" class="text-xs font-black text-white truncate">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="racha-card" class="hidden bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl transition-colors duration-300">
+                <div class="flex items-center space-x-3">
+                    <div id="racha-icon" class="p-2 rounded-lg border flex-none">
+                        <i data-lucide="flame" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest">Racha Actual</span>
+                        <p id="racha-label" class="text-xs font-black text-white truncate">--</p>
                     </div>
                 </div>
             </div>
@@ -934,6 +952,30 @@
                     <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                         <div id="k2-bar" class="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-700" style="width:0%"></div>
                     </div>
+                </div>
+            </div>
+
+            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-3">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Rendimiento por Zona</h3>
+                <p class="text-[8px] text-slate-600 leading-relaxed -mt-2">% Ataque (arriba) y % Bloqueo en zonas de red (abajo) · según de qué zona salió cada acción</p>
+                <div id="zone-perf-grid" class="grid {% if partido.modalidad == 'MINIVOLEY' %}grid-cols-2{% else %}grid-cols-3{% endif %} gap-2">
+                    {% if partido.modalidad == 'MINIVOLEY' %}
+                    {% for z in "3241" %}
+                    <div class="zone-perf-block bg-[#090d16] rounded-xl p-2 border border-slate-800 text-center" data-zona="{{ z }}">
+                        <span class="text-[8px] font-black text-slate-500">Z{{ z }}</span>
+                        <div class="zp-ataque text-[10px] font-black text-emerald-400 mt-1">—</div>
+                        <div class="zp-bloqueo text-[9px] font-black text-blue-400">—</div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    {% for z in "432561" %}
+                    <div class="zone-perf-block bg-[#090d16] rounded-xl p-2 border border-slate-800 text-center" data-zona="{{ z }}">
+                        <span class="text-[8px] font-black text-slate-500">Z{{ z }}</span>
+                        <div class="zp-ataque text-[10px] font-black text-emerald-400 mt-1">—</div>
+                        <div class="zp-bloqueo text-[9px] font-black text-blue-400">—</div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
                 </div>
             </div>
 
@@ -2143,6 +2185,7 @@
         updateUIHeader();
         drawCourtTempLineup();
         drawBenchPlayers();
+        if (state.modo_scout === 'rapido') renderGameplayGrid();
         
         try {
             // 4. Persistir la rotación en el servidor
@@ -2224,6 +2267,7 @@
         updateUIHeader();
         drawCourtTempLineup();
         drawBenchPlayers();
+        if (state.modo_scout === 'rapido') renderGameplayGrid();
         
         try {
             // 4. Persistir en el servidor
@@ -2250,6 +2294,12 @@
         if (['ERROR_RIVAL', 'PUNTO_RIVAL'].includes(accion)) {
             jug_id = null;
         }
+        // La zona es un dato transitorio de un único toque en el grid del
+        // Modo Rápido: se lee y se limpia de inmediato para que no se filtre
+        // por error a la siguiente acción (p.ej. un botón de +Punto/-Punto
+        // que no pasa por registrarGameplay).
+        const zonaActual = state.zona || null;
+        state.zona = null;
         if (!isRapido && !jug_id && !['ERROR_RIVAL', 'PUNTO_RIVAL'].includes(accion)) { 
             showToast("⚠️ SELECCIONA JUGADORA"); 
             return; 
@@ -2291,7 +2341,8 @@
                     calidad: calidad, 
                     set_numero: state.set_numero, 
                     fase: faseTag,
-                    rotacion_num: state.rotacion_num
+                    rotacion_num: state.rotacion_num,
+                    zona: zonaActual
                 }) 
             });
             
@@ -2351,6 +2402,10 @@
                 updateFaseIndicator();
                 updateFlashboard();
                 resetVisual();
+                // Refresca las tarjetas de zona: la fila de Volumen Rápido
+                // (Recepción/Defensa) y el bloque de Saque dependen de la
+                // fase y de quién saca, que acaban de cambiar.
+                if (state.modo_scout === 'rapido') renderGameplayGrid();
             } else {
                 showToast("❌ Error al registrar");
             }
@@ -2896,7 +2951,7 @@
                     const tbody = document.getElementById('quick-stats-body');
                     if (tbody && ir.tabla_rapida) {
                         if (ir.tabla_rapida.length === 0) {
-                            tbody.innerHTML = '<tr><td colspan="10" class="p-6 text-center text-slate-600 italic">Sin datos en este set</td></tr>';
+                            tbody.innerHTML = '<tr><td colspan="12" class="p-6 text-center text-slate-600 italic">Sin datos en este set</td></tr>';
                         } else {
                             tbody.innerHTML = ir.tabla_rapida.map(j => {
                                 const hit = j.ataque_pct != null ? j.ataque_pct.toFixed(3) : '—';
@@ -2913,6 +2968,8 @@
                                     <td class="p-2 text-center text-slate-300">${j.recepciones}<span class="text-rose-400">/${j.recepcion_err}</span></td>
                                     <td class="p-2 text-center text-slate-300"><span class="text-emerald-400">${j.saque_aces}</span>/<span class="text-rose-400">${j.saque_err}</span></td>
                                     <td class="p-2 text-center text-slate-300">${j.bloqueo_pts}</td>
+                                    <td class="p-2 text-center text-slate-300">${j.asistencias}<span class="text-rose-400">/${j.colocacion_err}</span></td>
+                                    <td class="p-2 text-center text-slate-300">${j.defensas}<span class="text-rose-400">/${j.defensa_err}</span></td>
                                 </tr>`;
                             }).join('');
                         }
@@ -2929,6 +2986,38 @@
                         if (k1el) k1el.innerText = rot.acciones > 0 ? `${rot.k1}%` : '—';
                         if (k2el) k2el.innerText = rot.acciones > 0 ? `${rot.k2}%` : '—';
                     });
+                }
+
+                // ── Rendimiento por zona (Ataque / Bloqueo) ───────────────
+                if (res.zonas) {
+                    res.zonas.forEach(z => {
+                        const block = document.querySelector(`.zone-perf-block[data-zona="${z.zona}"]`);
+                        if (!block) return;
+                        const atqEl = block.querySelector('.zp-ataque');
+                        const bloEl = block.querySelector('.zp-bloqueo');
+                        if (atqEl) atqEl.innerText = z.ataque_total > 0 ? `${z.ataque_pct}%` : '—';
+                        if (bloEl) bloEl.innerText = z.es_red ? (z.bloqueo_total > 0 ? `${z.bloqueo_pct}%` : '—') : '';
+                    });
+                }
+
+                // ── Racha / momentum ───────────────────────────────────────
+                const rachaCard = document.getElementById('racha-card');
+                if (rachaCard && res.racha) {
+                    if (res.racha.racha >= 2) {
+                        rachaCard.classList.remove('hidden');
+                        const esNuestra = res.racha.lado === 'nosotros';
+                        const icon = document.getElementById('racha-icon');
+                        const label = document.getElementById('racha-label');
+                        icon.className = `p-2 rounded-lg border flex-none ${esNuestra ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`;
+                        rachaCard.style.borderColor = esNuestra ? 'rgba(16, 185, 129, 0.35)' : 'rgba(244, 63, 94, 0.35)';
+                        label.className = `text-xs font-black truncate ${esNuestra ? 'text-emerald-400' : 'text-rose-400'}`;
+                        label.innerText = esNuestra
+                            ? `¡${res.racha.racha} puntos seguidos a favor! 🔥`
+                            : `${res.racha.racha} puntos seguidos del rival ⚠️`;
+                        if (window.lucide) lucide.createIcons();
+                    } else {
+                        rachaCard.classList.add('hidden');
+                    }
                 }
             }
         } catch(e) {
@@ -3416,8 +3505,9 @@
         }
     }
 
-    function registrarGameplay(accion, calidad, playerId) {
+    function registrarGameplay(accion, calidad, playerId, zona) {
         state.jugadora_id = playerId || null;
+        state.zona = zona || null;
         registrar(accion, calidad);
     }
 
@@ -3436,7 +3526,14 @@
         if (!lib) {
             return `<div class="rounded-xl border border-dashed border-slate-800/60 bg-slate-900/20 min-h-[4.5rem]"></div>`;
         }
-        const btnSm = 'w-full py-2 px-0.5 text-[9px] sm:text-[10px] font-black rounded-lg transition-all active:scale-95 text-center leading-tight';
+        // Mismo criterio de "Volumen Rápido" que las tarjetas de zona: un solo
+        // toque para la acción final (Recepción/Defensa según la fase, o su
+        // error), sin niveles intermedios de calidad.
+        const esRecepcion = state.fase_actual === 'K1';
+        const volumenAccion = esRecepcion ? 'RECEPCION' : 'DEFENSA';
+        const volumenLabel = esRecepcion ? 'Recepción' : 'Defensa';
+        const volumenLabelError = esRecepcion ? 'Error Recepción' : 'Error Defensa';
+        const btnSm = 'w-full py-3 px-1 min-h-[2.75rem] text-[10px] sm:text-xs font-black rounded-lg transition-all active:scale-95 text-center leading-tight whitespace-normal break-words';
         return `
             <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-2 py-1.5 flex flex-col gap-1.5 min-w-0">
                 <div class="flex items-center gap-2 border-b border-amber-500/20 pb-1">
@@ -3446,13 +3543,9 @@
                     </div>
                     <span class="text-[8px] sm:text-[9px] font-bold text-amber-400/80 truncate flex-1">${lib.nombre}</span>
                 </div>
-                <div class="grid grid-cols-3 grid-rows-2 gap-1 min-w-0">
-                    <button onclick="registrarGameplay('RECEPCION', '++', '${lib.id}')" class="${btnSm} bg-emerald-600 hover:bg-emerald-500 text-white">Rec++</button>
-                    <button onclick="registrarGameplay('RECEPCION', '+', '${lib.id}')" class="${btnSm} bg-emerald-600/70 hover:bg-emerald-500 text-white">Rec+</button>
-                    <button onclick="registrarGameplay('RECEPCION', '--', '${lib.id}')" class="${btnSm} bg-rose-600 hover:bg-rose-500 text-white">Rec−</button>
-                    <button onclick="registrarGameplay('DEFENSA', '++', '${lib.id}')" class="${btnSm} bg-emerald-600 hover:bg-emerald-500 text-white">Def++</button>
-                    <button onclick="registrarGameplay('DEFENSA', '+', '${lib.id}')" class="${btnSm} bg-emerald-600/70 hover:bg-emerald-500 text-white">Def+</button>
-                    <button onclick="registrarGameplay('DEFENSA', '--', '${lib.id}')" class="${btnSm} bg-rose-600 hover:bg-rose-500 text-white">Def−</button>
+                <div class="grid grid-cols-2 gap-1.5 min-w-0">
+                    <button onclick="registrarGameplay('${volumenAccion}', '=', '${lib.id}')" class="${btnSm} bg-white hover:bg-slate-200 text-black">${volumenLabel}</button>
+                    <button onclick="registrarGameplay('${volumenAccion}', '--', '${lib.id}')" class="${btnSm} bg-rose-600 hover:bg-rose-500 text-white">${volumenLabelError}</button>
                 </div>
             </div>
         `;
@@ -3482,6 +3575,57 @@
         }
     }
 
+    // ── Colocación: barra fija compartida (no depende de la zona) ──────────
+    // La colocadora se detecta automáticamente buscando en la rotación
+    // actual a la jugadora cuya posición es COLOCADORA, sin importar en qué
+    // zona esté rotada en cada momento.
+    function getColocadoraForGameplay() {
+        if (!state.rotation) return null;
+        const maxZ = MODALIDAD.toUpperCase() === 'MINIVOLEY' ? 4 : 6;
+        for (let z = 1; z <= maxZ; z++) {
+            const p = state.rotation[`pos${z}`];
+            if (!p) continue;
+            const pj = allJugadoras.find(x => String(x.id) === String(p.id));
+            if (pj && pj.posicion && pj.posicion.toUpperCase() === 'COLOCADORA') {
+                return { id: p.id, dorsal: p.dorsal, nombre: pj.nombre };
+            }
+        }
+        return null;
+    }
+
+    function buildColocacionBarHtml(col) {
+        const pId = col ? col.id : '';
+        const label = col ? `Colocación · #${col.dorsal} ${col.nombre}` : 'Colocación';
+        const btnBase = 'gameplay-action-btn flex-1 flex items-center justify-center px-1.5 py-3 min-h-[3rem] text-[10px] sm:text-xs md:text-sm font-black rounded-xl transition-all active:scale-95 text-center leading-[1.15] whitespace-normal break-words hyphens-auto';
+        return `
+            <div class="bg-[#121824] rounded-2xl p-2.5 border border-slate-800">
+                <div class="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-wider mb-1.5 truncate">${label}</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Colocación</button>
+                    <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Colocación</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderColocacionBar() {
+        const container = document.getElementById('colocacion-bar-container');
+        if (!container) return;
+        if (!state.rotation) {
+            container.innerHTML = '';
+            return;
+        }
+        container.innerHTML = buildColocacionBarHtml(getColocadoraForGameplay());
+    }
+
+    // ── Tarjetas de zona del Modo Rápido ("Estadísticas Rápidas") ───────────
+    // Botones ESTÁTICOS (Ataque, Bloqueo en zonas de red, Saque en Zona 1)
+    // + una fila DINÁMICA por fase ("Volumen Rápido": Recepción cuando
+    // recibimos el saque rival, Defensa el resto del tiempo). La Colocación
+    // vive fuera de las tarjetas, en una barra fija común (ver
+    // buildColocacionBarHtml). Un solo toque registra siempre la acción
+    // final —sin botones intermedios de "continuidad"— para no interrumpir
+    // el ritmo del partido en el iPad.
     function buildZoneCardHtml(z, btnBase) {
         const player = state.rotation[`pos${z}`];
         let pId = '';
@@ -3492,10 +3636,17 @@
             const nombre = pj ? pj.nombre : 'Jugadora';
             pLabel = `#${player.dorsal} ${nombre}`;
         }
-        const isMinivoley = MODALIDAD.toUpperCase() === 'MINIVOLEY';
         const isServer = (z === 1);
-        const isZagueraSinSaque = !isMinivoley && (z === 5 || z === 6);
+        const esZonaRed = [2, 3, 4].includes(z);
         const zoneTitle = isServer ? 'Saque (Zona 1)' : `Zona ${z}`;
+
+        // Fila de Volumen Rápido: K1 (recibimos) → Recepción; cualquier otra
+        // fase (K0 sacamos / K2 transición) → Defensa, ya que en ambos casos
+        // el equipo está en labor defensiva sobre el ataque rival.
+        const esRecepcion = state.fase_actual === 'K1';
+        const volumenAccion = esRecepcion ? 'RECEPCION' : 'DEFENSA';
+        const volumenLabel = esRecepcion ? 'Recepción' : 'Defensa';
+        const volumenLabelError = esRecepcion ? 'Error Recepción' : 'Error Defensa';
 
         let html = `
             <div class="bg-[#121824] rounded-2xl p-3 md:p-4 border border-slate-800 flex flex-col h-full min-h-0">
@@ -3504,40 +3655,42 @@
                     <span class="text-xs md:text-sm font-black text-white truncate max-w-[130px]">${pLabel}</span>
                 </div>
                 <div class="flex flex-col gap-2 flex-1 min-h-0">
-                    <div class="grid grid-cols-3 gap-1.5 flex-1 min-h-0">
-                        <button onclick="registrarGameplay('ATAQUE', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Ataque</button>
-                        <button onclick="registrarGameplay('ATAQUE', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Continuidad</button>
-                        <button onclick="registrarGameplay('ATAQUE', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Ataque</button>
+                    <!-- Fila 1: Ataque (estática, siempre visible) -->
+                    <div class="grid grid-cols-2 gap-2 flex-1 min-h-0">
+                        <button onclick="registrarGameplay('ATAQUE', '++', '${pId}', ${z})" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Ataque</button>
+                        <button onclick="registrarGameplay('ATAQUE', '--', '${pId}', ${z})" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Ataque</button>
                     </div>
         `;
 
-        if (!isZagueraSinSaque && !isServer) {
+        // Fila 2: Bloqueo — estática, solo en zonas de red (2, 3 y 4)
+        if (esZonaRed) {
             html += `
-                    <div class="grid grid-cols-3 gap-1.5 flex-1 min-h-0">
-                        <button onclick="registrarGameplay('BLOQUEO', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Bloqueo</button>
-                        <button onclick="registrarGameplay('BLOQUEO', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Toque Bloqueo</button>
-                        <button onclick="registrarGameplay('BLOQUEO', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Bloqueo</button>
+                    <div class="grid grid-cols-2 gap-2 flex-1 min-h-0">
+                        <button onclick="registrarGameplay('BLOQUEO', '++', '${pId}', ${z})" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Bloqueo</button>
+                        <button onclick="registrarGameplay('BLOQUEO', '--', '${pId}', ${z})" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Bloqueo</button>
                     </div>
             `;
         }
 
-        html += `
-                    <div class="grid grid-cols-3 gap-1.5 flex-1 min-h-0">
-                        <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Colocación</button>
-                        <button onclick="registrarGameplay('DEFENSA', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Defensa</button>
-                        <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Colocación</button>
+        const filaSaqueHtml = `
+                    <div class="grid grid-cols-2 gap-2 flex-1 min-h-0">
+                        <button onclick="registrarGameplay('SAQUE', '++', '${pId}', ${z})" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Ace Saque</button>
+                        <button onclick="registrarGameplay('SAQUE', '--', '${pId}', ${z})" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Saque</button>
+                    </div>
+        `;
+        const filaVolumenHtml = `
+                    <div class="grid grid-cols-2 gap-2 flex-1 min-h-0">
+                        <button onclick="registrarGameplay('${volumenAccion}', '=', '${pId}', ${z})" class="${btnBase} bg-white hover:bg-slate-200 text-black">${volumenLabel}</button>
+                        <button onclick="registrarGameplay('${volumenAccion}', '--', '${pId}', ${z})" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">${volumenLabelError}</button>
                     </div>
         `;
 
-        if (isServer) {
-            html += `
-                    <div class="grid grid-cols-3 gap-1.5 flex-1 min-h-0 border-t border-slate-800/60 pt-2">
-                        <button onclick="registrarGameplay('SAQUE', '++', '${pId}')" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Ace Saque</button>
-                        <button onclick="registrarGameplay('SAQUE', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Saque Continuidad</button>
-                        <button onclick="registrarGameplay('SAQUE', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Saque</button>
-                    </div>
-            `;
-        }
+        // En Zona 1 el orden es Ataque → Defensa/Recepción → Saque (el saque
+        // queda siempre en la última fila, solo visible si el saque es
+        // nuestro). En el resto de zonas la fila de Volumen Rápido es la
+        // última, como hasta ahora.
+        html += filaVolumenHtml;
+        if (isServer && state.tenemos_saque) html += filaSaqueHtml;
 
         html += `
                 </div>
@@ -3557,11 +3710,14 @@
                 </div>
             `;
             renderLiberoQuickBar();
+            renderColocacionBar();
             return;
         }
 
         const isMinivoley = MODALIDAD.toUpperCase() === 'MINIVOLEY';
-        const btnBase = 'gameplay-action-btn flex-1 flex items-center justify-center px-1 py-2 min-h-[2.75rem] text-[9px] sm:text-[10px] md:text-[11px] font-black rounded-xl transition-all active:scale-95 text-center leading-[1.15] whitespace-normal break-words hyphens-auto';
+        // Solo 2 botones por fila (en vez de 3): más grandes y fáciles de
+        // pulsar con el dedo en el iPad.
+        const btnBase = 'gameplay-action-btn flex-1 flex items-center justify-center px-1.5 py-2 min-h-[3rem] text-[10px] sm:text-xs md:text-sm font-black rounded-xl transition-all active:scale-95 text-center leading-[1.15] whitespace-normal break-words hyphens-auto';
 
         let html;
         if (isMinivoley) {
@@ -3582,6 +3738,7 @@
         container.innerHTML = html;
         if (window.lucide) lucide.createIcons();
         renderLiberoQuickBar();
+        renderColocacionBar();
         resizeGameplayLayout();
     }
 

@@ -190,6 +190,75 @@
             </table>
         </div>
     </div>
+
+    {% if set_data.racha_maxima.racha >= 2 %}
+    <div class="rounded-2xl border px-4 py-3 text-xs font-black uppercase tracking-wider flex items-center gap-2 {% if set_data.racha_maxima.lado == 'nosotros' %}bg-emerald-500/10 border-emerald-500/30 text-emerald-400{% else %}bg-rose-500/10 border-rose-500/30 text-rose-400{% endif %}">
+        <i data-lucide="flame" class="w-4 h-4"></i>
+        <span>Racha máxima del Set {{ set_data.set_num }}: {{ set_data.racha_maxima.racha }} puntos seguidos {% if set_data.racha_maxima.lado == 'nosotros' %}a favor{% else %}del rival{% endif %}</span>
+    </div>
+    {% endif %}
+
+    <!-- Rendimiento por Zona + Eficacia por Rotación (Set {{ set_data.set_num }}) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="report-sheet rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
+            <div class="set-title">Rendimiento por Zona — Set {{ set_data.set_num }}</div>
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr>
+                        <th class="player-name">Zona</th>
+                        <th>Ataque Int.</th>
+                        <th>Ataque %</th>
+                        <th>Bloqueo Int.</th>
+                        <th>Bloqueo %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for z in set_data.zonas %}
+                    <tr>
+                        <td class="player-name">Zona {{ z.zona }}{% if z.zona == 1 %} (Saque){% endif %}</td>
+                        <td class="num">{% if z.ataque_total %}{{ z.ataque_total }}{% else %}—{% endif %}</td>
+                        <td class="num {% if z.ataque_pct != None and z.ataque_pct < 0 %}cell-neg{% endif %}">{% if z.ataque_pct != None %}{{ z.ataque_pct }}%{% else %}—{% endif %}</td>
+                        <td class="num">{% if z.es_red %}{% if z.bloqueo_total %}{{ z.bloqueo_total }}{% else %}—{% endif %}{% else %}·{% endif %}</td>
+                        <td class="num {% if z.es_red and z.bloqueo_pct != None and z.bloqueo_pct < 0 %}cell-neg{% endif %}">{% if z.es_red %}{% if z.bloqueo_pct != None %}{{ z.bloqueo_pct }}%{% else %}—{% endif %}{% else %}·{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="report-sheet rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
+            <div class="set-title">Eficacia por Rotación — Set {{ set_data.set_num }}</div>
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr>
+                        <th class="player-name">Rotación</th>
+                        <th>Acciones</th>
+                        <th>K1 Recep.+Ataque</th>
+                        <th>K2 Saque+Bloq.+Def.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in set_data.rotacion %}
+                    <tr>
+                        <td class="player-name">R{{ r.rotacion }}</td>
+                        <td class="num">{% if r.acciones %}{{ r.acciones }}{% else %}—{% endif %}</td>
+                        <td class="num">{% if r.acciones %}{{ r.k1 }}%{% else %}—{% endif %}</td>
+                        <td class="num">{% if r.acciones %}{{ r.k2 }}%{% else %}—{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Evolución del marcador (run chart) del Set {{ set_data.set_num }} -->
+    {% if set_data.run_chart %}
+    <div class="bg-[#121824] p-5 rounded-3xl border border-slate-800 print:hidden">
+        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Evolución del Marcador — Set {{ set_data.set_num }}</h3>
+        <p class="text-[10px] text-slate-500 -mt-3 mb-3">Diferencia de puntos (nosotros − rival) tras cada punto disputado. Por encima de la línea = por delante.</p>
+        <div class="h-56"><canvas id="chartRun{{ set_data.set_num }}"></canvas></div>
+    </div>
+    {% endif %}
     {% endfor %}
 </div>
 
@@ -239,6 +308,44 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
             });
         }
+        // Run chart (evolución del marcador) por set
+        {% for set_data in detalle_sets %}
+        {% if set_data.run_chart %}
+        (function() {
+            const diffs = {{ set_data.run_chart|safe }};
+            const labels = diffs.map((_, i) => i + 1);
+            const canvas = document.getElementById('chartRun{{ set_data.set_num }}');
+            if (!canvas) return;
+            new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: diffs,
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.15,
+                        fill: true,
+                        segment: {
+                            borderColor: ctx => (ctx.p1.parsed.y < 0 ? '#f87171' : '#38bdf8')
+                        }
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { title: { display: true, text: 'Punto nº', color: '#64748b', font: { size: 9 } } },
+                        y: { grid: { color: (ctx) => ctx.tick.value === 0 ? 'rgba(148,163,184,0.4)' : 'rgba(148,163,184,0.08)' } }
+                    }
+                }
+            });
+        })();
+        {% endif %}
+        {% endfor %}
+
         if (window.lucide) lucide.createIcons();
     });
 </script>

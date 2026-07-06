@@ -22,6 +22,7 @@ from .db_utils import reintentar_en_error_transitorio
 from .forms import RegistrarAccionForm, RegistrarCambioForm, EliminarAccionForm
 from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet
 from .security import RateLimitMiddleware
+from .services.reporting import build_full_report, build_run_chart, calc_racha, calc_racha_maxima
 
 User = get_user_model()
 
@@ -1083,6 +1084,85 @@ class FlujoCompletoPartidoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.partido.refresh_from_db()
         self.assertTrue(self.partido.finalizado)
+
+    def test_informe_final_incluye_zona_rotacion_y_racha(self):
+        """El informe final (web y PDF) debe incluir los nuevos bloques de
+        rendimiento por zona, eficacia por rotación y racha máxima, que se
+        calculan a partir del histórico completo del set."""
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadoras[2], tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=1, zona=4, rotacion_num=1,
+        )
+
+        response = self.client.get(reverse('stats_app:partido_stats_final', args=[self.partido.pk]))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn('Rendimiento por Zona', content)
+        self.assertIn('Eficacia por Rotación', content)
+        self.assertIn('Zona 4', content)
+
+        pdf_response = self.client.get(reverse('stats_app:descargar_informe_completo', args=[self.partido.pk]))
+        self.assertEqual(pdf_response.status_code, 200)
+        self.assertEqual(pdf_response['Content-Type'], 'application/pdf')
+
+
+class ReportingHelpersTests(TestCase):
+    """Unidad para los cálculos nuevos de reporting.py: racha máxima del set
+    y evolución del marcador (run chart), que se apoyan en el mismo criterio
+    de qué registro representa un punto que ya usa `calc_set_score`."""
+
+    def setUp(self):
+        cache.clear()
+        self.coach, self.equipo, _, self.partido = _crear_entrenador_con_partido('coach_reporting')
+
+    def _punto(self, accion, calidad):
+        RegistroEstadistica.objects.create(
+            partido=self.partido, tipo_fase='K1', accion=accion,
+            calidad=calidad, set_numero=1,
+        )
+
+    def test_calc_racha_maxima_detecta_la_racha_mas_larga_no_solo_la_actual(self):
+        # nosotros: 3 seguidos, luego rival: 2 seguidos, luego nosotros: 1
+        for _ in range(3):
+            self._punto('ATAQUE', '++')
+        for _ in range(2):
+            self._punto('ATAQUE', '--')
+        self._punto('SAQUE', '++')
+
+        resultado = calc_racha_maxima(self.partido, 1)
+        self.assertEqual(resultado, {'lado': 'nosotros', 'racha': 3})
+
+        # calc_racha (racha EN CURSO) debe ser distinta: solo 1, porque el
+        # último punto fue nuestro tras la racha del rival.
+        self.assertEqual(calc_racha(self.partido, 1), {'lado': None, 'racha': 0})
+
+    def test_calc_racha_maxima_sin_rachas_devuelve_vacio(self):
+        self._punto('ATAQUE', '++')
+        self._punto('ATAQUE', '--')
+        resultado = calc_racha_maxima(self.partido, 1)
+        self.assertEqual(resultado, {'lado': None, 'racha': 0})
+
+    def test_build_run_chart_acumula_diferencia_de_puntos_en_orden(self):
+        self._punto('ATAQUE', '++')   # 1-0 -> +1
+        self._punto('ATAQUE', '++')   # 2-0 -> +2
+        self._punto('ATAQUE', '--')   # 2-1 -> +1
+        self._punto('SAQUE', '++')    # 3-1 -> +2
+        self.assertEqual(build_run_chart(self.partido, 1), [1, 2, 1, 2])
+
+    def test_build_run_chart_ignora_acciones_sin_desenlace_de_punto(self):
+        self._punto('RECEPCION', '+')  # acción neutra: no suma punto
+        self._punto('ATAQUE', '++')
+        self.assertEqual(build_run_chart(self.partido, 1), [1])
+
+    def test_build_full_report_enriquece_cada_set_con_los_nuevos_bloques(self):
+        self._punto('ATAQUE', '++')
+        reporte = build_full_report(self.partido, 'global')
+        self.assertEqual(len(reporte['detalle_sets']), 1)
+        set_data = reporte['detalle_sets'][0]
+        for clave in ('zonas', 'rotacion', 'racha_maxima', 'run_chart'):
+            self.assertIn(clave, set_data)
+        self.assertEqual(len(set_data['zonas']), 6)
+        self.assertEqual(len(set_data['rotacion']), 6)
 
 
 class CrudAdministracionTests(TestCase):

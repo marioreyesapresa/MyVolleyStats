@@ -24,7 +24,9 @@ from ..services.reporting import (
     build_quick_set_report,
     build_full_report,
     calc_set_score,
+    calc_racha,
     rotation_matrix,
+    zone_performance,
 )
 
 logger = logging.getLogger('stats_app.security')
@@ -83,21 +85,25 @@ def _form_invalido(form):
     )
 
 
-def _validar_rotacion_para_modalidad(partido, rotacion_num):
-    """Verifica que `rotacion_num` respete el límite real de zonas de la
-    modalidad del partido (1-6 en VOLEY, 1-4 en MINIVOLEY).
+def _validar_rango_zona_modalidad(partido, valor, campo='rotacion_num'):
+    """Verifica que un número de zona/rotación (1-6) respete el límite real
+    de la modalidad del partido (1-6 en VOLEY, 1-4 en MINIVOLEY).
 
-    Devuelve una JsonResponse de error si el valor está fuera de rango, o
-    `None` si es válido. El formulario ya acota el valor a [1, 6] (el
-    máximo universal); aquí se aplica el límite más estricto de MINIVOLEY,
-    que solo se conoce tras resolver el partido.
+    Compartida entre `rotacion_num` y `zona`: ambos usan el mismo rango de
+    zonas de pista. Devuelve una JsonResponse de error si el valor está
+    fuera de rango, o `None` si es válido (o si `valor` es `None`, ya que
+    ambos campos son opcionales). El formulario ya acota el valor a [1, 6]
+    (el máximo universal); aquí se aplica el límite más estricto de
+    MINIVOLEY, que solo se conoce tras resolver el partido.
     """
+    if valor is None:
+        return None
     max_rotacion = MAX_ROTACION_MINIVOLEY if partido.modalidad == 'MINIVOLEY' else MAX_ROTACION_VOLEY
-    if rotacion_num > max_rotacion:
+    if valor > max_rotacion:
         return JsonResponse(
             {
                 'status': 'error',
-                'mensaje': f'rotacion_num={rotacion_num} fuera de rango para modalidad '
+                'mensaje': f'{campo}={valor} fuera de rango para modalidad '
                            f'{partido.modalidad} (máx. {max_rotacion}).',
             },
             status=400,
@@ -158,9 +164,14 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
             partido = _partido_del_entrenador(request, cd['partido_id'])
 
             rotacion_num = cd.get('rotacion_num') or 1
-            error_rango = _validar_rotacion_para_modalidad(partido, rotacion_num)
+            error_rango = _validar_rango_zona_modalidad(partido, rotacion_num, 'rotacion_num')
             if error_rango:
                 return error_rango
+
+            zona = cd.get('zona')
+            error_zona = _validar_rango_zona_modalidad(partido, zona, 'zona')
+            if error_zona:
+                return error_zona
 
             jugadora_id = cd.get('jugadora_id')
             jugadora = _jugadora_del_equipo(request, jugadora_id, partido.equipo) if jugadora_id else None
@@ -172,7 +183,8 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
                 accion=cd['accion'],
                 calidad=cd.get('calidad') or '',
                 set_numero=cd.get('set_numero') or 1,
-                rotacion_num=rotacion_num
+                rotacion_num=rotacion_num,
+                zona=zona,
             )
 
             total_set = RegistroEstadistica.objects.filter(partido=partido, set_numero=registro.set_numero).count()
@@ -282,7 +294,7 @@ def RegistrarCambioAPI(request):
     partido = _partido_del_entrenador(request, cd['partido_id'])
 
     rotacion_num = cd.get('rotacion_num') or 1
-    error_rango = _validar_rotacion_para_modalidad(partido, rotacion_num)
+    error_rango = _validar_rango_zona_modalidad(partido, rotacion_num, 'rotacion_num')
     if error_rango:
         return error_rango
 
@@ -456,6 +468,8 @@ def ObtenerStatsSetAPI(request):
         'set_decisivo_numero': partido.set_decisivo_numero,
         'informe_rapido': build_quick_set_report(partido, set_num),
         'rotaciones': rotation_matrix(partido, set_num),
+        'zonas': zone_performance(partido, set_num),
+        'racha': calc_racha(partido, set_num),
     })
 
 

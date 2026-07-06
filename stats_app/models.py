@@ -118,6 +118,12 @@ class RegistroEstadistica(models.Model):
     accion = models.CharField(max_length=20, choices=ACCIONES)
     calidad = models.CharField(max_length=2, choices=CALIDADES, blank=True, null=True)
     rotacion_num = models.PositiveIntegerField(default=1, verbose_name="Rotación Activa")
+    zona = models.PositiveSmallIntegerField(
+        blank=True, null=True, verbose_name="Zona del campo",
+        help_text="Zona de la pista (1-6) desde la que se ejecutó la acción en Modo "
+                   "Rápido. Nulo para acciones sin zona propia (Colocación, líbero, "
+                   "Modo Avanzado, puntos de rival, etc.).",
+    )
     fecha_registro = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

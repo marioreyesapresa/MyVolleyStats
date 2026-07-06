@@ -223,6 +223,10 @@ def build_quick_set_report(partido, set_num):
             'saque_aces': p['saque_aces'],
             'saque_err': p['saque_err'],
             'bloqueo_pts': p['bloqueo_pts'],
+            'asistencias': p['asistencias'],
+            'colocacion_err': p['colocacion_err'],
+            'defensas': p['defensas'],
+            'defensa_err': p['defensa_err'],
             'alerta': p['balance'] < 0 or (p['errores'] >= 2 and p['puntos'] == 0),
         }
         for p in report['jugadoras']
@@ -261,7 +265,18 @@ def build_full_report(partido, set_filter='global'):
             sets_nums = [int(set_filter)]
         except (TypeError, ValueError):
             sets_nums = [r['set_num'] for r in summary]
-    detalle_sets = [build_set_report(partido, s) for s in sets_nums]
+
+    detalle_sets = []
+    for s in sets_nums:
+        sd = build_set_report(partido, s)
+        # Desgloses adicionales, solo para el informe post-partido (no se
+        # cargan en el informe rápido en vivo para no engordar el polling).
+        sd['zonas'] = zone_performance(partido, s)
+        sd['rotacion'] = rotation_matrix(partido, s)
+        sd['racha_maxima'] = calc_racha_maxima(partido, s)
+        sd['run_chart'] = build_run_chart(partido, s)
+        detalle_sets.append(sd)
+
     return {
         'resumen_sets': summary,
         'detalle_sets': detalle_sets,
@@ -335,6 +350,130 @@ def build_destacadas(detalle_sets, min_ataques=3):
         'lider_saque': lider_saque,
         'mejor_ataque': mejor_ataque,
     }
+
+
+def zone_performance(partido, set_num):
+    """Rendimiento de Ataque y Bloqueo por zona de pista (1-6), a partir del
+    campo `zona` que el Modo Rápido guarda en cada acción. Solo cuenta
+    acciones con zona conocida (colocación, líbero y Modo Avanzado no la
+    llevan, y quedan fuera de este desglose).
+
+    Devuelve una lista de dicts por zona con puntos/errores/% de acierto de
+    Ataque, y lo mismo de Bloqueo cuando la zona es de red (2, 3, 4).
+    """
+    qs = _qs_partido(partido, set_num).filter(zona__isnull=False)
+    zonas = []
+    for z in range(1, 7):
+        z_qs = qs.filter(zona=z)
+        atq = _fund_counts(z_qs, 'ATAQUE')
+        blo = _fund_counts(z_qs, 'BLOQUEO')
+        atq_pct = round((atq['pp'] - atq['mm']) / atq['total'] * 100, 1) if atq['total'] else None
+        blo_pct = round((blo['pp'] - blo['mm']) / blo['total'] * 100, 1) if blo['total'] else None
+        zonas.append({
+            'zona': z,
+            'es_red': z in (2, 3, 4),
+            'ataque_total': atq['total'],
+            'ataque_pts': atq['pp'],
+            'ataque_err': atq['mm'],
+            'ataque_pct': atq_pct,
+            'bloqueo_total': blo['total'],
+            'bloqueo_pts': blo['pp'],
+            'bloqueo_err': blo['mm'],
+            'bloqueo_pct': blo_pct,
+        })
+    return zonas
+
+
+def _lado_del_punto(registro):
+    """Determina qué lado se anotó el punto representado por este registro
+    de estadística, o `None` si es una acción intermedia sin desenlace de
+    punto (p.ej. una recepción o colocación en juego, calidad '=').
+
+    Mismo criterio que `calc_set_score`: cualquier '++' en Saque/Ataque/
+    Bloqueo o un Error del Rival es punto propio; un Punto del Rival o
+    cualquier '--' (error directo, sea cual sea la acción) es punto rival.
+    """
+    if (registro.accion in ('SAQUE', 'ATAQUE', 'BLOQUEO') and registro.calidad == '++') \
+            or registro.accion == 'ERROR_RIVAL':
+        return 'nosotros'
+    if registro.accion == 'PUNTO_RIVAL' or registro.calidad == '--':
+        return 'rival'
+    return None
+
+
+def calc_racha(partido, set_num):
+    """Racha de puntos consecutivos en curso (momentum) dentro del set.
+
+    Recorre los registros del set en orden cronológico inverso y cuenta
+    cuántos puntos seguidos del mismo lado se han anotado justo antes del
+    estado actual del marcador (las acciones sin desenlace de punto se
+    ignoran).
+    """
+    qs = _qs_partido(partido, set_num).order_by('-id').only('id', 'accion', 'calidad')
+    racha = 0
+    lado = None
+    for r in qs:
+        lado_actual = _lado_del_punto(r)
+        if lado_actual is None:
+            continue
+        if lado is None:
+            lado = lado_actual
+            racha = 1
+        elif lado_actual == lado:
+            racha += 1
+        else:
+            break
+    if racha < 2:
+        return {'lado': None, 'racha': 0}
+    return {'lado': lado, 'racha': racha}
+
+
+def calc_racha_maxima(partido, set_num):
+    """Racha más larga de puntos consecutivos del mismo lado en todo el set
+    (a diferencia de `calc_racha`, que solo mira el momento actual). Útil
+    para el informe post-partido: "mayor racha: 5 puntos seguidos".
+    """
+    qs = _qs_partido(partido, set_num).order_by('id').only('id', 'accion', 'calidad')
+    lado_actual = None
+    racha_actual = 0
+    mejor_lado = None
+    mejor_racha = 0
+    for r in qs:
+        lado = _lado_del_punto(r)
+        if lado is None:
+            continue
+        if lado == lado_actual:
+            racha_actual += 1
+        else:
+            lado_actual = lado
+            racha_actual = 1
+        if racha_actual > mejor_racha:
+            mejor_racha = racha_actual
+            mejor_lado = lado_actual
+    if mejor_racha < 2:
+        return {'lado': None, 'racha': 0}
+    return {'lado': mejor_lado, 'racha': mejor_racha}
+
+
+def build_run_chart(partido, set_num):
+    """Evolución del marcador punto a punto dentro del set: diferencia de
+    puntos (nosotros − rival) acumulada tras cada punto disputado, en orden
+    cronológico. Sirve para dibujar un "run chart" que visualiza rachas y
+    momentos clave de un vistazo.
+    """
+    qs = _qs_partido(partido, set_num).order_by('id').only('id', 'accion', 'calidad')
+    diffs = []
+    score_local = score_rival = 0
+    for r in qs:
+        lado = _lado_del_punto(r)
+        if lado is None:
+            continue
+        if lado == 'nosotros':
+            score_local += 1
+        else:
+            score_rival += 1
+        diffs.append(score_local - score_rival)
+    return diffs
 
 
 def rotation_matrix(partido, set_num):

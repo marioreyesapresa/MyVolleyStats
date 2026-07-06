@@ -142,6 +142,14 @@ class FormConValidacionDeModalidad(forms.Form):
         self.modalidad = modalidad
         super().__init__(*args, **kwargs)
 
+    def clean_zona(self):
+        valor = self.cleaned_data.get('zona')
+        if valor is not None and self.modalidad == 'MINIVOLEY' and valor > MAX_ROTACION_MINIVOLEY:
+            raise forms.ValidationError(
+                f'zona fuera de rango para minivoley (máx. {MAX_ROTACION_MINIVOLEY}).'
+            )
+        return valor
+
     def clean_rotacion_num(self):
         valor = self.cleaned_data.get('rotacion_num')
         if valor is not None and self.modalidad == 'MINIVOLEY' and valor > MAX_ROTACION_MINIVOLEY:
@@ -181,6 +189,7 @@ class RegistrarAccionForm(FormConValidacionDeModalidad):
     calidad = forms.ChoiceField(choices=RegistroEstadistica.CALIDADES, required=False)
     set_numero = IdField(required=False, initial=1, max_value=MAX_SET_NUMERO)
     rotacion_num = IdField(required=False, max_value=MAX_ROTACION_VOLEY, initial=1)
+    zona = IdField(required=False, max_value=MAX_ROTACION_VOLEY)
 
 
 class RegistrarCambioForm(FormConValidacionDeModalidad):
