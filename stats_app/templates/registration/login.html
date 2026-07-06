@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión | Voley Stats</title>
+    <title>Iniciar Sesión | {{ APP_NAME }}</title>
     {% include 'partials/pwa_meta.html' %}
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
@@ -17,13 +17,15 @@
     <div class="w-full max-w-md bg-[#0f172a] rounded-3xl shadow-2xl overflow-hidden border border-slate-800/80">
         <div class="bg-gradient-to-br from-emerald-900/40 to-slate-900 p-10 text-center border-b border-slate-800/50">
             <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-4 overflow-hidden">
-                <img src="{% static 'stats_app/icons/icon-192.png' %}" alt="Scout Rotation Pro" class="w-full h-full object-cover">
+                <img src="{% static 'stats_app/icons/icon-192.png' %}" alt="{{ APP_NAME }}" class="w-full h-full object-cover">
             </div>
-            <h2 class="text-3xl font-black text-white uppercase tracking-tight">Voley Stats</h2>
-            <p class="text-emerald-400 text-xs mt-2 uppercase tracking-widest font-black">Scout para entrenadores</p>
+            <h2 class="text-3xl font-black text-white tracking-tight">{{ APP_NAME }}</h2>
+            <p class="text-emerald-400 text-xs mt-2 uppercase tracking-widest font-black">{{ APP_TAGLINE }}</p>
         </div>
 
         <div class="p-8">
+            {% include 'partials/messages.html' %}
+
             {% if form.errors %}
             <div class="bg-rose-500/10 border border-rose-500/30 text-rose-400 px-4 py-3 rounded-xl text-sm mb-6">
                 Tu usuario o contraseña no son correctos. Por favor, inténtalo de nuevo.
@@ -33,14 +35,22 @@
             <form method="post" action="{% url 'login' %}" class="space-y-6">
                 {% csrf_token %}
                 <div>
-                    <label for="id_username" class="block text-xs font-black text-slate-400 uppercase mb-2 ml-1 tracking-wider">Nombre de usuario</label>
+                    <label for="id_username" class="block text-xs font-black text-slate-400 uppercase mb-2 ml-1 tracking-wider">Usuario o correo electrónico</label>
                     <input type="text" name="username" id="id_username" required
-                        class="w-full px-5 py-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition-all placeholder-slate-600 text-sm">
+                        class="w-full px-5 py-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition-all placeholder-slate-600 text-sm"
+                        placeholder="usuario o tu@email.com" autocomplete="username">
                 </div>
                 <div>
                     <label for="id_password" class="block text-xs font-black text-slate-400 uppercase mb-2 ml-1 tracking-wider">Contraseña</label>
                     <input type="password" name="password" id="id_password" required
-                        class="w-full px-5 py-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition-all placeholder-slate-600 text-sm">
+                        class="w-full px-5 py-3.5 bg-slate-900 border border-slate-800 rounded-2xl text-white focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition-all placeholder-slate-600 text-sm"
+                        autocomplete="current-password">
+                </div>
+
+                <div class="text-right -mt-2">
+                    <a href="{% url 'password_reset' %}" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold">
+                        ¿Olvidaste tu contraseña?
+                    </a>
                 </div>
 
                 <button type="submit" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-lg active:scale-[0.98] transition-transform text-sm uppercase tracking-widest mt-4">
@@ -54,7 +64,7 @@
             </p>
             
             <p class="text-center text-slate-500 text-xs mt-6">
-                © 2026 Voley Stats - Scout Rotation Pro
+                © 2026 {{ APP_FULL_TAGLINE }}
             </p>
         </div>
     </div>

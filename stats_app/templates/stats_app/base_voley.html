@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block title %}Scout Rotation Pro | Voley Técnico{% endblock %}</title>
+    <title>{% block title %}{{ APP_NAME }} | {{ APP_TAGLINE }}{% endblock %}</title>
     {% include 'partials/pwa_meta.html' %}
     <script>
         (function () {
@@ -70,8 +70,8 @@
     <!-- Mobile Header -->
     <header class="md:hidden bg-[#090d16] text-white px-4 py-4 flex justify-between items-center shadow-md border-b border-slate-800">
         <div class="flex items-center space-x-2">
-            <img src="{% static 'stats_app/icons/icon-192.png' %}" alt="Scout Rotation Pro" class="w-7 h-7 rounded-lg">
-            <span class="font-black tracking-tight text-lg uppercase">Voley Stats</span>
+            <img src="{% static 'stats_app/icons/icon-192.png' %}" alt="{{ APP_NAME }}" class="w-7 h-7 rounded-lg">
+            <span class="font-black tracking-tight text-lg">{{ APP_NAME }}</span>
         </div>
         <button id="mobile-menu-btn-dark" class="text-slate-200 focus:outline-none">
             <i data-lucide="menu" class="w-6 h-6"></i>
@@ -85,8 +85,8 @@
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
             <div class="flex items-center space-x-2 pb-4 border-b border-slate-800">
-                <img src="{% static 'stats_app/icons/icon-192.png' %}" alt="Scout Rotation Pro" class="w-9 h-9 rounded-xl">
-                <span class="font-black tracking-tighter text-xl text-emerald-400">VOLEY STATS</span>
+                <img src="{% static 'stats_app/icons/icon-192.png' %}" alt="{{ APP_NAME }}" class="w-9 h-9 rounded-xl">
+                <span class="font-black tracking-tighter text-xl text-emerald-400">{{ APP_NAME }}</span>
             </div>
             <nav class="flex-1 space-y-2">
                 <a href="{% url 'stats_app:dashboard' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all {% if request.resolver_match.view_name == 'stats_app:dashboard' %}sidebar-active-dark{% else %}text-slate-400{% endif %}">
@@ -138,8 +138,8 @@
     <!-- Sidebar Desktop -->
     <aside id="desktop-sidebar" class="w-64 sidebar-dark text-white hidden md:flex flex-col p-6 space-y-8 min-h-screen border-r border-slate-900 transition-all duration-300 overflow-hidden flex-shrink-0">
         <div class="flex items-center space-x-2 pb-4 border-b border-slate-800">
-            <img src="{% static 'stats_app/icons/icon-192.png' %}" alt="Scout Rotation Pro" class="w-9 h-9 rounded-xl">
-            <span class="font-black tracking-tighter text-xl text-emerald-400">VOLEY STATS</span>
+            <img src="{% static 'stats_app/icons/icon-192.png' %}" alt="{{ APP_NAME }}" class="w-9 h-9 rounded-xl">
+            <span class="font-black tracking-tighter text-xl text-emerald-400">{{ APP_NAME }}</span>
         </div>
         
         <nav class="flex-1 space-y-2">
@@ -206,15 +206,15 @@
                     <i data-lucide="panel-left" class="w-4 h-4"></i>
                 </button>
                 <div class="min-w-0">
-                    <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">home &gt; voley stats</p>
-                    <h1 class="text-xl font-black uppercase text-white tracking-tight truncate">{% block header_title %}Scout Rotation Pro{% endblock %}</h1>
+                    <p class="text-xs uppercase tracking-widest text-emerald-400 font-bold">home &gt; {{ APP_NAME|lower }}</p>
+                    <h1 class="text-xl font-black text-white tracking-tight truncate">{% block header_title %}{{ APP_NAME }}{% endblock %}</h1>
                 </div>
             </div>
             
             <div class="flex items-center space-x-6 ml-auto">
                 <div class="text-right hidden sm:block">
                     <p class="text-sm font-bold text-white">{{ request.user.first_name }} {{ request.user.last_name }}</p>
-                    <p class="text-[10px] text-emerald-400 font-black uppercase tracking-wider">Coach Voleibol</p>
+                    <p class="text-[10px] text-emerald-400 font-black uppercase tracking-wider">{{ APP_TAGLINE }}</p>
                 </div>
                 <div class="w-10 h-10 rounded-full bg-[#1e293b] text-emerald-400 font-black flex items-center justify-center border border-slate-800 shadow-md uppercase">
                     {{ request.user.first_name|default:request.user.username|slice:":1" }}
@@ -225,6 +225,7 @@
 
         <!-- Page body -->
         <main class="flex-1 p-6 md:p-8 w-full mx-auto space-y-8 overflow-y-auto">
+            {% include 'partials/messages.html' %}
             {% block content %}
             {% endblock %}
         </main>

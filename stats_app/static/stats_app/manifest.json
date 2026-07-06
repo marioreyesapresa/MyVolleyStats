@@ -1,7 +1,7 @@
 {
-  "name": "Scout Rotation Pro",
-  "short_name": "ScoutRotation",
-  "description": "Scouting de voleibol en vivo: registro de acciones, rotaciones y estadísticas para entrenadores.",
+  "name": "MyVolleyStats",
+  "short_name": "MyVolleyStats",
+  "description": "MyVolleyStats — Estadísticas de Voleibol y Scout Táctico",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

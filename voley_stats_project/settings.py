@@ -70,6 +70,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'stats_app.context_processors.branding',
             ],
         },
     },
@@ -210,9 +211,31 @@ STORAGES = {
 # ─────────────────────────────────────────────────────────────────────────────
 # Autenticación
 # ─────────────────────────────────────────────────────────────────────────────
+AUTHENTICATION_BACKENDS = [
+    'stats_app.backends.EmailOrUsernameBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'stats_app:dashboard'
 LOGOUT_REDIRECT_URL = 'login'
+
+# CSRF: si la sesión cambia en otra pestaña (p.ej. logout/login como otro
+# usuario), redirigimos al login con un mensaje claro en vez de la pantalla
+# amarilla genérica de Django.
+CSRF_FAILURE_VIEW = 'stats_app.views.auth.csrf_failure'
+
+# Correo para recuperación de contraseña. En desarrollo usa la consola;
+# en producción configura SMTP real vía variables de entorno.
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND',
+    default='django.core.mail.backends.console.EmailBackend',
+)
+EMAIL_HOST = config('EMAIL_HOST', default='')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@myvolleystats.com')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

@@ -1,11 +1,35 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
 
-from .models import Jugadora, RegistroEstadistica
+from .models import Equipo, Jugadora, RegistroEstadistica
 
 User = get_user_model()
+
+FIELD_CLASS = (
+    'w-full px-5 py-3.5 bg-slate-900 border border-slate-800 rounded-2xl '
+    'text-white focus:ring-2 focus:ring-emerald-500/50 focus:outline-none '
+    'transition-all placeholder-slate-600 text-sm'
+)
+
+
+class LoginForm(AuthenticationForm):
+    """Acepta usuario o correo en el campo `username` (vía EmailOrUsernameBackend)."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].label = 'Usuario o correo electrónico'
+        self.fields['username'].widget.attrs.update({
+            'class': FIELD_CLASS,
+            'placeholder': 'usuario o tu@email.com',
+            'autocomplete': 'username',
+        })
+        self.fields['password'].widget.attrs.update({
+            'class': FIELD_CLASS,
+            'autocomplete': 'current-password',
+        })
+        self.fields['password'].label = 'Contraseña'
 
 
 class RegistroEntrenadorForm(UserCreationForm):
@@ -53,6 +77,20 @@ class RegistroEntrenadorForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+
+class JugadoraForm(forms.ModelForm):
+    """Alta/edición de jugadoras. La fecha de nacimiento es opcional."""
+
+    class Meta:
+        model = Jugadora
+        fields = ['equipo', 'nombre', 'apellidos', 'dorsal', 'posicion', 'fecha_nacimiento']
+
+    def __init__(self, *args, entrenador=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['fecha_nacimiento'].required = False
+        if entrenador is not None:
+            self.fields['equipo'].queryset = Equipo.objects.filter(entrenador=entrenador)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

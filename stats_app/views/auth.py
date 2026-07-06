@@ -1,4 +1,6 @@
+from django.contrib import messages
 from django.contrib.auth import login
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 
@@ -14,5 +16,18 @@ class RegistroEntrenadorView(CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        login(self.request, self.object)
+        login(
+            self.request,
+            self.object,
+            backend='stats_app.backends.EmailOrUsernameBackend',
+        )
         return response
+
+
+def csrf_failure(request, reason=''):
+    """Sustituye la pantalla amarilla de CSRF por un redirect amigable al login."""
+    messages.error(
+        request,
+        'Tu sesión ha cambiado o caducado. Por favor, inicia sesión de nuevo.',
+    )
+    return redirect('login')

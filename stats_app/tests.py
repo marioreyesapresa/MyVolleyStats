@@ -11,6 +11,7 @@ from datetime import date, time
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.cache import cache
 from django.db import OperationalError
 from django.http import HttpResponse
@@ -173,7 +174,7 @@ class RegistroEntrenadorTests(TestCase):
 # ═════════════════════════════════════════════════════════════════════════════
 # TESTS DE INTRUSIÓN Y SEGURIDAD
 #
-# Simulan ataques reales contra "Scout Rotation Pro" para verificar que las
+# Simulan ataques reales contra "MyVolleyStats" para verificar que las
 # capas de blindaje (validación de entrada, aislamiento por entrenador,
 # rate limiting y resiliencia de base de datos) funcionan de extremo a
 # extremo, no solo sobre el papel. Organizados por categoría OWASP.
@@ -1117,6 +1118,7 @@ class CrudAdministracionTests(TestCase):
             'dorsal': 99, 'posicion': 'OPUESTA', 'fecha_nacimiento': '2006-05-05',
         })
         self.assertEqual(crear.status_code, 302)
+        self.assertIn(f'equipo_id={self.equipo.id}', crear.url)
         nueva = Jugadora.objects.get(nombre='Nueva')
 
         editar = self.client.post(reverse('stats_app:jugadora_editar', args=[nueva.pk]), data={
@@ -1124,6 +1126,7 @@ class CrudAdministracionTests(TestCase):
             'dorsal': 99, 'posicion': 'OPUESTA', 'fecha_nacimiento': '2006-05-05',
         })
         self.assertEqual(editar.status_code, 302)
+        self.assertEqual(editar.url, reverse('stats_app:equipos_list'))
         nueva.refresh_from_db()
         self.assertEqual(nueva.nombre, 'Editada')
 
@@ -1325,3 +1328,92 @@ class OcultacionDeDetalleInternoTests(TestCase):
         with override_settings(DEBUG=True):
             mensaje = ocultar_detalle_interno(ValueError('detalle técnico útil solo en local'))
         self.assertIn('detalle técnico útil solo en local', mensaje)
+
+
+class AutenticacionYFlujoJugadorasTests(TestCase):
+    """Login con email, recuperación de contraseña, CSRF amigable y flujo de altas."""
+
+    def setUp(self):
+        self.usuario = User.objects.create_user(
+            username='coach_login',
+            email='coach@example.com',
+            password='ContraseñaSegura123!',
+        )
+        self.equipo = Equipo.objects.create(
+            entrenador=self.usuario,
+            nombre='Equipo Login',
+            temporada='2025/2026',
+            categoria='SENIOR',
+        )
+
+    def test_login_con_nombre_de_usuario(self):
+        response = self.client.post(reverse('login'), {
+            'username': 'coach_login',
+            'password': 'ContraseñaSegura123!',
+        })
+        self.assertRedirects(response, reverse('stats_app:dashboard'))
+
+    def test_login_con_correo_electronico(self):
+        response = self.client.post(reverse('login'), {
+            'username': 'coach@example.com',
+            'password': 'ContraseñaSegura123!',
+        })
+        self.assertRedirects(response, reverse('stats_app:dashboard'))
+
+    def test_solicitud_recuperacion_contraseña_envia_correo(self):
+        with self.settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend'):
+            response = self.client.post(reverse('password_reset'), {'email': 'coach@example.com'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('coach@example.com', mail.outbox[0].to)
+
+    def test_csrf_invalido_redirige_al_login_con_mensaje(self):
+        self.client.login(username='coach_login', password='ContraseñaSegura123!')
+        cliente_csrf = Client(enforce_csrf_checks=True)
+        cliente_csrf.login(username='coach_login', password='ContraseñaSegura123!')
+        response = cliente_csrf.post(reverse('stats_app:jugadora_nueva'), {
+            'equipo': self.equipo.id,
+            'nombre': 'Sin',
+            'apellidos': 'CSRF',
+            'dorsal': 1,
+            'posicion': 'CENTRAL',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('login'))
+
+        seguimiento = cliente_csrf.get(response.url, follow=True)
+        self.assertContains(seguimiento, 'Tu sesión ha cambiado o caducado')
+
+    def test_crear_jugadora_sin_fecha_nacimiento(self):
+        self.client.login(username='coach_login', password='ContraseñaSegura123!')
+        response = self.client.post(
+            reverse('stats_app:jugadora_nueva') + f'?equipo_id={self.equipo.id}',
+            data={
+                'equipo': self.equipo.id,
+                'nombre': 'Sin',
+                'apellidos': 'Fecha',
+                'dorsal': 7,
+                'posicion': 'LIBERO',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        jugadora = Jugadora.objects.get(nombre='Sin', apellidos='Fecha')
+        self.assertIsNone(jugadora.fecha_nacimiento)
+        self.assertIn(f'equipo_id={self.equipo.id}', response.url)
+
+    def test_crear_jugadora_redirige_al_formulario_del_mismo_equipo(self):
+        self.client.login(username='coach_login', password='ContraseñaSegura123!')
+        response = self.client.post(
+            reverse('stats_app:jugadora_nueva') + f'?equipo_id={self.equipo.id}',
+            data={
+                'equipo': self.equipo.id,
+                'nombre': 'Otra',
+                'apellidos': 'Jugadora',
+                'dorsal': 8,
+                'posicion': 'RECEPTORA',
+                'fecha_nacimiento': '2010-03-15',
+            },
+            follow=True,
+        )
+        self.assertContains(response, 'añadida correctamente')
+        self.assertContains(response, 'Datos de la Nueva Jugadora')

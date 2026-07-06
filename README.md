@@ -1,4 +1,4 @@
-# 🏐 Voley Stats — Scout Rotation Pro
+# 🏐 MyVolleyStats — Estadísticas de Voleibol y Scout Táctico
 
 Aplicación web Django para el **scouting estadístico en tiempo real** de equipos de voleibol. Pensada para el cuerpo técnico en banquillo: registra acciones por jugadora, gestiona rotaciones, calcula indicadores K1/K2 y genera informes post-partido en pantalla y en PDF.
 

@@ -1,1 +1,1 @@
-# Voley Stats project
+# MyVolleyStats project

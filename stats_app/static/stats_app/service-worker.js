@@ -1,5 +1,5 @@
 /**
- * Service Worker mínimo de Scout Rotation Pro.
+ * Service Worker mínimo de MyVolleyStats.
  *
  * Objetivo único: cumplir el requisito de instalación de PWA en iOS/Android
  * (Safari/Chrome exigen un Service Worker registrado con un manejador de
@@ -18,7 +18,7 @@
  * `/api/`.
  */
 
-const SW_VERSION = 'scout-rotation-pro-sw-v1';
+const SW_VERSION = 'myvolleystats-sw-v1';
 
 self.addEventListener('install', (event) => {
     // Activa la nueva versión del Service Worker sin esperar a que se
