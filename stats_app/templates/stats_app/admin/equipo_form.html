@@ -29,14 +29,14 @@
                            value="{{ form.nombre.value|default_if_none:'' }}" placeholder="Ej: Senior B, Alevín A">
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div class="form-field-grid form-field-grid--2">
+                    <div class="min-w-0">
                         <label for="id_temporada" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Temporada</label>
                         <input type="text" name="temporada" id="id_temporada" required maxlength="50"
                                class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition-all text-sm"
                                value="{{ form.temporada.value|default_if_none:'' }}" placeholder="Ej: 2025/2026">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label for="id_categoria" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Categoría</label>
                         <select name="categoria" id="id_categoria" required
                                 class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-emerald-500/50 transition-all text-sm">

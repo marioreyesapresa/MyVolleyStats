@@ -22,8 +22,8 @@
             {% endif %}
 
             <div class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div class="form-field-grid form-field-grid--2">
+                    <div class="min-w-0">
                         <label for="id_equipo" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Equipo Propio</label>
                         <select name="equipo" id="id_equipo" required 
                                 class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500/50 transition-all text-sm">
@@ -34,7 +34,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label for="id_rival" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Equipo Rival</label>
                         <input type="text" name="rival" id="id_rival" required maxlength="150" 
                                class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 transition-all text-sm"
@@ -42,14 +42,14 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div class="form-field-grid form-field-grid--date-time">
+                    <div class="min-w-0">
                         <label for="id_fecha" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Fecha del Partido</label>
                         <input type="date" name="fecha" id="id_fecha" required
                                class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 transition-all text-sm"
                                value="{{ form.fecha.value|date:'Y-m-d'|default_if_none:'' }}">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label for="id_hora" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Hora del Partido</label>
                         <input type="time" name="hora" id="id_hora" required
                                class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 transition-all text-sm"
@@ -57,14 +57,14 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div class="form-field-grid form-field-grid--2">
+                    <div class="min-w-0">
                         <label for="id_lugar" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Pabellón / Lugar</label>
                         <input type="text" name="lugar" id="id_lugar" required maxlength="200"
                                class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 transition-all text-sm"
                                value="{{ form.lugar.value|default_if_none:'' }}" placeholder="Ej: Polideportivo Municipal">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label for="id_modalidad" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Modalidad</label>
                         <select name="modalidad" id="id_modalidad" required 
                                 class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500/50 transition-all text-sm">

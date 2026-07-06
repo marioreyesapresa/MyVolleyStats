@@ -22,14 +22,14 @@
             {% endif %}
 
             <div class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div class="form-field-grid form-field-grid--2">
+                    <div class="min-w-0">
                         <label for="id_nombre" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Nombre</label>
                         <input type="text" name="nombre" id="id_nombre" required maxlength="100" 
                                class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition-all text-sm"
                                value="{{ form.nombre.value|default_if_none:'' }}" placeholder="Ej: Elena">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label for="id_apellidos" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Apellidos</label>
                         <input type="text" name="apellidos" id="id_apellidos" required maxlength="150" 
                                class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition-all text-sm"
@@ -37,8 +37,8 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div class="form-field-grid form-field-grid--2">
+                    <div class="min-w-0">
                         <label for="id_equipo" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Equipo</label>
                         <select name="equipo" id="id_equipo" required 
                                 class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-emerald-500/50 transition-all text-sm">
@@ -49,7 +49,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label for="id_posicion" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Posición</label>
                         <select name="posicion" id="id_posicion" 
                                 class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-emerald-500/50 transition-all text-sm">
@@ -63,14 +63,14 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
+                <div class="form-field-grid form-field-grid--2">
+                    <div class="min-w-0">
                         <label for="id_dorsal" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Dorsal</label>
                         <input type="number" name="dorsal" id="id_dorsal"
                                class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition-all text-sm"
                                value="{{ form.dorsal.value|default_if_none:'' }}" placeholder="Dorsal">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label for="id_fecha_nacimiento" class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Fecha Nacimiento <span class="text-slate-500 font-normal normal-case">(opcional)</span></label>
                         <input type="date" name="fecha_nacimiento" id="id_fecha_nacimiento"
                                class="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition-all text-sm"

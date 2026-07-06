@@ -237,6 +237,15 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@myvolleystats.com')
 
+# Alertas automáticas por correo ante errores 500 en producción.
+# Configura ADMIN_NOTIFY_EMAIL (p.ej. myvolleystats@gmail.com) en Cloud Run.
+_admin_notify = config('ADMIN_NOTIFY_EMAIL', default='').strip()
+if _admin_notify:
+    ADMINS = [('MyVolleyStats Admin', _admin_notify)]
+    SERVER_EMAIL = DEFAULT_FROM_EMAIL
+else:
+    ADMINS = []
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -302,11 +311,23 @@ LOGGING = {
         'seguridad': {
             'format': '[SECURITY] %(asctime)s %(levelname)s %(name)s: %(message)s',
         },
+        'django.server': {
+            'format': '[DJANGO] %(asctime)s %(levelname)s %(name)s: %(message)s',
+        },
     },
     'handlers': {
         'console_seguridad': {
             'class': 'logging.StreamHandler',
             'formatter': 'seguridad',
+        },
+        'console_django': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'django.server',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'include_html': True,
         },
     },
     'loggers': {
@@ -318,6 +339,11 @@ LOGGING = {
         'stats_app.db_resilience': {
             'handlers': ['console_seguridad'],
             'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console_django'] + (['mail_admins'] if ADMINS else []),
+            'level': 'ERROR',
             'propagate': False,
         },
     },

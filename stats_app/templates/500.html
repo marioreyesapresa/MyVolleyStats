@@ -25,7 +25,10 @@
 
         <div class="p-8">
             <p class="text-slate-300 text-sm mb-8">
-                Ha ocurrido un error inesperado en el servidor. El equipo técnico ya ha sido notificado.
+                Ha ocurrido un error inesperado en el servidor.
+                {% if notificacion_activa %}
+                Hemos enviado una alerta automática al equipo técnico con el detalle del error.
+                {% endif %}
                 Inténtalo de nuevo en unos instantes.
             </p>
             <a href="/" class="inline-block w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-lg active:scale-[0.98] transition-transform text-sm uppercase tracking-widest">

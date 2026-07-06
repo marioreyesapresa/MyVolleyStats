@@ -63,6 +63,41 @@
         html[data-theme="noche"] .text-emerald-500 { color: var(--v-accent) !important; }
         html[data-theme="carbon"] .text-emerald-400 { color: var(--v-accent-text) !important; }
         html[data-theme="carbon"] .text-emerald-500 { color: var(--v-accent) !important; }
+
+        /* Formularios en iPad: los inputs date/time de Safari tienen un
+           min-width intrínseco que desborda columnas estrechas de un grid 2x2. */
+        .form-field-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        .form-field-grid > * {
+            min-width: 0;
+        }
+        .form-field-grid input,
+        .form-field-grid select {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .form-field-grid input[type="date"],
+        .form-field-grid input[type="time"],
+        .form-field-grid input[type="datetime-local"] {
+            min-width: 0;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        @media (min-width: 640px) {
+            .form-field-grid--2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        /* Fecha + hora: en tablet (iPad) van en columna para evitar solapamiento */
+        @media (min-width: 1024px) {
+            .form-field-grid--date-time {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col md:flex-row bg-[#0b0f19] text-[#f1f5f9]">

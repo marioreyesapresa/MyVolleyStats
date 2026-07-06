@@ -90,12 +90,12 @@ COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app /app
 
 RUN chown -R app:app /app
+RUN chmod +x /app/docker-entrypoint.sh
 USER app
 
 # Cloud Run inyecta el puerto real en la variable $PORT (por defecto 8080);
 # EXPOSE es documental, el bind real ocurre en el CMD de abajo.
 EXPOSE 8080
 
-# Health/arranque: 2 workers x 4 threads es un punto de partida razonable
-# para instancias de Cloud Run con 1-2 vCPU; ajustar según carga real.
-CMD gunicorn voley_stats_project.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60
+# migrate + gunicorn: aplica migraciones pendientes en cada arranque/despliegue.
+CMD ["/app/docker-entrypoint.sh"]

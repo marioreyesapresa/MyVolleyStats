@@ -52,7 +52,7 @@ substitutions:
   _IMAGE: europe-west1-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/voley-stats
   _ALLOWED_HOSTS: voley-stats-127334410815.europe-west1.run.app
   _CSRF_ORIGINS: https://voley-stats-127334410815.europe-west1.run.app
-  _EMAIL_ENV: EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend,EMAIL_HOST=smtp.gmail.com,EMAIL_PORT=587,EMAIL_HOST_USER=myvolleystats@gmail.com,EMAIL_USE_TLS=True,DEFAULT_FROM_EMAIL=myvolleystats@gmail.com
+  _EMAIL_ENV: EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend,EMAIL_HOST=smtp.gmail.com,EMAIL_PORT=587,EMAIL_HOST_USER=myvolleystats@gmail.com,EMAIL_USE_TLS=True,DEFAULT_FROM_EMAIL=myvolleystats@gmail.com,ADMIN_NOTIFY_EMAIL=myvolleystats@gmail.com
 
 options:
   logging: CLOUD_LOGGING_ONLY

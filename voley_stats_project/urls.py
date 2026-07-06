@@ -54,3 +54,5 @@ urlpatterns = [
     ),
     path('', include('stats_app.urls')),
 ]
+
+handler500 = 'stats_app.views.errors.handler500'
