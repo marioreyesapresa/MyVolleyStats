@@ -461,11 +461,11 @@ gcloud run deploy voley-stats \
   --source . \
   --region europe-west1 \
   --allow-unauthenticated \
-  --set-env-vars DJANGO_DEBUG=False,ALLOWED_HOSTS=...,CSRF_TRUSTED_ORIGINS=... \
-  --set-secrets SECRET_KEY=voley-secret-key:latest,DATABASE_URL=voley-database-url:latest
+  --set-env-vars DJANGO_DEBUG=False,ALLOWED_HOSTS=...,CSRF_TRUSTED_ORIGINS=...,EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend,EMAIL_HOST=smtp.gmail.com,EMAIL_PORT=587,EMAIL_HOST_USER=myvolleystats@gmail.com,EMAIL_USE_TLS=True,DEFAULT_FROM_EMAIL=myvolleystats@gmail.com \
+  --set-secrets SECRET_KEY=voley-secret-key:latest,DATABASE_URL=voley-database-url:latest,EMAIL_HOST_PASSWORD=voley-email-password:latest
 ```
 
-> Guarda `SECRET_KEY` y `DATABASE_URL` en **Secret Manager** (`--set-secrets`), nunca como `--set-env-vars` en texto plano.
+> Guarda `SECRET_KEY`, `DATABASE_URL` y `EMAIL_HOST_PASSWORD` en **Secret Manager** (`--set-secrets`), nunca como `--set-env-vars` en texto plano.
 
 ### Archivos de infraestructura
 
