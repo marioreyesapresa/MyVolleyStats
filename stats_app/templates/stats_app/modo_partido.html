@@ -429,6 +429,75 @@
     </div>
 
     <!-- Contenedor del Modo Rápido (Rediseño modular por pestañas) -->
+    <style>
+        /* Modo Rápido — tarjetas de zona: evitar solapamiento en iPad.
+           Las filas con flex-1 se comprimían por debajo del min-height de
+           los botones y acababan montándose unas sobre otras. */
+        #gameplay-grid-container {
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        #gameplay-grid-container .gameplay-field-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+            align-content: start;
+        }
+        #gameplay-grid-container .gameplay-field-grid--mini {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .gameplay-zone-card {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .gameplay-zone-card__actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+        }
+        .gameplay-btn-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.375rem;
+            flex-shrink: 0;
+        }
+        .gameplay-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 2.125rem;
+            flex-shrink: 0;
+            padding: 0.25rem 0.375rem;
+            font-weight: 900;
+            border-radius: 0.75rem;
+            text-align: center;
+            line-height: 1.15;
+            white-space: normal;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            font-size: 0.5625rem;
+            transition: transform 0.1s;
+        }
+        @media (min-width: 640px) {
+            .gameplay-action-btn {
+                min-height: 2.375rem;
+                font-size: 0.625rem;
+                padding: 0.375rem;
+            }
+        }
+        @media (min-width: 768px) {
+            .gameplay-action-btn {
+                min-height: 2.5rem;
+                font-size: 0.6875rem;
+            }
+        }
+        .gameplay-action-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
     <div id="scout-rapido-container" class="hidden w-full space-y-2">
         <!-- 1. MENÚ DE NAVEGACIÓN FLOTANTE (estilo píldora) -->
         <div class="sticky top-2 z-50 flex items-center justify-center gap-2 px-1">
@@ -518,14 +587,14 @@
             <div id="colocacion-bar-container" class="flex-shrink-0"></div>
 
             <!-- Botonera Inferior: Score point for Us / Them -->
-            <div class="flex-shrink-0 grid grid-cols-2 gap-4">
-                <button onclick="registrar('ERROR_RIVAL', '')" class="py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2">
-                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                    <span>Punto para {{ partido.equipo.nombre }}</span>
+            <div class="flex-shrink-0 grid grid-cols-2 gap-3 min-w-0">
+                <button onclick="registrar('ERROR_RIVAL', '')" class="py-4 px-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 min-w-0">
+                    <i data-lucide="plus-circle" class="w-5 h-5 flex-shrink-0"></i>
+                    <span class="truncate">Punto para {{ partido.equipo.nombre }}</span>
                 </button>
-                <button onclick="registrar('PUNTO_RIVAL', '')" class="py-5 bg-rose-600 hover:bg-rose-500 text-white font-black text-sm uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2">
-                    <i data-lucide="minus-circle" class="w-5 h-5"></i>
-                    <span>Punto para {{ partido.rival }}</span>
+                <button onclick="registrar('PUNTO_RIVAL', '')" class="py-4 px-2 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 min-w-0">
+                    <i data-lucide="minus-circle" class="w-5 h-5 flex-shrink-0"></i>
+                    <span class="truncate">Punto para {{ partido.rival }}</span>
                 </button>
             </div>
         </div>
@@ -556,33 +625,33 @@
             </div>
 
             <!-- Marcador Gigante Simétrico -->
-            <div class="grid grid-cols-2 gap-4 min-h-[400px]">
+            <div class="grid grid-cols-2 gap-3 min-h-[320px] min-w-0">
                 <!-- Lado Izquierdo (Verde brillante) -->
-                <div class="bg-emerald-600 rounded-3xl p-6 flex flex-col justify-between items-center shadow-lg border border-emerald-500 text-white">
-                    <div class="w-full flex items-center gap-2">
-                        <button onclick="registrar('ERROR_RIVAL', '')" class="flex-1 py-4 bg-emerald-700/50 hover:bg-emerald-700 border border-emerald-400/30 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md">
+                <div class="bg-emerald-600 rounded-3xl p-4 sm:p-6 flex flex-col justify-between items-center shadow-lg border border-emerald-500 text-white min-w-0">
+                    <div class="w-full flex items-center gap-2 min-w-0">
+                        <button onclick="registrar('ERROR_RIVAL', '')" class="flex-1 min-w-0 py-3 sm:py-4 bg-emerald-700/50 hover:bg-emerald-700 border border-emerald-400/30 text-white font-black text-[10px] sm:text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md truncate">
                             Sumar Punto
                         </button>
-                        <button onclick="restarPunto('local')" title="Restar punto (corrección)" class="flex-shrink-0 w-14 py-4 bg-black/10 hover:bg-black/25 border border-white/20 text-white/80 hover:text-white font-black text-lg rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center">
+                        <button onclick="restarPunto('local')" title="Restar punto (corrección)" class="flex-shrink-0 w-12 sm:w-14 py-3 sm:py-4 bg-black/10 hover:bg-black/25 border border-white/20 text-white/80 hover:text-white font-black text-lg rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center">
                             −
                         </button>
                     </div>
-                    <span id="giant-score-local" class="text-[120px] md:text-[180px] font-black leading-none my-6 select-none font-mono">0</span>
-                    <span class="text-sm font-black uppercase tracking-widest opacity-80">{{ partido.equipo.nombre }} (Local)</span>
+                    <span id="giant-score-local" class="text-[72px] sm:text-[120px] md:text-[180px] font-black leading-none my-4 sm:my-6 select-none font-mono">0</span>
+                    <span class="text-xs sm:text-sm font-black uppercase tracking-widest opacity-80 text-center truncate w-full px-1">{{ partido.equipo.nombre }} (Local)</span>
                 </div>
 
                 <!-- Lado Derecho (Rojo apagado) -->
-                <div class="bg-rose-800/80 rounded-3xl p-6 flex flex-col justify-between items-center shadow-lg border border-rose-700 text-white">
-                    <div class="w-full flex items-center gap-2">
-                        <button onclick="registrar('PUNTO_RIVAL', '')" class="flex-1 py-4 bg-rose-900/50 hover:bg-rose-900 border border-rose-500/30 text-white font-black text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md">
+                <div class="bg-rose-800/80 rounded-3xl p-4 sm:p-6 flex flex-col justify-between items-center shadow-lg border border-rose-700 text-white min-w-0">
+                    <div class="w-full flex items-center gap-2 min-w-0">
+                        <button onclick="registrar('PUNTO_RIVAL', '')" class="flex-1 min-w-0 py-3 sm:py-4 bg-rose-900/50 hover:bg-rose-900 border border-rose-500/30 text-white font-black text-[10px] sm:text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md truncate">
                             Sumar Punto
                         </button>
-                        <button onclick="restarPunto('rival')" title="Restar punto (corrección)" class="flex-shrink-0 w-14 py-4 bg-black/10 hover:bg-black/25 border border-white/20 text-white/80 hover:text-white font-black text-lg rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center">
+                        <button onclick="restarPunto('rival')" title="Restar punto (corrección)" class="flex-shrink-0 w-12 sm:w-14 py-3 sm:py-4 bg-black/10 hover:bg-black/25 border border-white/20 text-white/80 hover:text-white font-black text-lg rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center">
                             −
                         </button>
                     </div>
-                    <span id="giant-score-rival" class="text-[120px] md:text-[180px] font-black leading-none my-6 select-none font-mono">0</span>
-                    <span class="text-sm font-black uppercase tracking-widest opacity-80">{{ partido.rival }}</span>
+                    <span id="giant-score-rival" class="text-[72px] sm:text-[120px] md:text-[180px] font-black leading-none my-4 sm:my-6 select-none font-mono">0</span>
+                    <span class="text-xs sm:text-sm font-black uppercase tracking-widest opacity-80 text-center truncate w-full px-1">{{ partido.rival }}</span>
                 </div>
             </div>
         </div>
@@ -606,16 +675,16 @@
             <!-- Reglas del Set -->
             <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
                 <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Reglas del Set</h3>
-                <div class="grid grid-cols-3 gap-3">
-                    <div>
+                <div class="form-field-grid form-field-grid--3">
+                    <div class="min-w-0">
                         <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Puntos por set</label>
                         <input id="input-puntos-set" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Set decisivo</label>
                         <input id="input-puntos-set-decisivo" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Sets para ganar</label>
                         <input id="input-sets-para-ganar" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
                     </div>
@@ -3216,7 +3285,7 @@
                         <i data-lucide="arrow-up-circle" class="w-4 h-4 text-emerald-400"></i>
                         <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Registro de Saque</span>
                     </div>
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="ui-action-grid">
                         <button onclick="registrar('SAQUE', '++')" class="py-10 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xl md:text-2xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-2">
                             <span class="text-[10px] uppercase tracking-widest opacity-60">Punto Directo</span>
                             <span>ACE (++)</span>
@@ -3241,7 +3310,7 @@
                         <i data-lucide="shield" class="w-4 h-4 text-emerald-400"></i>
                         <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Registro de Recepción</span>
                     </div>
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="ui-action-grid">
                         <button onclick="registrar('RECEPCION', '++')" class="py-10 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xl md:text-2xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-2">
                             <span class="text-[10px] uppercase tracking-widest opacity-60">Excelente / Colocación</span>
                             <span>PERFECTA (++)</span>
@@ -3270,7 +3339,7 @@
                             <i data-lucide="refresh-cw" class="w-4 h-4 text-blue-400"></i>
                             <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Acción de Colocación</span>
                         </div>
-                        <div class="grid grid-cols-3 gap-4">
+                        <div class="ui-action-grid">
                             <button onclick="registrar('COLOCACION', '++')" class="py-8 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
                                 <span class="text-[9px] uppercase tracking-widest opacity-60">Colocación Perfecta</span>
                                 <span>ÉXITO (++)</span>
@@ -3295,7 +3364,7 @@
                         <i data-lucide="zap" class="w-4 h-4 text-emerald-400"></i>
                         <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Acción de Ataque</span>
                     </div>
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="ui-action-grid">
                         <button onclick="registrar('ATAQUE', '++')" class="py-8 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
                             <span class="text-[9px] uppercase tracking-widest opacity-60">Ataque Punto</span>
                             <span>PUNTO (++)</span>
@@ -3319,7 +3388,7 @@
                         <i data-lucide="shield" class="w-4 h-4 text-amber-500"></i>
                         <span class="text-xs font-black text-slate-400 uppercase tracking-widest block">Acción de Defensa / Bloqueo</span>
                     </div>
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="ui-action-grid">
                         <button onclick="registrarDefensaBloqueo('++')" class="py-8 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg md:text-xl rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center justify-center space-y-1">
                             <span class="text-[9px] uppercase tracking-widest opacity-60">Defensa Positiva / Bloqueo Punto</span>
                             <span>ÉXITO (++)</span>
@@ -3350,14 +3419,14 @@
                 const buttonsContainer = document.createElement('div');
                 
                 if (accionKey === 'SAQUE') {
-                    buttonsContainer.className = 'grid grid-cols-4 gap-2';
+                    buttonsContainer.className = 'ui-quality-grid ui-quality-grid--4';
                 } else {
-                    buttonsContainer.className = 'grid grid-cols-5 gap-1';
+                    buttonsContainer.className = 'ui-quality-grid ui-quality-grid--5';
                 }
 
                 config.avanzado.forEach(btn => {
                     const button = document.createElement('button');
-                    button.className = `py-5 font-black text-lg rounded-xl active:scale-95 transition-all shadow-md ${btn.class}`;
+                    button.className = `py-4 sm:py-5 font-black text-sm sm:text-lg rounded-xl active:scale-95 transition-all shadow-md min-w-0 ${btn.class}`;
                     button.title = btn.title;
                     button.innerText = btn.label;
                     button.onclick = () => registrar(accionKey, btn.calidad);
@@ -3533,17 +3602,17 @@
         const volumenAccion = esRecepcion ? 'RECEPCION' : 'DEFENSA';
         const volumenLabel = esRecepcion ? 'Recepción' : 'Defensa';
         const volumenLabelError = esRecepcion ? 'Error Recepción' : 'Error Defensa';
-        const btnSm = 'w-full py-3 px-1 min-h-[2.75rem] text-[10px] sm:text-xs font-black rounded-lg transition-all active:scale-95 text-center leading-tight whitespace-normal break-words';
+        const btnSm = 'gameplay-action-btn';
         return `
             <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-2 py-1.5 flex flex-col gap-1.5 min-w-0">
-                <div class="flex items-center gap-2 border-b border-amber-500/20 pb-1">
+                <div class="flex items-center gap-2 border-b border-amber-500/20 pb-1 min-w-0">
                     <div class="flex-shrink-0 text-center w-10 sm:w-12">
                         <span class="text-[8px] font-black text-amber-400/80 uppercase tracking-wider block">L${lib.n}</span>
                         <span class="text-xs sm:text-sm font-black text-amber-300">#${lib.dorsal}</span>
                     </div>
-                    <span class="text-[8px] sm:text-[9px] font-bold text-amber-400/80 truncate flex-1">${lib.nombre}</span>
+                    <span class="text-[8px] sm:text-[9px] font-bold text-amber-400/80 truncate flex-1 min-w-0">${lib.nombre}</span>
                 </div>
-                <div class="grid grid-cols-2 gap-1.5 min-w-0">
+                <div class="gameplay-btn-row">
                     <button onclick="registrarGameplay('${volumenAccion}', '=', '${lib.id}')" class="${btnSm} bg-white hover:bg-slate-200 text-black">${volumenLabel}</button>
                     <button onclick="registrarGameplay('${volumenAccion}', '--', '${lib.id}')" class="${btnSm} bg-rose-600 hover:bg-rose-500 text-white">${volumenLabelError}</button>
                 </div>
@@ -3596,13 +3665,13 @@
     function buildColocacionBarHtml(col) {
         const pId = col ? col.id : '';
         const label = col ? `Colocación · #${col.dorsal} ${col.nombre}` : 'Colocación';
-        const btnBase = 'gameplay-action-btn flex-1 flex items-center justify-center px-1.5 py-3 min-h-[3rem] text-[10px] sm:text-xs md:text-sm font-black rounded-xl transition-all active:scale-95 text-center leading-[1.15] whitespace-normal break-words hyphens-auto';
+        const btnCls = 'gameplay-action-btn';
         return `
             <div class="bg-[#121824] rounded-2xl p-2.5 border border-slate-800">
                 <div class="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-wider mb-1.5 truncate">${label}</div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnBase} bg-white hover:bg-slate-200 text-black">Colocación</button>
-                    <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Colocación</button>
+                <div class="gameplay-btn-row">
+                    <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnCls} bg-white hover:bg-slate-200 text-black">Colocación</button>
+                    <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Colocación</button>
                 </div>
             </div>
         `;
@@ -3626,7 +3695,7 @@
     // buildColocacionBarHtml). Un solo toque registra siempre la acción
     // final —sin botones intermedios de "continuidad"— para no interrumpir
     // el ritmo del partido en el iPad.
-    function buildZoneCardHtml(z, btnBase) {
+    function buildZoneCardHtml(z, btnCls) {
         const player = state.rotation[`pos${z}`];
         let pId = '';
         let pLabel = 'Anónimo (EQ)';
@@ -3649,39 +3718,37 @@
         const volumenLabelError = esRecepcion ? 'Error Recepción' : 'Error Defensa';
 
         let html = `
-            <div class="bg-[#121824] rounded-2xl p-3 md:p-4 border border-slate-800 flex flex-col h-full min-h-0">
-                <div class="flex justify-between items-center border-b border-slate-800/80 pb-2 mb-2.5 flex-shrink-0">
+            <div class="gameplay-zone-card bg-[#121824] rounded-2xl p-2.5 md:p-3 border border-slate-800">
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-1.5 mb-2 flex-shrink-0">
                     <span class="text-[10px] md:text-xs font-black text-blue-400 uppercase tracking-wider">${zoneTitle}</span>
                     <span class="text-xs md:text-sm font-black text-white truncate max-w-[130px]">${pLabel}</span>
                 </div>
-                <div class="flex flex-col gap-2 flex-1 min-h-0">
-                    <!-- Fila 1: Ataque (estática, siempre visible) -->
-                    <div class="grid grid-cols-2 gap-2 flex-1 min-h-0">
-                        <button onclick="registrarGameplay('ATAQUE', '++', '${pId}', ${z})" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Ataque</button>
-                        <button onclick="registrarGameplay('ATAQUE', '--', '${pId}', ${z})" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Ataque</button>
+                <div class="gameplay-zone-card__actions">
+                    <div class="gameplay-btn-row">
+                        <button onclick="registrarGameplay('ATAQUE', '++', '${pId}', ${z})" class="${btnCls} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Ataque</button>
+                        <button onclick="registrarGameplay('ATAQUE', '--', '${pId}', ${z})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Ataque</button>
                     </div>
         `;
 
-        // Fila 2: Bloqueo — estática, solo en zonas de red (2, 3 y 4)
         if (esZonaRed) {
             html += `
-                    <div class="grid grid-cols-2 gap-2 flex-1 min-h-0">
-                        <button onclick="registrarGameplay('BLOQUEO', '++', '${pId}', ${z})" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Bloqueo</button>
-                        <button onclick="registrarGameplay('BLOQUEO', '--', '${pId}', ${z})" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Bloqueo</button>
+                    <div class="gameplay-btn-row">
+                        <button onclick="registrarGameplay('BLOQUEO', '++', '${pId}', ${z})" class="${btnCls} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Bloqueo</button>
+                        <button onclick="registrarGameplay('BLOQUEO', '--', '${pId}', ${z})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Bloqueo</button>
                     </div>
             `;
         }
 
         const filaSaqueHtml = `
-                    <div class="grid grid-cols-2 gap-2 flex-1 min-h-0">
-                        <button onclick="registrarGameplay('SAQUE', '++', '${pId}', ${z})" class="${btnBase} bg-emerald-600 hover:bg-emerald-500 text-white">Ace Saque</button>
-                        <button onclick="registrarGameplay('SAQUE', '--', '${pId}', ${z})" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">Error Saque</button>
+                    <div class="gameplay-btn-row">
+                        <button onclick="registrarGameplay('SAQUE', '++', '${pId}', ${z})" class="${btnCls} bg-emerald-600 hover:bg-emerald-500 text-white">Ace Saque</button>
+                        <button onclick="registrarGameplay('SAQUE', '--', '${pId}', ${z})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Saque</button>
                     </div>
         `;
         const filaVolumenHtml = `
-                    <div class="grid grid-cols-2 gap-2 flex-1 min-h-0">
-                        <button onclick="registrarGameplay('${volumenAccion}', '=', '${pId}', ${z})" class="${btnBase} bg-white hover:bg-slate-200 text-black">${volumenLabel}</button>
-                        <button onclick="registrarGameplay('${volumenAccion}', '--', '${pId}', ${z})" class="${btnBase} bg-rose-600 hover:bg-rose-500 text-white">${volumenLabelError}</button>
+                    <div class="gameplay-btn-row">
+                        <button onclick="registrarGameplay('${volumenAccion}', '=', '${pId}', ${z})" class="${btnCls} bg-white hover:bg-slate-200 text-black">${volumenLabel}</button>
+                        <button onclick="registrarGameplay('${volumenAccion}', '--', '${pId}', ${z})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">${volumenLabelError}</button>
                     </div>
         `;
 
@@ -3715,23 +3782,20 @@
         }
 
         const isMinivoley = MODALIDAD.toUpperCase() === 'MINIVOLEY';
-        // Solo 2 botones por fila (en vez de 3): más grandes y fáciles de
-        // pulsar con el dedo en el iPad.
-        const btnBase = 'gameplay-action-btn flex-1 flex items-center justify-center px-1.5 py-2 min-h-[3rem] text-[10px] sm:text-xs md:text-sm font-black rounded-xl transition-all active:scale-95 text-center leading-[1.15] whitespace-normal break-words hyphens-auto';
+        const btnCls = 'gameplay-action-btn';
 
         let html;
         if (isMinivoley) {
-            // Minivoley 2×2: fila superior Z3–Z2, fila inferior Z4–Z1 (saque).
-            html = `<div class="grid grid-cols-2 grid-rows-2 gap-2.5 h-full min-h-0">
-                ${buildZoneCardHtml(3, btnBase)}
-                ${buildZoneCardHtml(2, btnBase)}
-                ${buildZoneCardHtml(4, btnBase)}
-                ${buildZoneCardHtml(1, btnBase)}
+            html = `<div class="gameplay-field-grid gameplay-field-grid--mini">
+                ${buildZoneCardHtml(3, btnCls)}
+                ${buildZoneCardHtml(2, btnCls)}
+                ${buildZoneCardHtml(4, btnCls)}
+                ${buildZoneCardHtml(1, btnCls)}
             </div>`;
         } else {
             const zonasOrdenadas = [4, 3, 2, 5, 6, 1];
-            html = `<div class="grid grid-cols-3 grid-rows-2 gap-2.5 h-full">`;
-            zonasOrdenadas.forEach(z => { html += buildZoneCardHtml(z, btnBase); });
+            html = `<div class="gameplay-field-grid">`;
+            zonasOrdenadas.forEach(z => { html += buildZoneCardHtml(z, btnCls); });
             html += `</div>`;
         }
 
@@ -3742,9 +3806,9 @@
         resizeGameplayLayout();
     }
 
-    // ── Ajusta dinámicamente la altura del campo de juego para ocupar todo
-    // el espacio vertical disponible tras el marcador, la barra de banquillo
-    // y la botonera inferior, sin necesidad de hacer scroll en pantalla.
+    // ── Ajusta la altura del panel de juego al viewport. Si las tarjetas de
+    // zona no caben, el scroll ocurre dentro de #gameplay-grid-container (sin
+    // solapar botones).
     function resizeGameplayLayout() {
         const gameplayContent = document.getElementById('rapido-gameplay-content');
         if (!gameplayContent || gameplayContent.classList.contains('hidden')) return;

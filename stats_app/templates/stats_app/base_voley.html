@@ -91,12 +91,61 @@
             .form-field-grid--2 {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+            .form-field-grid--3 {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
         }
         /* Fecha + hora: en tablet (iPad) van en columna para evitar solapamiento */
         @media (min-width: 1024px) {
             .form-field-grid--date-time {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+        }
+
+        /* Anti-solapamiento global: hijos de grids Tailwind no desbordan la celda */
+        .grid > * {
+            min-width: 0;
+        }
+        input[type="date"],
+        input[type="time"],
+        input[type="datetime-local"],
+        input[type="number"],
+        select,
+        textarea {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Botoneras de 3 acciones (scout): columna en móvil, 3 cols en tablet+ */
+        .ui-action-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        @media (min-width: 640px) {
+            .ui-action-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+        /* Botoneras de calidad (++/+/-/=/--): 2 cols en móvil, N cols en tablet+ */
+        .ui-quality-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+        @media (min-width: 640px) {
+            .ui-quality-grid--4 {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+            .ui-quality-grid--5 {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+        }
+        .ui-quality-grid button,
+        .ui-action-grid button {
+            min-width: 0;
+            white-space: normal;
+            overflow-wrap: break-word;
         }
     </style>
 </head>
