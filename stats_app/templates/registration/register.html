@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear cuenta | Voley Stats</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen px-6 py-10">
+
+    <div class="w-full max-w-md bg-[#0f172a] rounded-3xl shadow-2xl overflow-hidden border border-slate-800/80">
+        <div class="bg-gradient-to-br from-emerald-900/40 to-slate-900 p-10 text-center border-b border-slate-800/50">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                </svg>
+            </div>
+            <h2 class="text-3xl font-black text-white uppercase tracking-tight">Voley Stats</h2>
+            <p class="text-emerald-400 text-xs mt-2 uppercase tracking-widest font-black">Crea tu cuenta</p>
+        </div>
+
+        <div class="p-8">
+            {% if form.non_field_errors %}
+            <div class="bg-rose-500/10 border border-rose-500/30 text-rose-400 px-4 py-3 rounded-xl text-sm mb-6">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="block text-xs font-black text-slate-400 uppercase mb-2 ml-1 tracking-wider">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}
+                    <p class="text-slate-500 text-xs mt-1.5 ml-1">{{ field.help_text|safe }}</p>
+                    {% endif %}
+                    {% for error in field.errors %}
+                    <p class="text-rose-400 text-xs mt-1.5 ml-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-lg active:scale-[0.98] transition-transform text-sm uppercase tracking-widest mt-2">
+                    Crear cuenta
+                </button>
+            </form>
+
+            <p class="text-center text-slate-400 text-sm mt-8">
+                ¿Ya tienes cuenta?
+                <a href="{% url 'login' %}" class="text-emerald-400 hover:text-emerald-300 font-semibold">Iniciar sesión</a>
+            </p>
+
+            <p class="text-center text-slate-500 text-xs mt-6">
+                © 2026 Voley Stats - Scout Rotation Pro
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

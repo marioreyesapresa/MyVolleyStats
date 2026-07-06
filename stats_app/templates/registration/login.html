@@ -20,7 +20,7 @@
                 </svg>
             </div>
             <h2 class="text-3xl font-black text-white uppercase tracking-tight">Voley Stats</h2>
-            <p class="text-emerald-400 text-xs mt-2 uppercase tracking-widest font-black">Acceso Técnico</p>
+            <p class="text-emerald-400 text-xs mt-2 uppercase tracking-widest font-black">Scout para entrenadores</p>
         </div>
 
         <div class="p-8">
@@ -44,11 +44,16 @@
                 </div>
 
                 <button type="submit" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-lg active:scale-[0.98] transition-transform text-sm uppercase tracking-widest mt-4">
-                    Entrar al Dashboard
+                    Iniciar sesión
                 </button>
             </form>
+
+            <p class="text-center text-slate-400 text-sm mt-8">
+                ¿Primera vez aquí?
+                <a href="{% url 'register' %}" class="text-emerald-400 hover:text-emerald-300 font-semibold">Crear cuenta</a>
+            </p>
             
-            <p class="text-center text-slate-500 text-xs mt-10">
+            <p class="text-center text-slate-500 text-xs mt-6">
                 © 2026 Voley Stats - Scout Rotation Pro
             </p>
         </div>

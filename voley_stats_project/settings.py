@@ -126,6 +126,7 @@ STORAGES = {
 # ─────────────────────────────────────────────────────────────────────────────
 # Autenticación
 # ─────────────────────────────────────────────────────────────────────────────
+LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'stats_app:dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 

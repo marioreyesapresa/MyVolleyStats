@@ -134,3 +134,29 @@ class AislamientoEntrenadorTests(TestCase):
         })
         nuevo = Equipo.objects.get(nombre='Nuevo Equipo')
         self.assertEqual(nuevo.entrenador, self.coach_a)
+
+
+class RegistroEntrenadorTests(TestCase):
+    """Registro público de nuevos entrenadores."""
+
+    def test_registro_crea_usuario_y_redirige_al_dashboard(self):
+        response = self.client.post(reverse('register'), {
+            'username': 'nuevo_coach',
+            'email': 'nuevo@example.com',
+            'password1': 'ContraseñaSegura123!',
+            'password2': 'ContraseñaSegura123!',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('stats_app:dashboard'))
+        self.assertTrue(User.objects.filter(username='nuevo_coach').exists())
+
+    def test_registro_rechaza_email_duplicado(self):
+        User.objects.create_user(username='existente', email='dup@example.com', password='pass12345')
+        response = self.client.post(reverse('register'), {
+            'username': 'otro',
+            'email': 'dup@example.com',
+            'password1': 'ContraseñaSegura123!',
+            'password2': 'ContraseñaSegura123!',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(username='otro').exists())
