@@ -123,7 +123,8 @@
                 </a>
                 {% endif %}
             </nav>
-            <div class="pt-4 border-t border-slate-800">
+            <div class="pt-4 border-t border-slate-800 space-y-2">
+                {% include 'partials/staff_admin_link.html' %}
                 <form action="{% url 'logout' %}" method="post">
                     {% csrf_token %}
                     <button type="submit" class="flex items-center space-x-3 p-3 text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all w-full text-left">
@@ -186,6 +187,7 @@
         </nav>
 
         <div class="pt-6 border-t border-slate-800 space-y-2">
+            {% include 'partials/staff_admin_link.html' %}
             <form action="{% url 'logout' %}" method="post">
                 {% csrf_token %}
                 <button type="submit" class="flex items-center space-x-3 p-3 text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all w-full text-left">

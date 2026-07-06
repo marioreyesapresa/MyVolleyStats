@@ -1,0 +1,15 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | MyVolleyStats Admin{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+    <a href="{% url 'admin:index' %}">MyVolleyStats Admin</a>
+</div>
+{% endblock %}
+
+{% block nav-global %}
+<a href="{% url 'stats_app:dashboard' %}" style="color: #34d399; font-weight: 600; margin-right: 1rem;">
+    ← Volver a la app
+</a>
+{% endblock %}

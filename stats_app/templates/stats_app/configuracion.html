@@ -106,6 +106,24 @@
             </div>
         </label>
     </section>
+
+    {% if user.is_staff %}
+    <section class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+        <h2 class="text-sm font-black text-amber-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex items-center gap-2">
+            <i data-lucide="shield" class="w-4 h-4"></i>
+            Administración del sistema
+        </h2>
+        <p class="text-xs text-slate-500">
+            Si usas la app instalada en el iPad (sin barra de direcciones), entra al panel Django desde aquí.
+            Solo visible para cuentas con permisos de administrador.
+        </p>
+        <a href="{% url 'admin:index' %}"
+           class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-4 bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md">
+            <i data-lucide="shield" class="w-4 h-4"></i>
+            Abrir panel Django Admin
+        </a>
+    </section>
+    {% endif %}
 </div>
 
 <script>
