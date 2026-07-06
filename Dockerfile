@@ -49,9 +49,15 @@ COPY . .
 # se propaga a la imagen final ni se usa nunca en tiempo de ejecución:
 # en Cloud Run, la variable SECRET_KEY real siempre se inyecta como
 # variable de entorno / secreto en el momento del despliegue.
+#
+# DJANGO_DEBUG=False durante el build es obligatorio: en producción
+# WhiteNoise usa CompressedManifestStaticFilesStorage, que exige el
+# staticfiles.json generado por collectstatic con el mismo backend.
+# Si se ejecuta con DEBUG=True, el manifest no se crea y cada {% static %}
+# lanza 500 en Cloud Run.
 ARG SECRET_KEY=build-time-placeholder-not-used-in-runtime
 ENV SECRET_KEY=${SECRET_KEY} \
-    DJANGO_DEBUG=True
+    DJANGO_DEBUG=False
 RUN python manage.py collectstatic --noinput
 
 # ────────────────────────────────────────────────────────────────────────────
