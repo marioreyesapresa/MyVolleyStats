@@ -1,20 +1,53 @@
 import json
-import traceback
+import logging
 from django.shortcuts import get_object_or_404
 from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, Http404
+from django.db import OperationalError, InterfaceError
 from ..models import RotacionSet, Jugadora, Partido
+from ..forms import AlineacionInicialForm, RotarManualForm, ActualizarPosicionForm
+from ..db_utils import reintentar_en_error_transitorio
+from ..security import log_intento_acceso_no_autorizado, ocultar_detalle_interno
+
+logger = logging.getLogger('stats_app.security')
 
 
 def _partido_del_entrenador(request, partido_id):
-    return get_object_or_404(Partido, pk=partido_id, equipo__entrenador=request.user)
+    """Devuelve el partido solo si pertenece al entrenador autenticado.
+
+    Un 404 aquí queda auditado: puede ser un ID inexistente o un intento de
+    acceder/modificar la rotación de un partido de otro entrenador (IDOR).
+    """
+    try:
+        return get_object_or_404(Partido, pk=partido_id, equipo__entrenador=request.user)
+    except Http404:
+        log_intento_acceso_no_autorizado(request, 'Partido', partido_id)
+        raise
+
+
+def _parsear_json(request):
+    try:
+        data = json.loads(request.body or b'{}')
+    except (json.JSONDecodeError, TypeError, UnicodeDecodeError):
+        return None, JsonResponse({'error': 'JSON inválido'}, status=400)
+    if not isinstance(data, dict):
+        return None, JsonResponse({'error': 'Se esperaba un objeto JSON'}, status=400)
+    return data, None
+
+
+def _form_invalido(form):
+    return JsonResponse({'error': 'Datos de entrada inválidos', 'errores': form.errors}, status=400)
 
 
 class GetRotacionActualAPI(LoginRequiredMixin, View):
+    @reintentar_en_error_transitorio()
     def get(self, request, partido_id):
         partido = _partido_del_entrenador(request, partido_id)
-        set_n = request.GET.get('set', 1)
+        try:
+            set_n = int(request.GET.get('set', 1))
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'Parámetro "set" inválido'}, status=400)
         rotacion = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=False).order_by('-id').first()
         if not rotacion:
             rotacion = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=True).first()
@@ -35,24 +68,37 @@ class GetRotacionActualAPI(LoginRequiredMixin, View):
         return JsonResponse(data)
 
 class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
+    @reintentar_en_error_transitorio()
     def post(self, request, partido_id):
         try:
             partido = _partido_del_entrenador(request, partido_id)
-            data = json.loads(request.body)
-            set_n = data.get('set_numero', 1)
+            data, error = _parsear_json(request)
+            if error:
+                return error
 
-            # Todas las jugadoras referenciadas deben pertenecer al equipo del partido.
+            # Los campos de posición llegan a veces como '' (zona vacía) desde
+            # el frontend; se normalizan a None antes de validar como enteros.
+            data = {k: (None if v == '' else v) for k, v in data.items()}
+            form = AlineacionInicialForm(data)
+            if not form.is_valid():
+                return _form_invalido(form)
+            cd = form.cleaned_data
+            set_n = cd.get('set_numero') or 1
+
             posiciones_ids = [
-                data.get('pos1'), data.get('pos2'), data.get('pos3'),
-                data.get('pos4'), data.get('pos5'), data.get('pos6'),
-                data.get('libero1'), data.get('libero2'),
+                cd.get('pos1'), cd.get('pos2'), cd.get('pos3'),
+                cd.get('pos4'), cd.get('pos5'), cd.get('pos6'),
+                cd.get('libero1'), cd.get('libero2'),
             ]
             ids_validos = {v for v in posiciones_ids if v}
             if ids_validos:
                 encontradas = set(
                     Jugadora.objects.filter(id__in=ids_validos, equipo=partido.equipo).values_list('id', flat=True)
                 )
-                if encontradas != {int(i) for i in ids_validos}:
+                if encontradas != ids_validos:
+                    ids_ajenos = ids_validos - encontradas
+                    for jugadora_id in ids_ajenos:
+                        log_intento_acceso_no_autorizado(request, 'Jugadora', jugadora_id)
                     return JsonResponse({'error': 'Jugadora no válida para este equipo'}, status=400)
 
             def update_rot(es_inicial):
@@ -63,20 +109,20 @@ class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
                 if not rot:
                     rot = RotacionSet(partido=partido, set_numero=set_n, es_inicial=es_inicial)
                 
-                rot.pos1_id = data.get('pos1') if data.get('pos1') else None
-                rot.pos2_id = data.get('pos2') if data.get('pos2') else None
-                rot.pos3_id = data.get('pos3') if data.get('pos3') else None
-                rot.pos4_id = data.get('pos4') if data.get('pos4') else None
-                rot.pos5_id = data.get('pos5') if data.get('pos5') else None
-                rot.pos6_id = data.get('pos6') if data.get('pos6') else None
-                rot.libero1_id = data.get('libero1') if data.get('libero1') else None
-                rot.libero2_id = data.get('libero2') if data.get('libero2') else None
+                rot.pos1_id = cd.get('pos1')
+                rot.pos2_id = cd.get('pos2')
+                rot.pos3_id = cd.get('pos3')
+                rot.pos4_id = cd.get('pos4')
+                rot.pos5_id = cd.get('pos5')
+                rot.pos6_id = cd.get('pos6')
+                rot.libero1_id = cd.get('libero1')
+                rot.libero2_id = cd.get('libero2')
                 rot.save()
                 return rot
 
             # Durante el partido (sustituciones, edición en pista) solo se actualiza
             # la rotación actual; la alineación inicial (es_inicial=True) se conserva.
-            if data.get('solo_actual'):
+            if cd.get('solo_actual'):
                 update_rot(False)
             else:
                 update_rot(True)
@@ -85,17 +131,27 @@ class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
             return JsonResponse({'status': 'ok'})
         except Http404:
             raise
+        except (OperationalError, InterfaceError):
+            raise
         except Exception as e:
-            error_msg = f"ERROR CRÍTICO: {str(e)}\n{traceback.format_exc()}"
-            print(error_msg)
-            return JsonResponse({'error': str(e)}, status=400)
+            logger.exception('Error inesperado en GuardarAlineacionInicialAPI')
+            return JsonResponse({'error': ocultar_detalle_interno(e)}, status=400)
 
 class RotarManualAPI(LoginRequiredMixin, View):
+    @reintentar_en_error_transitorio()
     def post(self, request, partido_id):
         partido = _partido_del_entrenador(request, partido_id)
-        data = json.loads(request.body)
-        set_n = data.get('set_numero', 1)
-        direccion = data.get('direccion', 'adelante')
+        data, error = _parsear_json(request)
+        if error:
+            return error
+
+        form = RotarManualForm(data)
+        if not form.is_valid():
+            return _form_invalido(form)
+        cd = form.cleaned_data
+
+        set_n = cd.get('set_numero') or 1
+        direccion = cd.get('direccion') or 'horario'
         modalidad = partido.modalidad
         
         actual = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=False).order_by('-id').first()
@@ -152,15 +208,22 @@ class RotarManualAPI(LoginRequiredMixin, View):
         return JsonResponse({'status': 'ok'})
 
 class ActualizarPosicionJugadoraAPI(LoginRequiredMixin, View):
+    @reintentar_en_error_transitorio()
     def post(self, request):
-        data = json.loads(request.body)
-        jugadora_id = data.get('jugadora_id')
-        nueva_pos = data.get('posicion')
-        
+        data, error = _parsear_json(request)
+        if error:
+            return error
+
+        form = ActualizarPosicionForm(data)
+        if not form.is_valid():
+            return _form_invalido(form)
+        cd = form.cleaned_data
+
         try:
-            jugadora = Jugadora.objects.get(id=jugadora_id, equipo__entrenador=request.user)
-            jugadora.posicion = nueva_pos
+            jugadora = Jugadora.objects.get(id=cd['jugadora_id'], equipo__entrenador=request.user)
+            jugadora.posicion = cd.get('posicion') or None
             jugadora.save()
             return JsonResponse({'status': 'ok', 'mensaje': f'Posición de {jugadora.nombre} actualizada'})
         except Jugadora.DoesNotExist:
+            log_intento_acceso_no_autorizado(request, 'Jugadora', cd['jugadora_id'])
             return JsonResponse({'status': 'error', 'mensaje': 'Jugadora no encontrada'}, status=404)

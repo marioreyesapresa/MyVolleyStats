@@ -1,3 +1,4 @@
+import sys
 import dj_database_url
 from pathlib import Path
 from decouple import config, Csv
@@ -43,6 +44,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    # Se coloca lo antes posible: una petición bloqueada por rate limit no
+    # debe gastar ciclos en sesión/CSRF/auth ni tocar la base de datos.
+    'stats_app.security.RateLimitMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -74,20 +78,55 @@ TEMPLATES = [
 WSGI_APPLICATION = 'voley_stats_project.wsgi.application'
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Base de datos
+# Base de datos — Resiliencia frente a micro-cortes de red (Neon + Cloud Run)
 # - Local/desarrollo: SQLite por defecto si no hay DATABASE_URL.
 # - Producción: Neon (PostgreSQL) leído desde DATABASE_URL vía dj-database-url.
 #   Neon exige SSL, de ahí ssl_require=True (se ignora si es SQLite).
+#
+# Neon cierra agresivamente las conexiones inactivas (auto-suspend / pooler) y
+# Cloud Run puede sufrir micro-cortes de red entre contenedores. Sin las
+# opciones de abajo, Django reutilizaría una conexión persistente ya muerta
+# (conn_max_age) y el primer query tras el corte lanzaría un 500
+# (OperationalError / InterfaceError: "server closed the connection").
+#
+#   - conn_max_age:      mantiene la conexión abierta 10 min entre peticiones
+#                         para no pagar el coste de un TCP+TLS handshake nuevo
+#                         en cada request (importante en Cloud Run).
+#   - conn_health_checks: antes de reutilizar una conexión persistente, Django
+#                         hace un ping (`SELECT 1`) y si ha muerto, la
+#                         descarta y abre una nueva de forma transparente.
+#                         Es la mitigación oficial de Django (4.1+) para este
+#                         escenario exacto de "serverless Postgres" con
+#                         conexiones persistentes.
+#   - options.connect_timeout: evita que una petición se quede colgada
+#                         indefinidamente si Neon no responde al abrir TCP.
 # ─────────────────────────────────────────────────────────────────────────────
 DATABASE_URL = config('DATABASE_URL', default=f'sqlite:///{BASE_DIR / "db.sqlite3"}')
+_ES_POSTGRES = DATABASE_URL.startswith('postgres')
 
 DATABASES = {
     'default': dj_database_url.parse(
         DATABASE_URL,
         conn_max_age=600,
-        ssl_require=DATABASE_URL.startswith('postgres'),
+        conn_health_checks=True,
+        ssl_require=_ES_POSTGRES,
     )
 }
+
+if _ES_POSTGRES:
+    DATABASES['default'].setdefault('OPTIONS', {})
+    # Tiempo máximo para establecer la conexión TCP con Neon. Si la red está
+    # inestable, fallamos rápido en vez de colgar el worker de gunicorn.
+    DATABASES['default']['OPTIONS']['connect_timeout'] = 5
+else:
+    # SQLite (dev/tests): por defecto solo espera ~5s antes de lanzar
+    # "database is locked" si dos conexiones escriben a la vez. Los tests de
+    # concurrencia (stats_app.tests.ConcurrenciaYRaceConditionsTests) lanzan
+    # peticiones reales desde varios hilos; se amplía el timeout para que
+    # esperen su turno igual que lo haría Postgres/Neon con MVCC, en vez de
+    # fallar por una limitación conocida de SQLite ajena a la lógica probada.
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS']['timeout'] = 20
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Validadores de contraseñas
@@ -97,6 +136,37 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Caché — usada como almacén del Rate Limiting (stats_app.security)
+#
+# LocMemCache vive en la memoria del propio proceso/contenedor: no requiere
+# Redis/Memcached externo. Limitación conocida y aceptada: en Cloud Run con
+# min-instances > 1 o autoescalado el contador NO se comparte entre réplicas,
+# por lo que el límite real es "N peticiones/minuto por IP y por instancia".
+# Sigue siendo una mitigación eficaz contra fuerza bruta y scripts de abuso
+# que golpean una URL pública descubierta, sin añadir infraestructura nueva.
+# ─────────────────────────────────────────────────────────────────────────────
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'rate-limit-cache',
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Rate Limiting — límites lógicos por IP (ver stats_app/security.py)
+# Formato: (patrón de ruta, máx. peticiones, ventana en segundos)
+# ─────────────────────────────────────────────────────────────────────────────
+RATE_LIMIT_RULES = [
+    # Login / registro: protección de fuerza bruta sobre credenciales.
+    (r'^/accounts/login/', 10, 60),
+    (r'^/accounts/register/', 10, 60),
+    # APIs de scouting en vivo: alto volumen legítimo (clicks rápidos del
+    # entrenador + reintentos automáticos del frontend), pero acotado para
+    # frenar un abuso automatizado/DoS si se descubre la URL de Cloud Run.
+    (r'^/api/', 240, 60),
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -158,3 +228,70 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
 
     X_FRAME_OPTIONS = 'DENY'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Limpieza de cabeceras / no fuga de información técnica
+#
+# - Con DEBUG=False (obligatorio en producción) Django ya sustituye la
+#   página de error técnica (traceback, versión de Django, SQL ejecutado,
+#   variables de entorno) por una página genérica sin ningún detalle interno.
+#   Las plantillas `stats_app/templates/404.html` y `500.html` personalizan
+#   esa página genérica con la identidad visual de la app, sin revelar nada
+#   más.
+# - Las respuestas JSON de las APIs de scouting nunca serializan `str(exc)`
+#   directamente al cliente: pasan por `security.ocultar_detalle_interno`,
+#   que solo muestra el mensaje real en local (DEBUG=True) y siempre registra
+#   el detalle completo en el log del servidor vía `logger.exception`.
+# - La cabecera `Server` (que podría revelar la pila HTTP subyacente) la
+#   gestiona el servidor WSGI de producción (gunicorn, ver Procfile/Dockerfile),
+#   no Django, y gunicorn no expone la versión de Django en ninguna cabecera.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Logging — auditoría de seguridad para Cloud Run Logging
+#
+# `stats_app.security` registra en WARNING cada bloqueo de rate limit (429)
+# y cada intento de acceso a un recurso ajeno vía IDOR (404 forzado), con la
+# IP real del atacante (X-Forwarded-For) y el recurso/acción implicados. Se
+# usa un StreamHandler explícito (en vez de confiar en el "handler de último
+# recurso" de Python) para garantizar un formato consistente y que Cloud Run
+# lo capture siempre por stdout/stderr, sin depender de que no haya otros
+# handlers configurados en el proceso.
+# ─────────────────────────────────────────────────────────────────────────────
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'seguridad': {
+            'format': '[SECURITY] %(asctime)s %(levelname)s %(name)s: %(message)s',
+        },
+    },
+    'handlers': {
+        'console_seguridad': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'seguridad',
+        },
+    },
+    'loggers': {
+        'stats_app.security': {
+            'handlers': ['console_seguridad'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'stats_app.db_resilience': {
+            'handlers': ['console_seguridad'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Solo en `manage.py test` — la suite de seguridad simula fuerza bruta
+# (decenas de logins) y concurrencia real con hilos; el hasher de
+# contraseñas de producción (PBKDF2, deliberadamente lento) multiplicaría
+# el tiempo de CI sin aportar nada a lo que se está probando. No afecta a
+# ningún entorno real: solo se activa cuando el proceso es `test`.
+# ─────────────────────────────────────────────────────────────────────────────
+if 'test' in sys.argv:
+    PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']

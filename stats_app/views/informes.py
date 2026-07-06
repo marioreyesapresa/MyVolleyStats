@@ -2,12 +2,22 @@ from io import BytesIO
 from django.shortcuts import get_object_or_404
 from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 from datetime import datetime
 from ..models import Partido, Jugadora, RegistroEstadistica
 from ..services.reporting import build_full_report
+from ..security import log_intento_acceso_no_autorizado
+
+
+def _partido_del_entrenador(request, pk):
+    try:
+        return get_object_or_404(Partido, pk=pk, equipo__entrenador=request.user)
+    except Http404:
+        log_intento_acceso_no_autorizado(request, 'Partido', pk)
+        raise
+
 
 def render_to_pdf(template_src, context_dict={}):
     template = get_template(template_src)
@@ -72,7 +82,7 @@ class BaseInformePDFView(LoginRequiredMixin, View):
 
 class DescargarResumenPDF(BaseInformePDFView):
     def get(self, request, pk):
-        partido = get_object_or_404(Partido, pk=pk, equipo__entrenador=request.user)
+        partido = _partido_del_entrenador(request, pk)
         set_n = request.GET.get('set', 'global')
         stats = self.get_stats_data(partido, set_n)
         
@@ -93,7 +103,7 @@ class DescargarResumenPDF(BaseInformePDFView):
 
 class DescargarInformeCompletoPDF(BaseInformePDFView):
     def get(self, request, pk):
-        partido = get_object_or_404(Partido, pk=pk, equipo__entrenador=request.user)
+        partido = _partido_del_entrenador(request, pk)
         set_n = request.GET.get('set', 'global')
         reporte = build_full_report(partido, set_n)
 

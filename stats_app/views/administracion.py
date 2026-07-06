@@ -3,6 +3,7 @@ from django.views.generic import View, CreateView, UpdateView, DeleteView, ListV
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from ..models import Equipo, Jugadora, Partido
+from ..security import AuditoriaAccesoMixin
 
 
 class ConfiguracionView(LoginRequiredMixin, View):
@@ -42,7 +43,7 @@ class EquipoCreateView(LoginRequiredMixin, CreateView):
         return reverse_lazy('stats_app:equipos_list')
 
 
-class EquipoUpdateView(LoginRequiredMixin, UpdateView):
+class EquipoUpdateView(LoginRequiredMixin, AuditoriaAccesoMixin, UpdateView):
     model = Equipo
     fields = ['nombre', 'temporada', 'categoria']
     template_name = 'stats_app/admin/equipo_form.html'
@@ -54,7 +55,7 @@ class EquipoUpdateView(LoginRequiredMixin, UpdateView):
         return reverse_lazy('stats_app:equipos_list')
 
 
-class EquipoDeleteView(LoginRequiredMixin, DeleteView):
+class EquipoDeleteView(LoginRequiredMixin, AuditoriaAccesoMixin, DeleteView):
     model = Equipo
     template_name = 'stats_app/admin/equipo_confirm_delete.html'
     success_url = reverse_lazy('stats_app:dashboard')
@@ -96,7 +97,7 @@ class JugadoraCreateView(LoginRequiredMixin, CreateView):
         return initial
 
 
-class JugadoraUpdateView(LoginRequiredMixin, UpdateView):
+class JugadoraUpdateView(LoginRequiredMixin, AuditoriaAccesoMixin, UpdateView):
     model = Jugadora
     fields = ['equipo', 'nombre', 'apellidos', 'dorsal', 'posicion', 'fecha_nacimiento']
     template_name = 'stats_app/admin/jugadora_form.html'
@@ -112,7 +113,7 @@ class JugadoraUpdateView(LoginRequiredMixin, UpdateView):
         return form
 
 
-class JugadoraDeleteView(LoginRequiredMixin, DeleteView):
+class JugadoraDeleteView(LoginRequiredMixin, AuditoriaAccesoMixin, DeleteView):
     model = Jugadora
     template_name = 'stats_app/admin/jugadora_confirm_delete.html'
     success_url = reverse_lazy('stats_app:dashboard')
@@ -143,7 +144,7 @@ class PartidoCreateView(LoginRequiredMixin, CreateView):
         return initial
 
 
-class PartidoUpdateView(LoginRequiredMixin, UpdateView):
+class PartidoUpdateView(LoginRequiredMixin, AuditoriaAccesoMixin, UpdateView):
     model = Partido
     fields = ['equipo', 'fecha', 'hora', 'rival', 'local', 'lugar', 'modalidad']
     template_name = 'stats_app/admin/partido_form.html'
@@ -158,7 +159,7 @@ class PartidoUpdateView(LoginRequiredMixin, UpdateView):
         return form
 
 
-class PartidoDeleteView(LoginRequiredMixin, DeleteView):
+class PartidoDeleteView(LoginRequiredMixin, AuditoriaAccesoMixin, DeleteView):
     model = Partido
     template_name = 'stats_app/admin/partido_confirm_delete.html'
     success_url = reverse_lazy('stats_app:dashboard')

@@ -1397,7 +1397,7 @@
 
                 try {
                     // 1. Register substitution statistic
-                    const rCambio = await fetch('{% url "stats_app:api_registrar_cambio" %}', {
+                    const rCambio = await fetchConReintentos('{% url "stats_app:api_registrar_cambio" %}', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                         body: JSON.stringify({
@@ -1429,7 +1429,7 @@
                         }
                     }
 
-                    const rRot = await fetch(`{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}`, {
+                    const rRot = await fetchConReintentos(`{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                         body: JSON.stringify(newPositions)
@@ -1637,7 +1637,7 @@
                 container.innerHTML = '';
             }
             
-            const response = await fetch(`{% url "stats_app:api_get_rotacion" partido.id %}?set=${state.set_numero}`);
+            const response = await fetchConReintentos(`{% url "stats_app:api_get_rotacion" partido.id %}?set=${state.set_numero}`);
             if (response.status === 200) {
                 state.rotation = await response.json();
             } else {
@@ -2016,7 +2016,7 @@
         }
 
         try {
-            const r = await fetch(`{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}`, {
+            const r = await fetchConReintentos(`{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                 body: JSON.stringify(body)
@@ -2141,7 +2141,7 @@
         
         try {
             // 4. Persistir la rotación en el servidor
-            const r = await fetch(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
+            const r = await fetchConReintentos(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                 body: JSON.stringify({ set_numero: state.set_numero, direccion: dir })
@@ -2222,7 +2222,7 @@
         
         try {
             // 4. Persistir en el servidor
-            await fetch(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
+            await fetchConReintentos(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                 body: JSON.stringify({ set_numero: state.set_numero, direccion: 'horario' })
@@ -2273,7 +2273,7 @@
         // ATAQUE inherits the current phase (K1 if after reception, K2 if after defence)
         
         try {
-            const response = await fetch('{% url "stats_app:api_registrar_estadistica" %}', { 
+            const response = await fetchConReintentos('{% url "stats_app:api_registrar_estadistica" %}', { 
                 method: 'POST', 
                 headers: { 
                     'Content-Type': 'application/json', 
@@ -2478,7 +2478,7 @@
     async function eliminarRegistro(id) {
         if (state.prefs.confirmarBorrado && !confirm('¿Eliminar esta acción?')) return;
         try {
-            const r = await fetch('{% url "stats_app:api_eliminar_estadistica" %}', { 
+            const r = await fetchConReintentos('{% url "stats_app:api_eliminar_estadistica" %}', { 
                 method: 'POST', 
                 headers: { 
                     'Content-Type': 'application/json', 
@@ -2526,15 +2526,88 @@
         document.getElementById('counter-text').innerText = `${document.getElementById('historial-list').children.length} ACCIONES`; 
     }
 
-    function showToast(m) { 
-        const t = document.getElementById('toast'); 
-        document.getElementById('toast-message').innerText = m; 
+    // ── Toast: soporta un modo "persistente" (no se autooculta) usado por
+    // fetchConReintentos para avisar de "Conexión inestable" mientras dura
+    // el backoff, y se cierra explícitamente al reintentar con éxito o al
+    // agotar los intentos. Un temporizador global evita que un toast normal
+    // que llega DURANTE una racha de reintentos cierre el aviso antes de hora
+    // (y viceversa).
+    let toastTimeoutId = null;
+    function showToast(m, opts = {}) {
+        const persistente = !!(opts && opts.persistente);
+        const t = document.getElementById('toast');
+        document.getElementById('toast-message').innerText = m;
         t.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
-        t.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto'); 
-        setTimeout(() => {
-            t.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
-            t.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto'); 
-        }, 2000); 
+        t.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+        if (toastTimeoutId) {
+            clearTimeout(toastTimeoutId);
+            toastTimeoutId = null;
+        }
+        if (!persistente) {
+            toastTimeoutId = setTimeout(() => {
+                t.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+                t.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+                toastTimeoutId = null;
+            }, 2000);
+        }
+    }
+
+    function ocultarToast() {
+        const t = document.getElementById('toast');
+        if (toastTimeoutId) {
+            clearTimeout(toastTimeoutId);
+            toastTimeoutId = null;
+        }
+        t.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+        t.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+    }
+
+    // ── Resiliencia de red (banquillo) ───────────────────────────────────
+    // Envoltorio de `fetch()` con reintentos y backoff exponencial + jitter.
+    // Se usa en TODAS las llamadas a las APIs de scouting (registrar acción,
+    // cambios, eliminar, estadísticas, rotaciones, config del set) para que
+    // un micro-corte de cobertura (4G inestable / wifi del pabellón) no se
+    // traduzca en un marcador congelado ni en una estadística perdida: el
+    // usuario ve "Conexión inestable - Reintentando..." y, si la red vuelve,
+    // la petición se completa sola sin que el entrenador tenga que repetir
+    // el toque manualmente.
+    //
+    // Solo se reintenta ante fallos de red genuinos (fetch() lanza TypeError)
+    // o respuestas de servidor transitorias (502/503/504 gateway/proxy caído,
+    // 429 rate limit). Errores de negocio (400/403/404) se devuelven tal
+    // cual a la primera: reintentarlos no arreglaría nada y ocultaría un bug.
+    const REINTENTOS_HTTP_TRANSITORIOS = new Set([408, 429, 502, 503, 504]);
+
+    async function fetchConReintentos(url, options = {}, config = {}) {
+        const maxIntentos = config.maxIntentos ?? 4;
+        const baseDelayMs = config.baseDelayMs ?? 600;
+        let intento = 0;
+        let avisoMostrado = false;
+
+        while (true) {
+            try {
+                const response = await fetch(url, options);
+                if (REINTENTOS_HTTP_TRANSITORIOS.has(response.status) && intento < maxIntentos) {
+                    throw new Error(`HTTP transitorio ${response.status}`);
+                }
+                if (avisoMostrado) {
+                    showToast('✅ Conexión restablecida');
+                }
+                return response;
+            } catch (err) {
+                intento++;
+                if (intento > maxIntentos) {
+                    ocultarToast();
+                    showToast('❌ Sin conexión. Revisa la cobertura e inténtalo de nuevo.');
+                    throw err;
+                }
+                avisoMostrado = true;
+                showToast(`⚠️ Conexión inestable - Reintentando... (${intento}/${maxIntentos})`, { persistente: true });
+                const backoff = baseDelayMs * (2 ** (intento - 1));
+                const jitter = Math.random() * 250;
+                await new Promise(resolve => setTimeout(resolve, backoff + jitter));
+            }
+        }
     }
 
     function resetVisual() { 
@@ -2687,7 +2760,7 @@
     async function updateFlashboard() {
         try {
             const body = { partido_id: state.partido_id, set_numero: state.set_numero };
-            const r = await fetch('{% url "stats_app:api_obtener_stats_set" %}', {
+            const r = await fetchConReintentos('{% url "stats_app:api_obtener_stats_set" %}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                 body: JSON.stringify(body)
@@ -2925,7 +2998,7 @@
 
     async function finalizarPartido() {
         try {
-            const response = await fetch(`/api/partido/${state.partido_id}/finalizar/`, {
+            const response = await fetchConReintentos(`/api/partido/${state.partido_id}/finalizar/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3314,7 +3387,7 @@
         const setsParaGanar = parseInt(document.getElementById('input-sets-para-ganar').value) || state.reglas.setsParaGanar;
 
         try {
-            const r = await fetch('{% url "stats_app:api_actualizar_config_set" partido.id %}', {
+            const r = await fetchConReintentos('{% url "stats_app:api_actualizar_config_set" partido.id %}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                 body: JSON.stringify({
@@ -3560,7 +3633,7 @@
         const sets = {};
         try {
             for (let s = 1; s <= maxSet; s++) {
-                const r = await fetch(`/api/stats/${state.partido_id}/${s}/`);
+                const r = await fetchConReintentos(`/api/stats/${state.partido_id}/${s}/`);
                 if (!r.ok) continue;
                 const data = await r.json();
                 if (data.status !== 'ok') continue;
