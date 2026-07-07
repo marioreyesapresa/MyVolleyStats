@@ -8,7 +8,7 @@
                 <tr>
                     <th class="text-left">Fundamento</th><th>Nº</th>
                     <th class="q-pp">++</th><th class="q-p">+</th><th class="q-eq">=</th><th class="q-m">−</th><th class="q-mm">−−</th>
-                    <th>Efic. Pond.</th><th>Saldo ++/−−</th>
+                    <th>Efic. Ponderada</th><th>Saldo ++/−−</th>
                 </tr>
             </thead>
             <tbody>
@@ -83,10 +83,10 @@
                     {% for fm in fundamentos_meta %}
                     <th colspan="5" class="fund-head">{{ fm.label }}</th>
                     {% endfor %}
-                    <th rowspan="2" class="cell-err">Red</th>
-                    <th rowspan="2">Efic.Pond.</th>
-                    <th rowspan="2">Saldo Pond.</th>
-                    <th rowspan="2">++/−−</th>
+                    <th rowspan="2" class="cell-err" title="Toques de red: punto rival y error de la jugadora">Red</th>
+                    <th rowspan="2" title="Calidad media de los toques (++×2, +×1, =×0, −×−1, −−×−2)">Efic. Ponderada</th>
+                    <th rowspan="2" title="Suma de calidad de todos los toques; cada Red resta 2">Saldo Ponderado</th>
+                    <th rowspan="2" title="Puntos directos (++) menos errores directos (−−)">Saldo ++/−−</th>
                 </tr>
                 <tr>
                     {% for fm in fundamentos_meta %}

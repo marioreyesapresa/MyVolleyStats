@@ -55,10 +55,10 @@
         </div>
     </div>
 
-    <!-- Leyenda y fórmulas (colapsables) -->
+    <!-- Leyenda y fórmulas (arriba, desplegadas por defecto) -->
     {% include 'stats_app/includes/leyenda_metricas.html' with collapsible=True %}
 
-    <details class="bg-[#121824] border border-slate-800 rounded-2xl group print:hidden">
+    <details class="bg-[#121824] border border-slate-800 rounded-2xl group print:hidden" open>
         <summary class="px-4 py-3 cursor-pointer list-none flex items-center justify-between gap-2 select-none">
             <span class="font-black text-slate-300 uppercase tracking-wider text-[10px] flex items-center gap-2">
                 <i data-lucide="calculator" class="w-4 h-4 text-slate-500"></i>

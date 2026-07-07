@@ -40,10 +40,13 @@ Uso: {% include 'stats_app/includes/leyenda_metricas.html' with compact=True %}
         <tr><td class="left">Rotación K1 (verde)</td><td class="left">¿En qué rotación ganamos más rallies al recibir?</td></tr>
         <tr><td class="left">Rotación K2 (azul)</td><td class="left">¿En qué rotación ganamos más rallies al sacar?</td></tr>
         <tr><td class="left">Saldo</td><td class="left">¿Cuánto aporta o resta cada jugadora? (puntos ++ − errores −−)</td></tr>
+        <tr><td class="left">Pts. Mérito</td><td class="left">Puntos ganados por acción nuestra directa (++)</td></tr>
+        <tr><td class="left">Pts. Err. Rival</td><td class="left">Puntos ganados porque el rival falló</td></tr>
+        <tr><td class="left">Efic.% ataque</td><td class="left">(puntos − errores) ÷ intentos de ataque</td></tr>
     </tbody>
 </table>
 {% elif collapsible %}
-<details class="bg-[#121824] border border-slate-800 rounded-2xl group print:hidden">
+<details class="bg-[#121824] border border-slate-800 rounded-2xl group print:hidden" open>
     <summary class="px-4 py-3 cursor-pointer list-none flex items-center justify-between gap-2 select-none">
         <span class="font-black text-slate-300 uppercase tracking-wider text-[10px] flex items-center gap-2">
             <i data-lucide="help-circle" class="w-4 h-4 text-slate-500"></i>
@@ -68,6 +71,9 @@ Uso: {% include 'stats_app/includes/leyenda_metricas.html' with compact=True %}
                 <tr><td class="py-1.5 pr-4 text-emerald-400/90 font-bold whitespace-nowrap">Rotación · verde</td><td class="py-1.5">¿En qué rotación ganamos más rallies al recibir?</td></tr>
                 <tr><td class="py-1.5 pr-4 text-blue-400/90 font-bold whitespace-nowrap">Rotación · azul</td><td class="py-1.5">¿En qué rotación ganamos más rallies al sacar?</td></tr>
                 <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Saldo</td><td class="py-1.5">¿Cuánto aporta o resta cada jugadora al set? <span class="text-slate-600">( ++ − −− )</span></td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Pts. Mérito</td><td class="py-1.5">Puntos ganados por acción nuestra directa (++)</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Pts. Err. Rival</td><td class="py-1.5">Puntos ganados porque el rival falló</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Efic.% ataque</td><td class="py-1.5">(puntos de ataque − errores de ataque) ÷ intentos de ataque</td></tr>
             </tbody>
         </table>
     </div>
@@ -92,6 +98,9 @@ Uso: {% include 'stats_app/includes/leyenda_metricas.html' with compact=True %}
                 <tr><td class="py-1.5 pr-4 text-emerald-400/90 font-bold whitespace-nowrap">Rotación · verde</td><td class="py-1.5">¿En qué rotación ganamos más rallies al recibir?</td></tr>
                 <tr><td class="py-1.5 pr-4 text-blue-400/90 font-bold whitespace-nowrap">Rotación · azul</td><td class="py-1.5">¿En qué rotación ganamos más rallies al sacar?</td></tr>
                 <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Saldo</td><td class="py-1.5">¿Cuánto aporta o resta cada jugadora al set? <span class="text-slate-600">( ++ − −− )</span></td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Pts. Mérito</td><td class="py-1.5">Puntos ganados por acción nuestra directa (++)</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Pts. Err. Rival</td><td class="py-1.5">Puntos ganados porque el rival falló</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Efic.% ataque</td><td class="py-1.5">(puntos de ataque − errores de ataque) ÷ intentos de ataque</td></tr>
             </tbody>
         </table>
     </div>

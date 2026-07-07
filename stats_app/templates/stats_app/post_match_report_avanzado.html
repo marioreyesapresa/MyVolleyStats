@@ -54,10 +54,7 @@
         </div>
     </div>
 
-    <div class="bg-[#121824] rounded-2xl border border-slate-800 p-4 print:hidden text-xs text-slate-400 space-y-1">
-        <p><span class="text-white font-bold">++</span> Excelente/punto · <span class="text-white font-bold">+</span> Bueno · <span class="text-white font-bold">=</span> En juego · <span class="text-white font-bold">−</span> Mejorable · <span class="text-white font-bold">−−</span> Error directo · <span class="text-rose-400 font-bold">Red</span> Toque de red (punto rival)</p>
-        <p><span class="text-indigo-300 font-bold">Efic. Pond.</span> = ponderación (++×2, +×1, =×0, −×−1, −−×−2) ÷ máximo posible · <span class="text-indigo-300 font-bold">Saldo Pond.</span> incluye penalización por Red (−2 cada una)</p>
-    </div>
+    {% include 'stats_app/includes/leyenda_metricas_avanzadas.html' with collapsible=True %}
 
     <div class="report-sheet rounded-3xl shadow-2xl overflow-hidden p-4 md:p-6 space-y-8">
 

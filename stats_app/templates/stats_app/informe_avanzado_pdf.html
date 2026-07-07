@@ -31,6 +31,8 @@
         <div class="subtitle">{% if set_n == 'global' %}Partido completo{% else %}Set {{ set_n }}{% endif %} · {{ fecha }} · Escala ++ / + / = / − / −− / Red</div>
     </div>
 
+    {% include 'stats_app/includes/leyenda_metricas_avanzadas.html' with pdf=True %}
+
     <div class="section">Resumen por sets</div>
     <table>
         <thead>
@@ -68,9 +70,7 @@
     {% endfor %}
 
     <div class="legend">
-        <strong>Eficacia ponderada:</strong> ++×2, +×1, =×0, −×−1, −−×−2 sobre el total de acciones del fundamento.
-        <strong>Red:</strong> toque de red = punto rival y error individual (−2 en saldo ponderado).
-        Informe técnico para datos registrados en Modo Avanzado (escala completa).
+        Generado por MyVolleyStats — {{ fecha }}
     </div>
 </body>
 </html>

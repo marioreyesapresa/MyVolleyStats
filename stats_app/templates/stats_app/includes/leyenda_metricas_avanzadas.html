@@ -1,0 +1,68 @@
+{% comment %}
+Leyenda del informe de Estadísticas Avanzadas.
+Uso: {% include 'stats_app/includes/leyenda_metricas_avanzadas.html' with collapsible=True %}
+{% endcomment %}
+{% if pdf %}
+<div class="section-title">Leyenda — ¿Qué significa cada cosa?</div>
+<table style="width:100%;margin-bottom:8px;font-size:6.5px;">
+    <thead>
+        <tr><th class="left" style="width:24%;">Término</th><th class="left">Significado</th></tr>
+    </thead>
+    <tbody>
+        <tr><td class="left"><strong>++</strong></td><td class="left">Excelente / punto directo (ace, kill, bloqueo punto…)</td></tr>
+        <tr><td class="left"><strong>+</strong></td><td class="left">Bueno (toque positivo sin punto directo)</td></tr>
+        <tr><td class="left"><strong>=</strong></td><td class="left">En juego (pelota continúa, sin error ni punto)</td></tr>
+        <tr><td class="left"><strong>−</strong></td><td class="left">Mejorable (toque flojo o difícil de aprovechar)</td></tr>
+        <tr><td class="left"><strong>−−</strong></td><td class="left">Error directo (punto para el rival)</td></tr>
+        <tr><td class="left"><strong>Red</strong></td><td class="left">La jugadora tocó la red → punto rival y error suyo</td></tr>
+        <tr><td class="left"><strong>Efic. Ponderada</strong></td><td class="left">Calidad media de los toques: (++×2 + +×1 + =×0 + −×−1 + −−×−2) ÷ máximo posible. 100% = todos ++; 0% = todos −−</td></tr>
+        <tr><td class="left"><strong>Saldo Ponderado</strong></td><td class="left">Suma de puntos de calidad de todos los toques. Cada Red resta 2 puntos extra. Positivo = aporta; negativo = resta</td></tr>
+        <tr><td class="left"><strong>Saldo ++/−−</strong></td><td class="left">Puntos directos (++) menos errores directos (−−). No cuenta +, = ni −</td></tr>
+        <tr><td class="left"><strong>Complejo K1</strong></td><td class="left">Recepción + colocación + ataque: calidad del rally al recibir</td></tr>
+        <tr><td class="left"><strong>Complejo K2</strong></td><td class="left">Saque + bloqueo + defensa: calidad del rally al sacar</td></tr>
+        <tr><td class="left"><strong>Pts. Mérito</strong></td><td class="left">Puntos ganados por acción nuestra directa (++)</td></tr>
+        <tr><td class="left"><strong>Pts. Err. Rival</strong></td><td class="left">Puntos ganados porque el rival falló (error rival)</td></tr>
+    </tbody>
+</table>
+{% elif collapsible %}
+<details class="bg-[#121824] border border-indigo-500/20 rounded-2xl group print:hidden" open>
+    <summary class="px-4 py-3 cursor-pointer list-none flex items-center justify-between gap-2 select-none">
+        <span class="font-black text-indigo-300 uppercase tracking-wider text-[10px] flex items-center gap-2">
+            <i data-lucide="help-circle" class="w-4 h-4 text-indigo-400"></i>
+            Leyenda — ¿Qué significa cada cosa?
+        </span>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+    </summary>
+    <div class="px-4 pb-4 border-t border-slate-800/60 pt-3 overflow-x-auto">
+        <table class="w-full text-left text-[10px] sm:text-xs border-collapse min-w-[320px]">
+            <thead>
+                <tr class="text-[9px] font-black text-slate-500 uppercase border-b border-slate-800">
+                    <th class="pb-2 pr-4 font-black w-36">Término</th>
+                    <th class="pb-2 font-black">Significado</th>
+                </tr>
+            </thead>
+            <tbody class="text-slate-400 divide-y divide-slate-800/50">
+                <tr><td class="py-1.5 pr-4 text-emerald-400 font-bold whitespace-nowrap">++</td><td class="py-1.5">Excelente / punto directo (ace, kill, bloqueo punto…)</td></tr>
+                <tr><td class="py-1.5 pr-4 text-green-400 font-bold whitespace-nowrap">+</td><td class="py-1.5">Bueno (toque positivo sin punto directo)</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-300 font-bold whitespace-nowrap">=</td><td class="py-1.5">En juego (pelota continúa, sin error ni punto)</td></tr>
+                <tr><td class="py-1.5 pr-4 text-orange-400 font-bold whitespace-nowrap">−</td><td class="py-1.5">Mejorable (toque flojo o difícil de aprovechar)</td></tr>
+                <tr><td class="py-1.5 pr-4 text-rose-400 font-bold whitespace-nowrap">−−</td><td class="py-1.5">Error directo (punto para el rival)</td></tr>
+                <tr><td class="py-1.5 pr-4 text-rose-500 font-bold whitespace-nowrap">Red</td><td class="py-1.5">La jugadora tocó la red → punto rival y error suyo</td></tr>
+                <tr><td class="py-1.5 pr-4 text-indigo-300 font-bold whitespace-nowrap">Efic. Ponderada</td><td class="py-1.5">Calidad media de los toques: <span class="text-slate-500">(++×2 + +×1 + =×0 + −×−1 + −−×−2) ÷ máximo posible</span>. 100% = todos ++; 0% = todos −−</td></tr>
+                <tr><td class="py-1.5 pr-4 text-indigo-300 font-bold whitespace-nowrap">Saldo Ponderado</td><td class="py-1.5">Suma de puntos de calidad de todos los toques. <span class="text-slate-500">Cada Red resta 2 puntos extra.</span> Positivo = aporta al equipo; negativo = resta</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Saldo ++/−−</td><td class="py-1.5">Puntos directos (++) menos errores directos (−−). <span class="text-slate-600">No cuenta +, = ni −</span></td></tr>
+                <tr><td class="py-1.5 pr-4 text-emerald-400 font-bold whitespace-nowrap">Complejo K1</td><td class="py-1.5">Recepción + colocación + ataque: calidad del rally al recibir</td></tr>
+                <tr><td class="py-1.5 pr-4 text-blue-400 font-bold whitespace-nowrap">Complejo K2</td><td class="py-1.5">Saque + bloqueo + defensa: calidad del rally al sacar</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Pts. Mérito</td><td class="py-1.5">Puntos ganados por acción nuestra directa (++)</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Pts. Err. Rival</td><td class="py-1.5">Puntos ganados porque el rival falló</td></tr>
+            </tbody>
+        </table>
+    </div>
+</details>
+{% else %}
+<div class="bg-[#121824] border border-indigo-500/20 rounded-2xl p-4 space-y-2 print:hidden text-xs text-slate-400">
+    <p class="font-black text-indigo-300 uppercase tracking-wider text-[10px]">Leyenda — ¿Qué significa cada cosa?</p>
+    <p><span class="text-emerald-400 font-bold">++</span> punto/excelente · <span class="text-green-400 font-bold">+</span> bueno · <span class="text-slate-300 font-bold">=</span> en juego · <span class="text-orange-400 font-bold">−</span> mejorable · <span class="text-rose-400 font-bold">−−</span> error · <span class="text-rose-500 font-bold">Red</span> toque de red</p>
+    <p><span class="text-indigo-300 font-bold">Efic. Ponderada</span> = calidad media (++/+ /=/-/-- con pesos) · <span class="text-indigo-300 font-bold">Saldo Ponderado</span> = suma de calidad (Red −2) · <span class="text-slate-200 font-bold">Saldo ++/−−</span> = solo extremos</p>
+</div>
+{% endif %}

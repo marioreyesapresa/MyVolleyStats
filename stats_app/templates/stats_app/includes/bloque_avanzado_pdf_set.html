@@ -60,7 +60,9 @@
             {% for fm in fundamentos_meta %}
             <th colspan="5" class="fund">{{ fm.label }}</th>
             {% endfor %}
-            <th rowspan="2">Red</th><th rowspan="2">Ef.P.</th><th rowspan="2">S.Pond</th>
+            <th rowspan="2" title="Toques de red">Red</th>
+            <th rowspan="2" title="Eficacia ponderada">Efic. Ponderada</th>
+            <th rowspan="2" title="Saldo ponderado (Red −2)">Saldo Ponderado</th>
         </tr>
         <tr>
             {% for fm in fundamentos_meta %}

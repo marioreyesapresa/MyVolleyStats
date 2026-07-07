@@ -152,6 +152,19 @@
         </div>
     </div>
 
+    {% include 'stats_app/includes/leyenda_metricas.html' with pdf=True %}
+
+    <div class="legend" style="margin-top:0;margin-bottom:8px;border-top:none;padding-top:0;">
+        <strong>Saldo</strong> = Puntos (++) − Errores (−−).
+        <strong>Efic.% ataque</strong> = (puntos − errores) ÷ intentos.
+        <strong>Side-out %</strong> = % rallies ganados al recibir.
+        <strong>Breakpoint %</strong> = % rallies ganados al sacar.
+        <strong>Complejos K1/K2</strong> = ( ++ − −− ) ÷ total acciones del complejo.
+        <strong>Zona %</strong> = eficacia ataque/bloqueo por zona.
+        <strong>Rotación K1/K2</strong> = % rallies ganados en esa rotación al recibir (K1) o sacar (K2).
+        Verde = acierto · Rojo = error.
+    </div>
+
     <div class="section-title">Resumen por sets</div>
     <table class="top-combined">
         <thead>
@@ -541,15 +554,7 @@
     </div>
     {% endfor %}
 
-    {% include 'stats_app/includes/leyenda_metricas.html' with pdf=True %}
-
-    <div class="legend">
-        <strong>Saldo</strong> = Puntos (++) − Errores (−−). Los ceros en jugadoras se omiten (—) para facilitar la lectura.
-        <strong>Efic.% ataque</strong> = (puntos − errores) ÷ intentos.
-        <strong>Side-out %</strong> = % de rallies ganados cuando recibimos. <strong>Breakpoint %</strong> = % ganados con nuestro saque.
-        <strong>Complejos K1/K2</strong> = calidad de acciones: ( ++ − −− ) ÷ total en recep.+ataque (K1) o saque+bloq.+def. (K2).
-        <strong>Zona %</strong> = eficacia de ataque/bloqueo por zona de origen. <strong>Rotación K1/K2</strong> = % de rallies ganados en esa rotación al recibir (K1) o sacar (K2).
-        Verde = acierto · Rojo = error · Fila oscura = totales del equipo.
+    <div class="legend" style="margin-top:8px;">
         Generado por MyVolleyStats — {{ fecha }}
     </div>
 </body>
