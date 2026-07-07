@@ -185,6 +185,10 @@
                     <i data-lucide="settings" class="w-5 h-5 {% if request.resolver_match.view_name == 'stats_app:configuracion' %}text-emerald-400{% else %}text-slate-400{% endif %}"></i>
                     <span class="font-medium text-sm">Configuración</span>
                 </a>
+                <a href="{% url 'stats_app:descargar_manual_usuario' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
+                    <i data-lucide="book-open" class="w-5 h-5 text-slate-400"></i>
+                    <span class="font-medium text-sm">Manual de usuario</span>
+                </a>
                 {% if partido %}
                 <div class="h-px bg-slate-800/50 my-3"></div>
                 <p class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 px-3 pb-1">Scouting Partido</p>
@@ -239,6 +243,10 @@
             <a href="{% url 'stats_app:configuracion' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all {% if request.resolver_match.view_name == 'stats_app:configuracion' %}sidebar-active-dark{% else %}text-slate-400{% endif %}">
                 <i data-lucide="settings" class="w-5 h-5 {% if request.resolver_match.view_name == 'stats_app:configuracion' %}text-emerald-400{% else %}text-slate-400{% endif %}"></i>
                 <span class="font-medium text-sm">Configuración</span>
+            </a>
+            <a href="{% url 'stats_app:descargar_manual_usuario' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
+                <i data-lucide="book-open" class="w-5 h-5 text-slate-400"></i>
+                <span class="font-medium text-sm">Manual de usuario</span>
             </a>
             
             {% if partido %}

@@ -12,6 +12,8 @@ from datetime import datetime
 from ..models import Partido, Jugadora, RegistroEstadistica, RotacionSet
 from ..services.reporting import build_full_report, build_quick_report, build_advanced_report, _rows_for, _fund_counts
 from ..security import log_intento_acceso_no_autorizado
+from ..context_processors import APP_NAME, APP_TAGLINE
+from ..services.manual_images import build_manual_capturas_context, manual_logo_uri
 
 
 def _partido_del_entrenador(request, pk):
@@ -238,3 +240,24 @@ class DescargarInformeAvanzadoPDF(BaseInformePDFView):
                 informe_avanzado_pdf_cache_generado_en=timezone.now(),
             )
         return pdf
+
+
+class DescargarManualUsuarioPDF(LoginRequiredMixin, View):
+    """Manual de usuario en PDF para entrenadores (no requiere partido)."""
+
+    def get(self, request):
+        context = {
+            'app_name': APP_NAME,
+            'app_tagline': APP_TAGLINE,
+            'fecha': datetime.now().strftime('%d/%m/%Y'),
+            'capturas': build_manual_capturas_context(),
+            'logo_uri': manual_logo_uri(),
+        }
+        pdf = render_to_pdf('stats_app/manual_usuario_pdf.html', context)
+        if pdf is None:
+            return HttpResponse('Error al generar el PDF', status=500)
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = (
+            f'attachment; filename="Manual_Usuario_{APP_NAME}.pdf"'
+        )
+        return response

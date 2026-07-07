@@ -5,7 +5,8 @@ from .rotaciones import (
     GetRotacionActualAPI, GuardarAlineacionInicialAPI, RotarManualAPI, ActualizarPosicionJugadoraAPI
 )
 from .informes import (
-    DescargarResumenPDF, DescargarInformeCompletoPDF, DescargarInformeAvanzadoPDF
+    DescargarResumenPDF, DescargarInformeCompletoPDF, DescargarInformeAvanzadoPDF,
+    DescargarManualUsuarioPDF,
 )
 from .administracion import (
     ConfiguracionView, DashboardView,

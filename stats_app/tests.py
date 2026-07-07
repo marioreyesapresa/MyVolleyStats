@@ -1033,6 +1033,12 @@ class FlujoCompletoPartidoTests(TestCase):
         self.assertEqual(response['Content-Type'], 'application/pdf')
         self.assertIn(b'PDF', response.content[:10])
 
+    def test_descargar_manual_usuario_pdf_genera_documento(self):
+        response = self.client.get(reverse('stats_app:descargar_manual_usuario'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn(b'PDF', response.content[:10])
+
     def test_registrar_cambio_happy_path(self):
         response = self.client.post(
             reverse('stats_app:api_registrar_cambio'),

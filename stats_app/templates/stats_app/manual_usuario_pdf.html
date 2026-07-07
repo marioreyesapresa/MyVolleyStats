@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Manual de usuario — {{ app_name }}</title>
+    <style>
+        @page { size: A4; margin: 1.6cm 1.4cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 9.5px; color: #1e293b; line-height: 1.55; margin: 0; }
+        h1 { font-size: 26px; color: #0f172a; margin: 0; letter-spacing: 1px; }
+        h2 {
+            font-size: 13px; color: #065f46; margin: 20px 0 10px; padding: 7px 10px;
+            background: #ecfdf5; border-left: 5px solid #10b981; text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        h3 { font-size: 10.5px; color: #1e40af; margin: 14px 0 6px; font-weight: bold; }
+        h4 { font-size: 9.5px; color: #475569; margin: 10px 0 4px; font-weight: bold; text-transform: uppercase; }
+        p { margin: 0 0 7px; }
+        ul, ol { margin: 0 0 9px 15px; padding: 0; }
+        li { margin-bottom: 3px; }
+
+        /* Portada */
+        .cover { page-break-after: always; padding: 0; margin: 0; }
+        .cover-hero { width: 100%; background-color: #0b0f19; border-collapse: collapse; }
+        .cover-hero td { text-align: center; padding: 36px 24px 28px; vertical-align: middle; }
+        .cover-logo { width: 72px; height: 72px; margin: 0 auto 14px; display: block; }
+        .cover h1 { font-size: 28px; color: #ffffff; margin: 0; letter-spacing: 2px; text-transform: uppercase; }
+        .cover .subtitle { font-size: 14px; color: #94a3b8; margin-top: 10px; font-weight: normal; }
+        .cover .tagline { font-size: 9px; color: #34d399; font-weight: bold; margin-top: 8px; text-transform: uppercase; letter-spacing: 2px; }
+        .cover-stripe { height: 5px; background-color: #10b981; width: 100%; }
+        .cover-body { padding: 28px 32px 40px; text-align: center; }
+        .cover-pills { width: 100%; margin: 18px auto 0; border-collapse: collapse; }
+        .cover-pills td { width: 33%; text-align: center; padding: 6px 4px; }
+        .pill {
+            background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46;
+            font-size: 8px; font-weight: bold; padding: 8px 6px; text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .cover-box {
+            margin: 22px auto 0; max-width: 420px; background-color: #f8fafc; border: 1px solid #e2e8f0;
+            padding: 14px 18px; font-size: 9.5px; color: #475569; text-align: left; line-height: 1.5;
+        }
+        .cover-version { font-size: 8px; color: #94a3b8; margin-top: 20px; }
+
+        /* Índice */
+        .toc { page-break-after: always; }
+        .toc ol { column-count: 2; }
+        .toc li { margin-bottom: 5px; font-size: 9px; }
+
+        .section-break { page-break-before: always; }
+        .section-intro { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 12px; margin-bottom: 12px; font-size: 9px; }
+
+        /* Tablas */
+        table.data { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 8.5px; }
+        table.data th, table.data td { border: 1px solid #cbd5e1; padding: 5px 6px; text-align: left; vertical-align: top; }
+        table.data th { background: #f1f5f9; font-weight: bold; color: #334155; }
+        table.data tr:nth-child(even) td { background: #fafafa; }
+
+        /* Cajas */
+        .tip { background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #22c55e; padding: 8px 10px; margin: 10px 0; font-size: 8.5px; }
+        .warn { background: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #f97316; padding: 8px 10px; margin: 10px 0; font-size: 8.5px; }
+        .info { background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #3b82f6; padding: 8px 10px; margin: 10px 0; font-size: 8.5px; }
+        .checklist { background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 14px; margin: 10px 0; }
+        .checklist li { list-style: none; margin-bottom: 5px; }
+
+        /* Capturas */
+        .fig-block { margin: 12px 0 16px; page-break-inside: avoid; }
+        .fig-block img { width: 500px; border: 2px solid #e2e8f0; display: block; margin: 0 auto; }
+        .fig-block .caption {
+            font-size: 8px; color: #64748b; margin-top: 5px; text-align: center;
+            font-style: italic; background: #f8fafc; padding: 4px 8px;
+        }
+        .fig-row { width: 100%; margin: 10px 0; }
+        .fig-row td { vertical-align: top; padding: 4px; }
+        .fig-half img { width: 240px; border: 1px solid #e2e8f0; }
+
+        /* Pasos numerados */
+        .steps { margin: 8px 0; }
+        .steps td.num {
+            width: 22px; height: 22px; background: #10b981; color: white; font-weight: bold;
+            text-align: center; vertical-align: top; font-size: 10px; padding-top: 3px;
+        }
+        .steps td.txt { padding: 2px 0 8px 8px; vertical-align: top; }
+
+        /* Caso práctico */
+        .case-step { background: #fafafa; border: 1px solid #e2e8f0; padding: 10px 12px; margin: 8px 0; }
+        .case-step strong { color: #065f46; }
+
+        .footer {
+            margin-top: 20px; font-size: 7.5px; color: #94a3b8; text-align: center;
+            border-top: 2px solid #ecfdf5; padding-top: 10px;
+        }
+        .badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 1px 5px; font-size: 7.5px; font-weight: bold; border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════ PORTADA ═══════════════ -->
+    <div class="cover">
+        <table class="cover-hero">
+            <tr>
+                <td>
+                    {% if logo_uri %}
+                    <img src="{{ logo_uri }}" alt="{{ app_name }}" class="cover-logo" />
+                    {% endif %}
+                    <h1>{{ app_name }}</h1>
+                    <p class="subtitle">Manual completo para entrenadores</p>
+                    <p class="tagline">{{ app_tagline }}</p>
+                </td>
+            </tr>
+        </table>
+        <div class="cover-stripe"></div>
+        <div class="cover-body">
+            <table class="cover-pills">
+                <tr>
+                    <td><div class="pill">Scout en vivo</div></td>
+                    <td><div class="pill">Informes PDF</div></td>
+                    <td><div class="pill">Uso en iPad</div></td>
+                </tr>
+            </table>
+            <div class="cover-box">
+                <strong>Guía visual paso a paso</strong> para usar la app desde el banquillo sin complicaciones.
+                Incluye capturas de cada pantalla, todas las funciones explicadas y un
+                <strong>caso práctico completo</strong> al final del documento.
+            </div>
+            <p class="cover-version">Versión del documento: {{ fecha }}</p>
+        </div>
+    </div>
+
+    <!-- ═══════════════ ÍNDICE ═══════════════ -->
+    <div class="toc">
+        <h2>Índice</h2>
+        <ol>
+            <li>¿Qué es {{ app_name }}?</li>
+            <li>Instalar la app en iPad (recomendado)</li>
+            <li>Antes del partido — lista de comprobación</li>
+            <li>Acceso e inicio de sesión</li>
+            <li>Menú principal y navegación</li>
+            <li>Equipos y jugadoras</li>
+            <li>Crear, editar y eliminar partidos</li>
+            <li>Pizarra de rotación</li>
+            <li>Scout en vivo — Modo Rápido</li>
+            <li>Scout en vivo — Modo Avanzado</li>
+            <li>Pestañas Ajustes y Configuración (en partido)</li>
+            <li>Indicadores del set</li>
+            <li>Finalizar set y partido</li>
+            <li>Informes, PDF y exportación</li>
+            <li>Configuración general de la app</li>
+            <li>Problemas frecuentes</li>
+            <li>Glosario de términos</li>
+            <li>Caso práctico: partido completo paso a paso</li>
+        </ol>
+    </div>
+
+    <!-- ═══════════════ 1. INTRODUCCIÓN ═══════════════ -->
+    <div class="section">
+        <h2>1. ¿Qué es {{ app_name }}?</h2>
+        <div class="section-intro">
+            <strong>{{ app_name }}</strong> es una aplicación web de scouting estadístico para voleibol.
+            Funciona en tablet, iPad o portátil desde el banquillo, en tiempo real, sin instalar nada
+            (salvo que quieras añadirla a la pantalla de inicio del iPad).
+        </div>
+        <h3>¿Qué puedes hacer con ella?</h3>
+        <table class="data">
+            <tr><th>Función</th><th>Descripción</th></tr>
+            <tr><td>Registrar acciones</td><td>Saque, recepción, ataque, bloqueo, defensa, colocación, red, errores…</td></tr>
+            <tr><td>Marcador automático</td><td>Los puntos se suman solos según la acción registrada</td></tr>
+            <tr><td>Rotaciones y líberos</td><td>Pizarra visual con arrastrar y soltar</td></tr>
+            <tr><td>Indicadores en vivo</td><td>Side-out, breakpoint, líderes, rotaciones, zonas…</td></tr>
+            <tr><td>Informes</td><td>Estadísticas rápidas, avanzadas, resumen PDF y exportación JSON</td></tr>
+            <tr><td>Compartir</td><td>Enviar informes por WhatsApp desde el iPad</td></tr>
+        </table>
+
+        <h3>Dos modos de scout</h3>
+        <table class="data">
+            <tr><th>Modo</th><th>Ideal para</th><th>Cómo se usa</th></tr>
+            <tr>
+                <td><strong>Rápido</strong></td>
+                <td>iPad en banquillo — la mayoría de entrenadores</td>
+                <td>Cuadrícula por zonas del campo. Un toque = una acción.</td>
+            </tr>
+            <tr>
+                <td><strong>Avanzado</strong></td>
+                <td>Análisis técnico detallado</td>
+                <td>Eliges jugadora → fundamento → calidad (++ / + / = / − / −− / Red).</td>
+            </tr>
+        </table>
+        <p>Puedes alternar entre ambos modos en cualquier momento del partido sin perder datos.</p>
+
+        <h3>Modalidades soportadas</h3>
+        <table class="data">
+            <tr><th>Modalidad</th><th>Zonas</th><th>Rotaciones</th><th>Notas</th></tr>
+            <tr><td>Voleibol 6×6</td><td>6 zonas</td><td>R1–R6</td><td>Líbero en Cadete, Juvenil, Junior y Senior</td></tr>
+            <tr><td>Minivoley 4×4</td><td>4 zonas (diamante)</td><td>R1–R4</td><td>Sin líbero</td></tr>
+        </table>
+    </div>
+
+    <!-- ═══════════════ 2. INSTALAR EN IPAD ═══════════════ -->
+    <div class="section section-break">
+        <h2>2. Instalar la app en iPad (recomendado)</h2>
+        <div class="info">
+            <strong>Haz esto antes de tu primer partido.</strong> Instalar la app en la pantalla de inicio
+            del iPad te da pantalla completa (sin barra de Safari), acceso más rápido y mejor experiencia
+            al compartir informes.
+        </div>
+
+        <table class="steps">
+            <tr><td class="num">1</td><td class="txt">Abre <strong>{{ app_name }}</strong> en <strong>Safari</strong> (no uses Chrome en iPad).</td></tr>
+            <tr><td class="num">2</td><td class="txt">Pulsa el botón <strong>Compartir</strong> (cuadrado con flecha hacia arriba, abajo en la barra de Safari).</td></tr>
+            <tr><td class="num">3</td><td class="txt">Desplázate y elige <strong>Añadir a pantalla de inicio</strong>.</td></tr>
+            <tr><td class="num">4</td><td class="txt">Confirma el nombre (puedes dejar «{{ app_name }}») y pulsa <strong>Añadir</strong>.</td></tr>
+            <tr><td class="num">5</td><td class="txt">Abre la app desde el <strong>icono en la pantalla de inicio</strong>, no desde Safari.</td></tr>
+        </table>
+
+        <h3>Configuración recomendada en iPad para partido</h3>
+        <table class="data">
+            <tr><th>Ajuste</th><th>Valor recomendado</th><th>Por qué</th></tr>
+            <tr><td>Orientación</td><td>Horizontal (apaisado)</td><td>Más espacio para las zonas del campo</td></tr>
+            <tr><td>Menú lateral</td><td>Oculto</td><td>Botón de panel (esquina superior) → más espacio útil</td></tr>
+            <tr><td>Modo scout</td><td>Rápido</td><td>Más ágil en banquillo; cambia a Avanzado si lo necesitas</td></tr>
+            <tr><td>Auto-rotación</td><td>Activada</td><td>Rota sola al recuperar el saque (Configuración)</td></tr>
+            <tr><td>Vibración</td><td>Activada</td><td>Confirmación táctil al registrar cada acción</td></tr>
+        </table>
+        <div class="tip"><strong>Consejo:</strong> Si la conexión WiFi del pabellón es inestable, la app reintenta automáticamente y te avisa. Los datos se guardan en el servidor en cuanto hay conexión.</div>
+    </div>
+
+    <!-- ═══════════════ 3. CHECKLIST ═══════════════ -->
+    <div class="section section-break">
+        <h2>3. Antes del partido — lista de comprobación</h2>
+        <div class="checklist">
+            <ol>
+                <li>☐ Tengo usuario y contraseña (me los dio el administrador del club).</li>
+                <li>☐ He instalado la app en la pantalla de inicio del iPad (sección 2).</li>
+                <li>☐ He creado el equipo con todas las jugadoras, dorsales y posiciones correctas.</li>
+                <li>☐ He creado el partido: rival, fecha, hora, local/visitante y modalidad.</li>
+                <li>☐ He abierto <strong>Modo partido → Pizarra de rotación</strong> y guardado la alineación inicial.</li>
+                <li>☐ He indicado quién saca al inicio del set (nosotros o rival).</li>
+                <li>☐ He probado registrar 2–3 acciones de prueba y deshacerlas.</li>
+            </ol>
+        </div>
+        <div class="warn"><strong>Importante:</strong> Sin alineación guardada en la pizarra, el Modo Rápido no muestra las zonas del campo.</div>
+    </div>
+
+    <!-- ═══════════════ 4. ACCESO ═══════════════ -->
+    <div class="section section-break">
+        <h2>4. Acceso e inicio de sesión</h2>
+        <p>Abre la app e introduce tu <strong>usuario o correo electrónico</strong> y tu <strong>contraseña</strong>.</p>
+        <ul>
+            <li><strong>¿Olvidaste la contraseña?</strong> Pulsa «¿Olvidaste tu contraseña?» en la pantalla de login. Recibirás un correo para restablecerla.</li>
+            <li><strong>¿No tienes cuenta?</strong> Las cuentas las crea el administrador del club. No hay registro público.</li>
+            <li><strong>Cerrar sesión:</strong> Menú lateral → Cerrar Sesión (abajo del todo).</li>
+        </ul>
+        <div class="info">Cada entrenador solo ve sus propios equipos y partidos. Nadie más puede acceder a tus datos.</div>
+    </div>
+
+    <!-- ═══════════════ 5. MENÚ ═══════════════ -->
+    <div class="section section-break">
+        <h2>5. Menú principal y navegación</h2>
+        <p>El menú lateral izquierdo (o el icono ☰ en móvil) es tu centro de control:</p>
+        <table class="data">
+            <tr><th>Enlace</th><th>Función</th></tr>
+            <tr><td><strong>Inicio / Partidos</strong></td><td>Dashboard: partidos próximos e historial, crear partido, accesos rápidos</td></tr>
+            <tr><td><strong>Gestión de Equipos</strong></td><td>Equipos, plantilla, añadir/editar jugadoras</td></tr>
+            <tr><td><strong>Configuración</strong></td><td>Tema, preferencias de scout, descarga del manual</td></tr>
+            <tr><td><strong>Manual de usuario</strong></td><td>Descarga este PDF</td></tr>
+        </table>
+
+        <h3>Dentro de un partido — menú extra</h3>
+        <table class="data">
+            <tr><th>Enlace</th><th>Función</th></tr>
+            <tr><td><strong>Pizarra de Rotación</strong></td><td>Colocar jugadoras en pista, rotar, sustituir</td></tr>
+            <tr><td><strong>Scout en Vivo</strong></td><td>Registrar acciones (Rápido o Avanzado)</td></tr>
+            <tr><td><strong>Indicadores del Set</strong></td><td>Estadísticas en tiempo real, tiempos muertos</td></tr>
+            <tr><td><strong>Estadísticas Finales</strong></td><td>Informes al terminar el partido</td></tr>
+        </table>
+
+        <h3>Dashboard — pestañas de partidos</h3>
+        <ul>
+            <li><strong>Próximos Partidos</strong> — partidos en curso o pendientes.</li>
+            <li><strong>Historial</strong> — partidos ya finalizados.</li>
+        </ul>
+        <p>Cada tarjeta de partido incluye: Scout en Vivo, Estadísticas, PDF Resumen, Editar y Eliminar.</p>
+
+        <p><strong>Ocultar menú:</strong> botón de panel (icono rectangular) en la esquina superior → ganas espacio en pantalla.</p>
+
+        {% if capturas.dashboard %}
+        <div class="fig-block">
+            <img src="{{ capturas.dashboard }}" alt="Dashboard" />
+            <p class="caption">Fig. 1 — Panel de inicio: partidos, menú lateral y acceso rápido al scout</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════ 6. EQUIPOS ═══════════════ -->
+    <div class="section section-break">
+        <h2>6. Equipos y jugadoras</h2>
+        <h3>6.1 Crear un equipo</h3>
+        <table class="steps">
+            <tr><td class="num">1</td><td class="txt">Ve a <strong>Gestión de Equipos</strong>.</td></tr>
+            <tr><td class="num">2</td><td class="txt">Pulsa <strong>Nuevo Equipo</strong>.</td></tr>
+            <tr><td class="num">3</td><td class="txt">Rellena: <strong>Nombre</strong>, <strong>Temporada</strong> (ej. 2025/2026) y <strong>Categoría</strong>.</td></tr>
+        </table>
+
+        <h3>6.2 Añadir jugadoras</h3>
+        <p>Desde la tarjeta del equipo → <strong>Añadir jugadora</strong>. Campos:</p>
+        <table class="data">
+            <tr><th>Campo</th><th>Importancia</th></tr>
+            <tr><td>Dorsal</td><td>Número en pista — debe coincidir con el partido</td></tr>
+            <tr><td>Nombre y apellidos</td><td>Identificación en informes</td></tr>
+            <tr><td>Posición</td><td>Colocadora, Opuesta, Central, Receptora o Líbero</td></tr>
+            <tr><td>Fecha de nacimiento</td><td>Opcional; útil para categorías</td></tr>
+        </table>
+        <div class="warn"><strong>La colocadora es clave:</strong> la app la detecta automáticamente en Modo Rápido para mostrar la barra de colocación.</div>
+
+        {% if capturas.equipos %}
+        <div class="fig-block">
+            <img src="{{ capturas.equipos }}" alt="Equipos" />
+            <p class="caption">Fig. 2 — Gestión de equipos: plantilla, editar y añadir jugadoras</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════ 7. PARTIDOS ═══════════════ -->
+    <div class="section section-break">
+        <h2>7. Crear, editar y eliminar partidos</h2>
+        <h3>Crear partido</h3>
+        <table class="steps">
+            <tr><td class="num">1</td><td class="txt">Dashboard → <strong>Nuevo Partido</strong>.</td></tr>
+            <tr><td class="num">2</td><td class="txt">Elige equipo, rival, fecha, hora, lugar.</td></tr>
+            <tr><td class="num">3</td><td class="txt">Marca si jugáis <strong>Local</strong> o visitante.</td></tr>
+            <tr><td class="num">4</td><td class="txt">Selecciona <strong>modalidad</strong>: Voleibol 6×6 o Minivoley 4×4.</td></tr>
+            <tr><td class="num">5</td><td class="txt">Guarda y pulsa <strong>Scout en Vivo</strong> en la tarjeta del partido.</td></tr>
+        </table>
+
+        <h3>Editar o eliminar</h3>
+        <ul>
+            <li><strong>Editar:</strong> icono de lápiz en la tarjeta del partido, o desde scout → Configuración → Editar Partido.</li>
+            <li><strong>Eliminar:</strong> icono de papelera en la tarjeta (acción irreversible).</li>
+        </ul>
+
+        <h3>Reglas del set (pestaña Ajustes del scout)</h3>
+        <table class="data">
+            <tr><th>Parámetro</th><th>Por defecto</th><th>Significado</th></tr>
+            <tr><td>Puntos por set</td><td>25</td><td>Puntos para ganar un set (mín. 2 de diferencia)</td></tr>
+            <tr><td>Set decisivo</td><td>15</td><td>Último set posible (tie-break)</td></tr>
+            <tr><td>Sets para ganar</td><td>3</td><td>Sets necesarios para ganar el partido</td></tr>
+        </table>
+    </div>
+
+    <!-- ═══════════════ 8. PIZARRA ═══════════════ -->
+    <div class="section section-break">
+        <h2>8. Pizarra de rotación</h2>
+        <p>La pizarra muestra el campo con las zonas y el banquillo. Es obligatoria antes de scoutear en Modo Rápido.</p>
+
+        <h3>Cómo asignar jugadoras</h3>
+        <ul>
+            <li><strong>Tocar:</strong> selecciona jugadora en el banquillo → toca la zona del campo.</li>
+            <li><strong>Arrastrar:</strong> arrastra la jugadora hasta la zona deseada.</li>
+            <li><strong>Líberos:</strong> arrastra o asigna a los dos huecos de líbero (solo categorías que lo permiten).</li>
+        </ul>
+
+        <h3>Controles de la pizarra</h3>
+        <table class="data">
+            <tr><th>Botón</th><th>Función</th></tr>
+            <tr><td>Rotación 🔄</td><td>Gira la formación una posición (sentido horario)</td></tr>
+            <tr><td>Config. Set</td><td>Abre modal para elegir set activo y cambios de jugadoras</td></tr>
+            <tr><td>Rotación Inicial del Set</td><td>Indica R1–R6 (solo al guardar la primera alineación del set)</td></tr>
+            <tr><td>Estado Inicial</td><td>K0 (sacamos) o K1 (recibimos)</td></tr>
+            <tr><td>Guardar Alineación</td><td>Guarda la formación en el servidor</td></tr>
+            <tr><td>Limpiar Todo</td><td>Vacía la pizarra (pide confirmación)</td></tr>
+        </table>
+
+        {% if capturas.rotacion %}
+        <div class="fig-block">
+            <img src="{{ capturas.rotacion }}" alt="Pizarra" />
+            <p class="caption">Fig. 3 — Pizarra de rotación: campo, banquillo y líberos</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════ 9. MODO RÁPIDO ═══════════════ -->
+    <div class="section section-break">
+        <h2>9. Scout en vivo — Modo Rápido</h2>
+        <div class="section-intro">Modo recomendado para iPad. Pantalla dividida en zonas con botones de acción por jugadora.</div>
+
+        <h3>9.1 Pestaña Juego — registrar una acción</h3>
+        <table class="steps">
+            <tr><td class="num">1</td><td class="txt">Localiza la <strong>zona</strong> donde actuó la jugadora.</td></tr>
+            <tr><td class="num">2</td><td class="txt">Toca el botón de la acción (ataque, bloqueo, recepción…).</td></tr>
+            <tr><td class="num">3</td><td class="txt">El marcador se actualiza automáticamente si la acción suma punto o error.</td></tr>
+        </table>
+
+        <h3>Botones por zona</h3>
+        <table class="data">
+            <tr><th>Zona / Barra</th><th>Botones disponibles</th></tr>
+            <tr><td>Todas las zonas</td><td>Punto Ataque (++), Error Ataque (−−), Recepción/Defensa (=), Error Recepción/Defensa (−−)</td></tr>
+            <tr><td>Zonas 2, 3 y 4</td><td>+ Punto Bloqueo (++), Error Bloqueo (−−)</td></tr>
+            <tr><td>Zona 1 (si sacamos)</td><td>Ace Saque (++), Error Saque (−−)</td></tr>
+            <tr><td>Barra Colocación</td><td>Colocación (=), Error Colocación (−−) — auto-detecta colocadora</td></tr>
+            <tr><td>Barra Líbero</td><td>Recepción/Defensa (=), Error (−−) — solo Cadete+</td></tr>
+            <tr><td>Botones inferiores</td><td>Punto para nosotros (error rival), Punto para rival</td></tr>
+        </table>
+
+        <h3>Barra de acciones rápidas</h3>
+        <table class="data">
+            <tr><th>Botón</th><th>Función</th></tr>
+            <tr><td>Deshacer</td><td>Elimina la última acción registrada</td></tr>
+            <tr><td>Rotar</td><td>Rotación horaria manual</td></tr>
+            <tr><td>Sustituir</td><td>Salta a la Pizarra de Rotación para un cambio</td></tr>
+            <tr><td>Saque</td><td>Cambia quién tiene la posesión del saque</td></tr>
+        </table>
+
+        <h3>Pestañas del Modo Rápido</h3>
+        <table class="data">
+            <tr><th>Pestaña</th><th>Contenido</th></tr>
+            <tr><td>Juego</td><td>Cuadrícula de zonas + marcador</td></tr>
+            <tr><td>Acciones</td><td>Últimas ~40 acciones del set con contexto de marcador</td></tr>
+            <tr><td>Marcador</td><td>Marcador grande, sumar/restar puntos, Finalizar Set</td></tr>
+            <tr><td>Ajustes</td><td>Reglas, posesión del saque, preferencias, finalizar</td></tr>
+            <tr><td>Archivos</td><td>Informes, exportar JSON, finalizar partido</td></tr>
+            <tr><td>Configuración</td><td>Editar partido/equipo, cambiar modo scout</td></tr>
+            <tr><td>⇄ Avanzado</td><td>Cambia al Modo Avanzado</td></tr>
+        </table>
+
+        {% if capturas.scout_rapido %}
+        <div class="fig-block">
+            <img src="{{ capturas.scout_rapido }}" alt="Modo Rápido" />
+            <p class="caption">Fig. 4 — Modo Rápido: cuadrícula por zonas, marcador y barra de pestañas</p>
+        </div>
+        {% endif %}
+
+        {% if capturas.acciones or capturas.marcador %}
+        <table class="fig-row"><tr>
+            {% if capturas.acciones %}
+            <td><div class="fig-half"><img src="{{ capturas.acciones }}" alt="Acciones" /><p class="caption">Fig. 5 — Historial de acciones</p></div></td>
+            {% endif %}
+            {% if capturas.marcador %}
+            <td><div class="fig-half"><img src="{{ capturas.marcador }}" alt="Marcador" /><p class="caption">Fig. 6 — Pestaña Marcador</p></div></td>
+            {% endif %}
+        </tr></table>
+        {% endif %}
+
+        <div class="tip"><strong>Scroll:</strong> las zonas zagueras (5, 6 y saque) quedan siempre visibles arriba. Si necesitas ver colocación y botones de punto, baja la pantalla con scroll natural.</div>
+    </div>
+
+    <!-- ═══════════════ 10. MODO AVANZADO ═══════════════ -->
+    <div class="section section-break">
+        <h2>10. Scout en vivo — Modo Avanzado</h2>
+        <div class="section-intro">Análisis técnico completo. Orden: <strong>jugadora → fundamento → calidad</strong>.</div>
+
+        <h3>10.1 Selección de jugadora</h3>
+        <p>Debajo del marcador aparecen las jugadoras en pista (Z1–Z6). Toca una para seleccionarla antes de registrar.</p>
+        <p>Badges visibles: <span class="badge">K0 Saque</span> <span class="badge">K1 Recepción</span> <span class="badge">K2 Transición</span> y rotación actual (R1–R6).</p>
+
+        <h3>10.2 Escala de calidad</h3>
+        <table class="data">
+            <tr><th>Símbolo</th><th>Significado</th><th>Efecto en marcador</th></tr>
+            <tr><td><strong>++</strong></td><td>Excelente / punto directo</td><td>Punto nuestro (saque, ataque, bloqueo)</td></tr>
+            <tr><td><strong>+</strong></td><td>Bueno</td><td>Sin punto; cuenta en eficacia avanzada</td></tr>
+            <tr><td><strong>=</strong></td><td>En juego</td><td>La pelota continúa</td></tr>
+            <tr><td><strong>−</strong></td><td>Mejorable</td><td>Sin punto; penaliza eficacia</td></tr>
+            <tr><td><strong>−−</strong></td><td>Error directo</td><td>Punto rival</td></tr>
+            <tr><td><strong>Red</strong></td><td>Toque de red de la jugadora seleccionada</td><td>Punto rival</td></tr>
+        </table>
+
+        <h3>10.3 Fundamentos registrables</h3>
+        <table class="data">
+            <tr><th>Fundamento</th><th>Calidades</th><th>Notas</th></tr>
+            <tr><td>Saque</td><td>++, +, −, −−</td><td>—</td></tr>
+            <tr><td>Recepción</td><td>++, +, =, −, −−</td><td>—</td></tr>
+            <tr><td>Colocación</td><td>++, +, =, −, −−</td><td>—</td></tr>
+            <tr><td>Ataque</td><td>++, +, =, −, −−</td><td>—</td></tr>
+            <tr><td>Bloqueo</td><td>++, +, =, −, −−</td><td>En fila delantera, ++/−− van a Bloqueo</td></tr>
+            <tr><td>Defensa</td><td>++, +, =, −, −−</td><td>En zaguero, ++/−− van a Defensa</td></tr>
+            <tr><td>Red</td><td>Botón único</td><td>Punto rival</td></tr>
+            <tr><td>Error del Rival</td><td>Sin calidad</td><td>Punto nuestro</td></tr>
+            <tr><td>Punto del Rival</td><td>Sin calidad</td><td>Punto rival</td></tr>
+            <tr><td>Sustitución</td><td>—</td><td>Registra un cambio en pista</td></tr>
+        </table>
+
+        <h3>10.4 Pestaña Acciones (Avanzado)</h3>
+        <p>Historial completo del set con opción de <strong>eliminar</strong> cualquier acción (icono papelera). Útil para corregir errores de registro.</p>
+
+        {% if capturas.scout_avanzado %}
+        <div class="fig-block">
+            <img src="{{ capturas.scout_avanzado }}" alt="Modo Avanzado" />
+            <p class="caption">Fig. 7 — Modo Avanzado: selección de jugadora, fundamentos y calidad</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════ 11. AJUSTES ═══════════════ -->
+    <div class="section section-break">
+        <h2>11. Pestañas Ajustes y Configuración (en partido)</h2>
+        <p>Compartidas entre Modo Rápido y Avanzado.</p>
+
+        <h3>Pestaña Ajustes</h3>
+        <table class="data">
+            <tr><th>Opción</th><th>Descripción</th></tr>
+            <tr><td>Posesión del Saque</td><td>Nosotros sacamos / Rival saca</td></tr>
+            <tr><td>Reglas del Set</td><td>Puntos, set decisivo, sets para ganar → Guardar</td></tr>
+            <tr><td>Auto-rotación</td><td>Rota al ganar el saque (toggle)</td></tr>
+            <tr><td>Vibración táctil</td><td>Feedback al registrar</td></tr>
+            <tr><td>Confirmar deshacer</td><td>Pide confirmación antes de borrar</td></tr>
+            <tr><td>Quitar Jugadoras</td><td>Limpia selección en pista</td></tr>
+            <tr><td>Finalizar Set</td><td>Cierra el set manualmente</td></tr>
+            <tr><td>Finalizar Partido</td><td>Termina el partido definitivamente</td></tr>
+        </table>
+
+        <h3>Pestaña Configuración (en partido)</h3>
+        <ul>
+            <li><strong>Editar Partido</strong> — rival, fecha, modalidad, lugar.</li>
+            <li><strong>Configurar Set y Alineación</strong> — modal para set activo y cambios (1 sale, 1 entra).</li>
+            <li><strong>Gestionar Plantilla</strong> — editar jugadoras del equipo.</li>
+            <li><strong>Modo de Scout</strong> — alternar Rápido / Avanzado.</li>
+        </ul>
+
+        {% if capturas.ajustes %}
+        <div class="fig-block">
+            <img src="{{ capturas.ajustes }}" alt="Ajustes" />
+            <p class="caption">Fig. 8 — Pestaña Ajustes: reglas del set, posesión y preferencias</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════ 12. INDICADORES ═══════════════ -->
+    <div class="section section-break">
+        <h2>12. Indicadores del set</h2>
+        <p>Acceso: menú lateral → <strong>Indicadores del Set</strong>. Consulta en tiempos muertos o entre sets.</p>
+
+        <h3>KPIs principales</h3>
+        <table class="data">
+            <tr><th>Indicador</th><th>Qué mide</th></tr>
+            <tr><td>Side-out %</td><td>% de rallies ganados cuando recibís el saque</td></tr>
+            <tr><td>Breakpoint %</td><td>% de rallies ganados cuando sacáis</td></tr>
+            <tr><td>K1 / K2</td><td>Eficacia de complejos recepción-ataque y saque-bloqueo-defensa</td></tr>
+            <tr><td>Marcador del set</td><td>Puntos actuales</td></tr>
+        </table>
+
+        <h3>Tablas y análisis</h3>
+        <ul>
+            <li><strong>Rendimiento por jugadora</strong> — saldo, puntos, errores, ataque, recepción, saque, bloqueo, colocación, defensa.</li>
+            <li><strong>Líderes del set</strong> — estrella, máxima anotadora, mejor en saque.</li>
+            <li><strong>Racha actual</strong> — puntos consecutivos.</li>
+            <li><strong>Destacados por acción</strong> — mejores y peores por fundamento.</li>
+            <li><strong>Eficacia por zona</strong> — ataque/bloqueo desde cada zona (Modo Rápido).</li>
+            <li><strong>Eficacia por rotación</strong> — rendimiento en R1–R6.</li>
+            <li><strong>Parones / Tiempos muertos</strong> — registro con botón T. Muerto.</li>
+        </ul>
+
+        <p>Accesos directos a informes PDF y web desde esta pantalla.</p>
+
+        {% if capturas.indicadores %}
+        <div class="fig-block">
+            <img src="{{ capturas.indicadores }}" alt="Indicadores" />
+            <p class="caption">Fig. 9 — Indicadores del set: KPIs, tabla de jugadoras y análisis táctico</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════ 13. FINALIZAR ═══════════════ -->
+    <div class="section section-break">
+        <h2>13. Finalizar set y partido</h2>
+
+        <h3>13.1 Fin de set automático</h3>
+        <p>Cuando un equipo alcanza los puntos configurados (25 o 15 en el decisivo) con mínimo 2 de diferencia, aparece un aviso. Confirma para:</p>
+        <ul>
+            <li>Introducir la <strong>duración del set</strong> (minutos).</li>
+            <li>Pasar al <strong>siguiente set</strong> (marcador a 0, set +1).</li>
+        </ul>
+
+        <h3>13.2 Fin de set manual</h3>
+        <p>Pestaña <strong>Marcador</strong> o <strong>Ajustes</strong> → <strong>Finalizar Set</strong>.</p>
+
+        <h3>13.3 Fin de partido</h3>
+        <table class="steps">
+            <tr><td class="num">1</td><td class="txt">Gana los sets necesarios (por defecto 3).</td></tr>
+            <tr><td class="num">2</td><td class="txt">Pestaña <strong>Archivos</strong> → <strong>Finalizar Partido</strong>.</td></tr>
+            <tr><td class="num">3</td><td class="txt">Confirma. El partido queda bloqueado: no se pueden añadir más acciones.</td></tr>
+            <tr><td class="num">4</td><td class="txt">El partido pasa al <strong>Historial</strong> del dashboard.</td></tr>
+        </table>
+        <div class="warn"><strong>Irreversible:</strong> un partido finalizado no se puede reabrir para seguir scoutando.</div>
+    </div>
+
+    <!-- ═══════════════ 14. INFORMES ═══════════════ -->
+    <div class="section section-break">
+        <h2>14. Informes, PDF y exportación</h2>
+
+        <h3>Tipos de informe</h3>
+        <table class="data">
+            <tr><th>Informe</th><th>Formato</th><th>Contenido</th><th>Cuándo usarlo</th></tr>
+            <tr>
+                <td><strong>Estadísticas Rápidas</strong></td><td>Web + PDF</td>
+                <td>Zonas, saldo, destacados, rotaciones, mérito vs error rival, tabla por set y total</td>
+                <td>Tras scout en Modo Rápido o resumen claro</td>
+            </tr>
+            <tr>
+                <td><strong>Estadísticas Avanzadas</strong></td><td>Web + PDF</td>
+                <td>Desglose ++/+ /=/-/--, Red, eficacia ponderada, K1/K2 técnicos</td>
+                <td>Análisis técnico profundo</td>
+            </tr>
+            <tr>
+                <td><strong>Resumen ejecutivo</strong></td><td>PDF</td>
+                <td>Top 7 jugadoras + gráfico origen de puntos</td>
+                <td>Envío rápido al club</td>
+            </tr>
+            <tr>
+                <td><strong>Exportar JSON</strong></td><td>Archivo .json</td>
+                <td>Datos brutos por set para análisis externo</td>
+                <td>Integración con otras herramientas</td>
+            </tr>
+        </table>
+
+        <h3>Dónde descargarlos</h3>
+        <ul>
+            <li>Dashboard → tarjeta del partido → Estadísticas / PDF Resumen.</li>
+            <li>Menú lateral del partido → Estadísticas Finales.</li>
+            <li>Scout → pestaña <strong>Archivos</strong>.</li>
+            <li>Indicadores del set → accesos directos a informes.</li>
+        </ul>
+
+        <h3>Filtro por set</h3>
+        <p>En informes web puedes ver el <strong>partido completo</strong> o un <strong>set concreto</strong> con el selector superior.</p>
+
+        <h3>Compartir por WhatsApp (iPad)</h3>
+        <table class="steps">
+            <tr><td class="num">1</td><td class="txt">Abre Estadísticas Finales (web).</td></tr>
+            <tr><td class="num">2</td><td class="txt">Pulsa <strong>Compartir</strong> o «Compartir por WhatsApp».</td></tr>
+            <tr><td class="num">3</td><td class="txt">Elige WhatsApp y el contacto o grupo.</td></tr>
+        </table>
+        <p>Alternativa: descarga el PDF y compártelo desde la app Archivos del iPad.</p>
+
+        <div class="tip">Los PDF de partidos <strong>finalizados</strong> se generan una vez y se cachean: las siguientes descargas son instantáneas.</div>
+
+        {% if capturas.archivos %}
+        <div class="fig-block">
+            <img src="{{ capturas.archivos }}" alt="Archivos" />
+            <p class="caption">Fig. 10 — Pestaña Archivos: todos los informes y exportación</p>
+        </div>
+        {% endif %}
+
+        {% if capturas.estadisticas or capturas.estadisticas_avanzado %}
+        <table class="fig-row"><tr>
+            {% if capturas.estadisticas %}
+            <td><div class="fig-half"><img src="{{ capturas.estadisticas }}" alt="Stats rápidas" /><p class="caption">Fig. 11 — Estadísticas Rápidas</p></div></td>
+            {% endif %}
+            {% if capturas.estadisticas_avanzado %}
+            <td><div class="fig-half"><img src="{{ capturas.estadisticas_avanzado }}" alt="Stats avanzadas" /><p class="caption">Fig. 12 — Estadísticas Avanzadas</p></div></td>
+            {% endif %}
+        </tr></table>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════ 15. CONFIGURACIÓN ═══════════════ -->
+    <div class="section section-break">
+        <h2>15. Configuración general de la app</h2>
+        <p>Menú lateral → <strong>Configuración</strong>. Los cambios se guardan en el navegador del dispositivo.</p>
+        <table class="data">
+            <tr><th>Sección</th><th>Opciones</th></tr>
+            <tr><td>Apariencia</td><td>Tema: Oscuro, Azul Noche o Carbón</td></tr>
+            <tr><td>Scout en Vivo</td><td>Modo por defecto, auto-rotación, vibración, confirmar deshacer</td></tr>
+            <tr><td>Interfaz</td><td>Barra lateral oculta por defecto</td></tr>
+            <tr><td>Manual</td><td>Descargar este PDF</td></tr>
+        </table>
+        <div class="warn">Si cambias de iPad, configura de nuevo estas preferencias.</div>
+
+        {% if capturas.configuracion %}
+        <div class="fig-block">
+            <img src="{{ capturas.configuracion }}" alt="Configuración" />
+            <p class="caption">Fig. 13 — Configuración: tema, scout y descarga del manual</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════ 16. PROBLEMAS ═══════════════ -->
+    <div class="section section-break">
+        <h2>16. Problemas frecuentes</h2>
+        <table class="data">
+            <tr><th>Problema</th><th>Solución</th></tr>
+            <tr><td>No veo las zonas en Modo Rápido</td><td>Pizarra de rotación → coloca jugadoras → Guardar alineación</td></tr>
+            <tr><td>El marcador no cuadra</td><td>Deshacer última acción, o pestaña Marcador → restar punto</td></tr>
+            <tr><td>No puedo registrar más acciones</td><td>El partido puede estar finalizado. Revisa Archivos</td></tr>
+            <tr><td>La app no rota sola</td><td>Activa auto-rotación en Ajustes o Configuración</td></tr>
+            <tr><td>El informe tarda la primera vez</td><td>Normal. En partidos finalizados, la segunda descarga es rápida</td></tr>
+            <tr><td>No aparece Compartir</td><td>Usa Safari o app instalada en pantalla de inicio</td></tr>
+            <tr><td>Conexión inestable</td><td>La app reintenta solo. Espera el mensaje de confirmación</td></tr>
+            <tr><td>He perdido preferencias</td><td>Se guardan por dispositivo. Vuelve a Configuración</td></tr>
+            <tr><td>No recuerdo contraseña</td><td>«¿Olvidaste tu contraseña?» o contacta al administrador</td></tr>
+        </table>
+    </div>
+
+    <!-- ═══════════════ 17. GLOSARIO ═══════════════ -->
+    <div class="section section-break">
+        <h2>17. Glosario de términos</h2>
+        <table class="data">
+            <tr><th>Término</th><th>Significado</th></tr>
+            <tr><td>Side-out</td><td>Punto ganado cuando recibís el saque rival</td></tr>
+            <tr><td>Breakpoint</td><td>Punto ganado cuando sacáis vosotras</td></tr>
+            <tr><td>Saldo</td><td>Puntos directos (++) menos errores (−−) de una jugadora</td></tr>
+            <tr><td>K0</td><td>Fase de saque (sacamos nosotros)</td></tr>
+            <tr><td>K1</td><td>Fase de recepción (recibimos el saque)</td></tr>
+            <tr><td>K2</td><td>Fase de transición defensiva (bloqueo/defensa)</td></tr>
+            <tr><td>Complejo K1</td><td>Recepción → colocación → ataque</td></tr>
+            <tr><td>Complejo K2</td><td>Saque → bloqueo → defensa</td></tr>
+            <tr><td>Pts. Mérito</td><td>Puntos ganados por acción nuestra directa (++)</td></tr>
+            <tr><td>Pts. Err. Rival</td><td>Puntos ganados por error del rival</td></tr>
+            <tr><td>Efic. Pond.</td><td>Eficacia ponderada con pesos ++×2 … −−×−2 (informe avanzado)</td></tr>
+            <tr><td>S. Pond.</td><td>Saldo ponderado de calidad; Red = −2 (informe avanzado)</td></tr>
+            <tr><td>Zona %</td><td>Rendimiento de ataque/bloqueo desde una zona</td></tr>
+            <tr><td>PWA</td><td>App web instalable en pantalla de inicio del iPad</td></tr>
+        </table>
+    </div>
+
+    <!-- ═══════════════ 18. CASO PRÁCTICO ═══════════════ -->
+    <div class="section section-break">
+        <h2>18. Caso práctico: partido completo paso a paso</h2>
+        <div class="section-intro">
+            Sigue este ejemplo ficticio para tu primer partido real.
+            <strong>Equipo:</strong> Alevín Femenino · <strong>Rival:</strong> CV Ejemplo · <strong>Modalidad:</strong> Minivoley 4×4 · <strong>Local</strong>
+        </div>
+
+        <div class="case-step">
+            <strong>Paso 1 — Preparación (30 min antes)</strong><br/>
+            Abres la app desde el icono del iPad. Compruebas que el equipo «Alevín F» tiene las 8 jugadoras con dorsal correcto.
+            Creas el partido: rival «CV Ejemplo», hoy 18:00, local, Minivoley 4×4.
+        </div>
+
+        <div class="case-step">
+            <strong>Paso 2 — Alineación (10 min antes)</strong><br/>
+            Modo partido → <strong>Pizarra de rotación</strong>. Colocas a las 4 jugadoras en sus zonas.
+            Indicas rotación inicial R1 y que <strong>el rival saca</strong> (K1). Pulsas <strong>Guardar alineación</strong>.
+        </div>
+
+        <div class="case-step">
+            <strong>Paso 3 — Primer punto (Modo Rápido)</strong><br/>
+            Scout en Vivo → pestaña <strong>Juego</strong>. El rival saca. La jugadora en zona 6 recibe bien:
+            tocas su zona → <strong>Recepción/Defensa (=)</strong>. La opuesta ataca y punto:
+            zona 4 → <strong>Punto Ataque</strong>. Marcador: 1–0. La app muestra fase K1 y rotación R1.
+        </div>
+
+        <div class="case-step">
+            <strong>Paso 4 — Error y deshacer</strong><br/>
+            Tu jugadora en zona 1 erra el saque. Zona 1 → <strong>Error Saque</strong>. Marcador: 1–1.
+            Te equivocaste: pulsas <strong>Deshacer</strong>. Vuelve a 1–0. Corriges con el saque correcto.
+        </div>
+
+        <div class="case-step">
+            <strong>Paso 5 — Sustitución</strong><br/>
+            En el 8–6 pulsas <strong>Sustituir</strong> (o vas a Pizarra). La jugadora 7 entra por la 3.
+            Guardas alineación. La sustitución queda registrada en el historial.
+        </div>
+
+        <div class="case-step">
+            <strong>Paso 6 — Tiempo muerto</strong><br/>
+            Rival pide tiempo. Vas a <strong>Indicadores del set</strong> → pulsas <strong>T. Muerto</strong>.
+            Consultas Side-out (72%) y quién lleva más recepciones. Decides mantener la colocadora.
+        </div>
+
+        <div class="case-step">
+            <strong>Paso 7 — Fin del set 1 (25–22)</strong><br/>
+            Al llegar a 25–22 la app avisa. Confirmas fin de set, introduces duración «22 min».
+            Pasas al set 2. La pizarra pide nueva alineación o mantienes la rotación actual.
+        </div>
+
+        <div class="case-step">
+            <strong>Paso 8 — Cambio a Modo Avanzado (opcional)</strong><br/>
+            En el set 2 quieres más detalle. Pulsas <strong>⇄ Avanzado</strong> en la barra flotante.
+            Seleccionas jugadora 5 → Recepción → <strong>++</strong>. Los datos del set 1 se conservan.
+        </div>
+
+        <div class="case-step">
+            <strong>Paso 9 — Fin del partido (3–0)</strong><br/>
+            Tras ganar el tercer set: pestaña <strong>Archivos</strong> → <strong>Finalizar Partido</strong> → Confirmar.
+            El partido aparece en Historial del dashboard.
+        </div>
+
+        <div class="case-step">
+            <strong>Paso 10 — Informes y envío</strong><br/>
+            Abres <strong>Estadísticas Finales</strong>. Revisas la tabla por set y los destacados.
+            Pulsas <strong>Compartir por WhatsApp</strong> y envías el PDF al grupo del equipo.
+            También descargas <strong>Estadísticas Avanzadas</strong> para el análisis de la semana.
+        </div>
+
+        <div class="tip">
+            <strong>Resumen del flujo:</strong> Instalar iPad → Equipo → Partido → Pizarra → Scout (Rápido/Avanzado) →
+            Indicadores → Finalizar sets → Finalizar partido → Informes → Compartir.
+        </div>
+    </div>
+
+    <div class="footer">
+        {{ app_name }} — Manual completo para entrenadores · {{ fecha }}<br/>
+        Soporte: contacta con el administrador de tu club para credenciales y dudas técnicas.
+    </div>
+
+</body>
+</html>

@@ -7,6 +7,7 @@ urlpatterns = [
     # Dashboard y CRUDs de administración
     path('', views.DashboardView.as_view(), name='dashboard'),
     path('configuracion/', views.ConfiguracionView.as_view(), name='configuracion'),
+    path('manual-usuario/', views.DescargarManualUsuarioPDF.as_view(), name='descargar_manual_usuario'),
     path('equipo/nuevo/', views.EquipoCreateView.as_view(), name='equipo_nuevo'),
     path('equipo/<int:pk>/editar/', views.EquipoUpdateView.as_view(), name='equipo_editar'),
     path('equipo/<int:pk>/eliminar/', views.EquipoDeleteView.as_view(), name='equipo_eliminar'),
