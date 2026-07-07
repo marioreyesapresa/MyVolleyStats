@@ -1204,7 +1204,9 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(dest['ataque']['mejor']['dorsal'], 12)
         self.assertEqual(dest['saque']['mejor']['dorsal'], 18)
         self.assertIsNone(dest['saque']['a_mejorar'])  # solo 1 error de saque
-        self.assertEqual(dest['control_balon']['mejor']['dorsal'], 25)
+        self.assertEqual(dest['recepcion']['mejor']['dorsal'], 25)
+        self.assertIn('defensa', dest)
+        self.assertIn('bloqueo', dest)
 
 
 class CrudAdministracionTests(TestCase):

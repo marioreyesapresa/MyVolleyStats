@@ -46,27 +46,35 @@
         </div>
     </div>
 
-    <!-- Leyenda -->
-    {% include 'stats_app/includes/leyenda_metricas.html' %}
+    <!-- Leyenda y fórmulas (colapsables) -->
+    {% include 'stats_app/includes/leyenda_metricas.html' with collapsible=True %}
 
-    <div class="bg-[#121824] border border-slate-800 rounded-2xl p-4 text-[10px] sm:text-xs text-slate-400 space-y-2 print:hidden">
-        <p class="font-black text-slate-300 uppercase tracking-wider text-[10px]">Fórmulas rápidas</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5">
-            <p><span class="text-white font-bold">Saldo</span> = Puntos (++) − Errores (−−). Ej.: 10 pts y 1 err. → saldo <span class="text-emerald-400 font-bold">+9</span></p>
-            <p><span class="text-white font-bold">Puntos</span> = acciones con calidad ++ (ataque punto, ace, bloqueo…)</p>
-            <p><span class="text-white font-bold">Errores</span> = acciones con calidad −− (error directo)</p>
-            <p><span class="text-white font-bold">Efic. recepción %</span> = % de side-out cuando recibimos saque rival</p>
-            <p><span class="text-white font-bold">Efic. saque %</span> = % de puntos ganados con nuestro saque</p>
-            <p><span class="text-white font-bold">Efic.% ataque</span> = (puntos − errores) ÷ intentos de ataque</p>
-            <p><span class="text-white font-bold">K1 / K2 (complejos)</span> = calidad de acciones: ( ++ − −− ) ÷ total en recep.+ataque (K1) o saque+bloq.+def. (K2)</p>
-            <p><span class="text-white font-bold">Zona %</span> = (puntos − errores) ÷ intentos de ataque/bloqueo en esa zona (solo con zona registrada)</p>
-            <p><span class="text-white font-bold">Rotación K1/K2</span> = % de rallies ganados al recibir (verde) o al sacar (azul) en cada rotación — distinto de los complejos</p>
+    <details class="bg-[#121824] border border-slate-800 rounded-2xl group print:hidden">
+        <summary class="px-4 py-3 cursor-pointer list-none flex items-center justify-between gap-2 select-none">
+            <span class="font-black text-slate-300 uppercase tracking-wider text-[10px] flex items-center gap-2">
+                <i data-lucide="calculator" class="w-4 h-4 text-slate-500"></i>
+                Fórmulas rápidas
+            </span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+        </summary>
+        <div class="px-4 pb-4 text-[10px] sm:text-xs text-slate-400 space-y-2 border-t border-slate-800/60 pt-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5">
+                <p><span class="text-white font-bold">Saldo</span> = Puntos (++) − Errores (−−). Ej.: 10 pts y 1 err. → saldo <span class="text-emerald-400 font-bold">+9</span></p>
+                <p><span class="text-white font-bold">Puntos</span> = acciones con calidad ++ (ataque punto, ace, bloqueo…)</p>
+                <p><span class="text-white font-bold">Errores</span> = acciones con calidad −− (error directo)</p>
+                <p><span class="text-white font-bold">Efic. recepción %</span> = % de side-out cuando recibimos saque rival</p>
+                <p><span class="text-white font-bold">Efic. saque %</span> = % de puntos ganados con nuestro saque</p>
+                <p><span class="text-white font-bold">Efic.% ataque</span> = (puntos − errores) ÷ intentos de ataque</p>
+                <p><span class="text-white font-bold">K1 / K2 (complejos)</span> = calidad de acciones: ( ++ − −− ) ÷ total en recep.+ataque (K1) o saque+bloq.+def. (K2)</p>
+                <p><span class="text-white font-bold">Zona %</span> = (puntos − errores) ÷ intentos de ataque/bloqueo en esa zona (solo con zona registrada)</p>
+                <p><span class="text-white font-bold">Rotación K1/K2</span> = % de rallies ganados al recibir (verde) o al sacar (azul) en cada rotación — distinto de los complejos</p>
+            </div>
+            <p class="text-[9px] text-slate-600 pt-1 border-t border-slate-800">
+                <span class="inline-block w-3 h-3 rounded bg-[#d4edda] align-middle mr-1"></span>verde = puntos/aces &nbsp;
+                <span class="inline-block w-3 h-3 rounded bg-[#f8d7da] align-middle mr-1"></span>rojo = errores
+            </p>
         </div>
-        <p class="text-[9px] text-slate-600 pt-1 border-t border-slate-800">
-            <span class="inline-block w-3 h-3 rounded bg-[#d4edda] align-middle mr-1"></span>verde = puntos/aces &nbsp;
-            <span class="inline-block w-3 h-3 rounded bg-[#f8d7da] align-middle mr-1"></span>rojo = errores
-        </p>
-    </div>
+    </details>
 
     <!-- Resumen por sets (como imagen de referencia) -->
     <div class="report-sheet rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
@@ -118,7 +126,7 @@
         </div>
         <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 space-y-2">
             <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Destacados por acción</h3>
-            <p class="text-[9px] text-slate-600">Mejor vs. a mejorar en ataque, saque y control de balón (recep.+def.)</p>
+            <p class="text-[9px] text-slate-600">Mejor vs. a mejorar · ataque, recepción, saque, bloqueo y defensa</p>
             {% with d=destacadas.destacados_por_accion %}
             <div class="text-[11px] space-y-1.5">
                 <div class="grid grid-cols-[4.5rem_1fr_1fr] gap-2">
@@ -127,14 +135,24 @@
                     <span class="text-rose-400">{% if d.ataque.a_mejorar %}#{{ d.ataque.a_mejorar.dorsal }} {{ d.ataque.a_mejorar.detalle }}{% else %}—{% endif %}</span>
                 </div>
                 <div class="grid grid-cols-[4.5rem_1fr_1fr] gap-2">
+                    <span class="text-slate-500 font-black uppercase text-[9px]">Recepción</span>
+                    <span class="text-emerald-400">{% if d.recepcion.mejor %}#{{ d.recepcion.mejor.dorsal }} {{ d.recepcion.mejor.detalle }}{% else %}—{% endif %}</span>
+                    <span class="text-rose-400">{% if d.recepcion.a_mejorar %}#{{ d.recepcion.a_mejorar.dorsal }} {{ d.recepcion.a_mejorar.detalle }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="grid grid-cols-[4.5rem_1fr_1fr] gap-2">
                     <span class="text-slate-500 font-black uppercase text-[9px]">Saque</span>
                     <span class="text-emerald-400">{% if d.saque.mejor %}#{{ d.saque.mejor.dorsal }} {{ d.saque.mejor.detalle }}{% else %}—{% endif %}</span>
                     <span class="text-rose-400">{% if d.saque.a_mejorar %}#{{ d.saque.a_mejorar.dorsal }} {{ d.saque.a_mejorar.detalle }}{% else %}—{% endif %}</span>
                 </div>
                 <div class="grid grid-cols-[4.5rem_1fr_1fr] gap-2">
-                    <span class="text-slate-500 font-black uppercase text-[9px]">Ctrl. balón</span>
-                    <span class="text-emerald-400">{% if d.control_balon.mejor %}#{{ d.control_balon.mejor.dorsal }} {{ d.control_balon.mejor.detalle }}{% else %}—{% endif %}</span>
-                    <span class="text-rose-400">{% if d.control_balon.a_mejorar %}#{{ d.control_balon.a_mejorar.dorsal }} {{ d.control_balon.a_mejorar.detalle }}{% else %}—{% endif %}</span>
+                    <span class="text-slate-500 font-black uppercase text-[9px]">Bloqueo</span>
+                    <span class="text-emerald-400">{% if d.bloqueo.mejor %}#{{ d.bloqueo.mejor.dorsal }} {{ d.bloqueo.mejor.detalle }}{% else %}—{% endif %}</span>
+                    <span class="text-rose-400">{% if d.bloqueo.a_mejorar %}#{{ d.bloqueo.a_mejorar.dorsal }} {{ d.bloqueo.a_mejorar.detalle }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="grid grid-cols-[4.5rem_1fr_1fr] gap-2">
+                    <span class="text-slate-500 font-black uppercase text-[9px]">Defensa</span>
+                    <span class="text-emerald-400">{% if d.defensa.mejor %}#{{ d.defensa.mejor.dorsal }} {{ d.defensa.mejor.detalle }}{% else %}—{% endif %}</span>
+                    <span class="text-rose-400">{% if d.defensa.a_mejorar %}#{{ d.defensa.a_mejorar.dorsal }} {{ d.defensa.a_mejorar.detalle }}{% else %}—{% endif %}</span>
                 </div>
             </div>
             {% endwith %}

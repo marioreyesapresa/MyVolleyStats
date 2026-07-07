@@ -23,14 +23,14 @@ from ..security import log_intento_acceso_no_autorizado, ocultar_detalle_interno
 from ..services.reporting import (
     build_quick_set_report,
     build_full_report,
-    build_set_leaders,
-    build_destacados_por_accion,
     calc_k1_complex_pct,
     calc_k2_complex_pct,
     calc_set_score,
     calc_racha,
     rotation_matrix,
     zone_performance,
+    _leaders_from_players,
+    _destacados_from_players,
 )
 
 logger = logging.getLogger('stats_app.security')
@@ -391,30 +391,21 @@ def ObtenerStatsSetAPI(request):
         lista_fund.sort(key=lambda x: x['eficiencia'], reverse=True)
         stats_por_jugadora[fund] = lista_fund[:5]
 
-    lideres = build_set_leaders(partido, set_num)
-    destacados_por_accion = build_destacados_por_accion(partido, set_num)
+    informe_rapido = build_quick_set_report(partido, set_num)
+    lideres = _leaders_from_players(informe_rapido['jugadoras'])
+    destacados_por_accion = _destacados_from_players(informe_rapido['jugadoras'])
 
     k1_efi = calc_k1_complex_pct(partido, set_num)
     k2_efi = calc_k2_complex_pct(partido, set_num)
 
-    # Calculate score for the current set
-    puntos_local = (
-        stats_base.filter(accion__in=['SAQUE', 'ATAQUE', 'BLOQUEO'], calidad='++').count() +
-        stats_base.filter(accion='ERROR_RIVAL').count()
-    )
-    puntos_rival = (
-        stats_base.filter(Q(accion='PUNTO_RIVAL') | Q(calidad='--')).count()
-    )
+    puntos_local = informe_rapido['score_local']
+    puntos_rival = informe_rapido['score_rival']
 
-    # Calculate global sets won
     all_sets = RegistroEstadistica.objects.filter(partido=partido).values_list('set_numero', flat=True).distinct()
     sets_local = 0
     sets_rival = 0
     for s in all_sets:
-        qs_s = RegistroEstadistica.objects.filter(partido=partido, set_numero=s)
-        p_l = qs_s.filter(accion__in=['SAQUE', 'ATAQUE', 'BLOQUEO'], calidad='++').count() + qs_s.filter(accion='ERROR_RIVAL').count()
-        p_r = qs_s.filter(Q(accion='PUNTO_RIVAL') | Q(calidad='--')).count()
-        
+        p_l, p_r = calc_set_score(partido, s)
         limit = partido.limite_puntos_set(s)
         if (p_l >= limit or p_r >= limit) and abs(p_l - p_r) >= 2:
             if p_l > p_r:
@@ -445,7 +436,7 @@ def ObtenerStatsSetAPI(request):
         'puntos_set_decisivo': partido.puntos_set_decisivo,
         'sets_para_ganar': partido.sets_para_ganar,
         'set_decisivo_numero': partido.set_decisivo_numero,
-        'informe_rapido': build_quick_set_report(partido, set_num),
+        'informe_rapido': informe_rapido,
         'rotaciones': rotation_matrix(partido, set_num),
         'zonas': zone_performance(partido, set_num),
         'racha': calc_racha(partido, set_num),
@@ -584,7 +575,9 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
             labels_sets.append(f"Set {s}")
             local, rival = calc_set_score(partido, s)
             qs_s = RegistroEstadistica.objects.filter(partido=partido, set_numero=s)
-            p_merito.append(qs_s.filter(accion__in=['SAQUE', 'ATAQUE', 'BLOQUEO'], calidad='++').count())
+            p_merito.append(
+                qs_s.filter(accion__in=['SAQUE', 'ATAQUE', 'BLOQUEO'], calidad='++').count()
+            )
             p_err_rival.append(qs_s.filter(accion='ERROR_RIVAL').count())
             p_rival.append(rival)
 

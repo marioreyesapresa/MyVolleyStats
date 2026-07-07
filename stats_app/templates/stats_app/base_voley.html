@@ -317,6 +317,13 @@
         </main>
     </div>
 
+    <div id="page-loading-overlay" class="hidden fixed inset-0 z-[9999] bg-[#0b0f19]/85 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+        <div class="text-center space-y-3">
+            <div class="w-9 h-9 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cargando informe…</p>
+        </div>
+    </div>
+
     <script>
         lucide.createIcons();
 
@@ -374,6 +381,14 @@
             const sidebarDefault = localStorage.getItem('voley_sidebar_collapsed_default');
             if (sidebarDefault === '1') applySidebarState(true);
         }
+
+        // Feedback visual al navegar a Estadísticas Finales (página pesada)
+        const navOverlay = document.getElementById('page-loading-overlay');
+        document.querySelectorAll('a[href*="/stats-final/"]').forEach(link => {
+            link.addEventListener('click', () => {
+                if (navOverlay) navOverlay.classList.remove('hidden');
+            });
+        });
     </script>
     {% include 'partials/pwa_register.html' %}
 </body>

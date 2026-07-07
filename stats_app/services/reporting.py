@@ -231,11 +231,20 @@ def build_quick_set_report(partido, set_num):
             'colocacion_err': p['colocacion_err'],
             'defensas': p['defensas'],
             'defensa_err': p['defensa_err'],
-            'alerta': p['balance'] < 0 or (p['errores'] >= 2 and p['puntos'] == 0),
+            'alerta': _candidata_cambio(p),
         }
         for p in report['jugadoras']
     ]
     return report
+
+
+def _candidata_cambio(p):
+    """Fila roja en banquillo: sustitución sugerida, sin castigar a colocadoras eficaces."""
+    if p.get('asistencias', 0) >= 5 and p.get('colocacion_err', 0) == 0:
+        return p['balance'] < -3
+    if p['puntos'] == 0 and p['errores'] >= 2:
+        return True
+    return p['balance'] <= -3
 
 
 def _player_destacado(p, detalle):
@@ -301,8 +310,18 @@ def _leaders_from_players(players):
     }
 
 
+def _peor_errores(players, key_err, min_err=1):
+    candidatas = [p for p in players if (p.get(key_err) or 0) >= min_err]
+    if not candidatas:
+        return None
+    worst = max(candidatas, key=lambda p: p.get(key_err) or 0)
+    err = worst[key_err]
+    label = f"{err} err" if err == 1 else f"{err} errores"
+    return _player_destacado(worst, label)
+
+
 def _destacados_from_players(players, min_ataques=3):
-    """Cara y cruz por fundamento a partir de filas de jugadora."""
+    """Cara y cruz por fundamento (ataque, recepción, saque, bloqueo, defensa)."""
     mejor_ataque = None
     with_kills = [p for p in players if p['ataque_kills'] > 0]
     max_kills = max(with_kills, key=lambda p: p['ataque_kills']) if with_kills else None
@@ -328,13 +347,15 @@ def _destacados_from_players(players, min_ataques=3):
             f"{pct}% ({best_eff['ataque_kills']}/{best_eff['ataque_err']})",
         )
 
-    peor_ataque = None
-    with_atq_err = [p for p in players if p['ataque_err'] > 0]
-    if with_atq_err:
-        worst = max(with_atq_err, key=lambda p: p['ataque_err'])
-        err = worst['ataque_err']
-        label = f"{err} err" if err == 1 else f"{err} errores"
-        peor_ataque = _player_destacado(worst, label)
+    peor_ataque = _peor_errores(players, 'ataque_err')
+
+    mejor_recepcion = None
+    with_rec = [p for p in players if p.get('recepcion_pos', 0) > 0]
+    if with_rec:
+        top = max(with_rec, key=lambda p: (p['recepcion_pos'], -(p.get('recepcion_err') or 0)))
+        mejor_recepcion = _player_destacado(
+            top, f"{top['recepcion_pos']} pos / {top.get('recepcion_err', 0)} err"
+        )
 
     mejor_saque = None
     with_aces = [p for p in players if p['saque_aces'] > 0]
@@ -344,32 +365,32 @@ def _destacados_from_players(players, min_ataques=3):
         label = f"{aces} ace" if aces == 1 else f"{aces} aces"
         mejor_saque = _player_destacado(top, label)
 
-    peor_saque = None
-    with_srv_err = [p for p in players if p['saque_err'] >= 2]
-    if with_srv_err:
-        worst = max(with_srv_err, key=lambda p: p['saque_err'])
-        peor_saque = _player_destacado(worst, f"{worst['saque_err']} errores")
+    peor_saque = _peor_errores(players, 'saque_err', min_err=2)
 
-    mejor_control = None
-    with_control = [p for p in players if p.get('control_balon_pos', 0) > 0]
-    if with_control:
-        top = max(with_control, key=lambda p: (p['control_balon_pos'], -p.get('control_balon_err', 0)))
-        mejor_control = _player_destacado(
-            top, f"{top['control_balon_pos']} pos / {top.get('control_balon_err', 0)} err"
+    mejor_bloqueo = None
+    with_blo = [p for p in players if (p.get('bloqueo_pts') or 0) > 0 or (p.get('bloqueo_toques') or 0) > 0]
+    if with_blo:
+        top = max(with_blo, key=lambda p: (p.get('bloqueo_pts') or 0, p.get('bloqueo_toques') or 0))
+        if top.get('bloqueo_pts', 0) > 0:
+            detalle = f"{top['bloqueo_pts']} pts"
+        else:
+            detalle = f"{top['bloqueo_toques']} toques"
+        mejor_bloqueo = _player_destacado(top, detalle)
+
+    mejor_defensa = None
+    with_def = [p for p in players if p.get('defensas', 0) > 0]
+    if with_def:
+        top = max(with_def, key=lambda p: (p['defensas'], -(p.get('defensa_err') or 0)))
+        mejor_defensa = _player_destacado(
+            top, f"{top['defensas']} def / {top.get('defensa_err', 0)} err"
         )
-
-    peor_control = None
-    with_ctrl_err = [p for p in players if p.get('control_balon_err', 0) > 0]
-    if with_ctrl_err:
-        worst = max(with_ctrl_err, key=lambda p: p['control_balon_err'])
-        err = worst['control_balon_err']
-        label = f"{err} err" if err == 1 else f"{err} errores"
-        peor_control = _player_destacado(worst, label)
 
     return {
         'ataque': {'mejor': mejor_ataque, 'a_mejorar': peor_ataque},
+        'recepcion': {'mejor': mejor_recepcion, 'a_mejorar': _peor_errores(players, 'recepcion_err')},
         'saque': {'mejor': mejor_saque, 'a_mejorar': peor_saque},
-        'control_balon': {'mejor': mejor_control, 'a_mejorar': peor_control},
+        'bloqueo': {'mejor': mejor_bloqueo, 'a_mejorar': _peor_errores(players, 'bloqueo_err')},
+        'defensa': {'mejor': mejor_defensa, 'a_mejorar': _peor_errores(players, 'defensa_err')},
     }
 
 
@@ -378,7 +399,9 @@ def _aggregate_players_stats(detalle_sets):
     agg = {}
     sum_keys = [
         'balance', 'puntos', 'ataque_kills', 'ataque_err', 'ataque_swings',
-        'saque_aces', 'saque_err', 'control_balon_pos', 'control_balon_err',
+        'saque_aces', 'saque_err', 'recepcion_pos', 'recepcion_err',
+        'bloqueo_pts', 'bloqueo_toques', 'bloqueo_err',
+        'defensas', 'defensa_err', 'asistencias', 'colocacion_err',
     ]
     for sd in detalle_sets:
         for j in sd['jugadoras']:
@@ -455,8 +478,8 @@ def build_full_report(partido, set_filter='global'):
         sd['run_chart'] = build_run_chart(partido, s)
         sd['k1_efi'] = calc_k1_complex_pct(partido, s)
         sd['k2_efi'] = calc_k2_complex_pct(partido, s)
-        sd['lideres'] = build_set_leaders(partido, s)
-        sd['destacados_por_accion'] = build_destacados_por_accion(partido, s)
+        sd['lideres'] = _leaders_from_players(sd['jugadoras'])
+        sd['destacados_por_accion'] = _destacados_from_players(sd['jugadoras'])
         detalle_sets.append(sd)
 
     return {

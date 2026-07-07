@@ -888,6 +888,15 @@
 
 <!-- Tab: Indicadores del Set (estadísticas rápidas en vivo) -->
 <div id="tab-metricas-content" class="tab-content hidden w-full -mt-6 md:-mt-8">
+    <style>
+        #destacados-list {
+            scrollbar-width: thin;
+            scrollbar-color: #64748b #1e293b;
+        }
+        #destacados-list::-webkit-scrollbar { width: 6px; }
+        #destacados-list::-webkit-scrollbar-track { background: #1e293b; border-radius: 3px; }
+        #destacados-list::-webkit-scrollbar-thumb { background: #64748b; border-radius: 3px; }
+    </style>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
         <!-- ═══ MAIN: tabla rápida + KPIs ═══════════════════════════════ -->
@@ -1004,42 +1013,34 @@
                 </div>
             </div>
 
-            <div id="destacados-card" class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Destacados por Acción</h3>
-                <p class="text-[8px] text-slate-600 leading-relaxed">Cara y cruz del set · Mejor vs. a mejorar</p>
-                <div class="space-y-2 text-[10px]">
+            <div id="destacados-card" class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2 flex flex-col min-h-0 max-h-[42vh]">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800 flex-none">Destacados por Acción</h3>
+                <p class="text-[8px] text-slate-600 leading-relaxed flex-none">Mejor vs. a mejorar · por volumen en cada fundamento</p>
+                <div id="destacados-list" class="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-2 text-[10px] pr-1 -mr-1">
                     <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start">
                         <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Ataque</span>
-                        <div class="min-w-0">
-                            <span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span>
-                            <p id="dest-ataque-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p>
-                        </div>
-                        <div class="min-w-0">
-                            <span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span>
-                            <p id="dest-ataque-peor" class="font-bold text-rose-300 truncate leading-tight">—</p>
-                        </div>
+                        <div class="min-w-0"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-ataque-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p></div>
+                        <div class="min-w-0"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-ataque-peor" class="font-bold text-rose-300 truncate leading-tight">—</p></div>
+                    </div>
+                    <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start border-t border-slate-800/60 pt-2">
+                        <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Recep.</span>
+                        <div class="min-w-0"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-recep-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p></div>
+                        <div class="min-w-0"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-recep-peor" class="font-bold text-rose-300 truncate leading-tight">—</p></div>
                     </div>
                     <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start border-t border-slate-800/60 pt-2">
                         <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Saque</span>
-                        <div class="min-w-0">
-                            <span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span>
-                            <p id="dest-saque-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p>
-                        </div>
-                        <div class="min-w-0">
-                            <span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span>
-                            <p id="dest-saque-peor" class="font-bold text-rose-300 truncate leading-tight">—</p>
-                        </div>
+                        <div class="min-w-0"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-saque-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p></div>
+                        <div class="min-w-0"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-saque-peor" class="font-bold text-rose-300 truncate leading-tight">—</p></div>
                     </div>
                     <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start border-t border-slate-800/60 pt-2">
-                        <span class="text-[8px] font-black text-slate-500 uppercase pt-1 leading-tight">Ctrl. balón</span>
-                        <div class="min-w-0">
-                            <span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span>
-                            <p id="dest-control-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p>
-                        </div>
-                        <div class="min-w-0">
-                            <span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span>
-                            <p id="dest-control-peor" class="font-bold text-rose-300 truncate leading-tight">—</p>
-                        </div>
+                        <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Bloqueo</span>
+                        <div class="min-w-0"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-bloqueo-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p></div>
+                        <div class="min-w-0"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-bloqueo-peor" class="font-bold text-rose-300 truncate leading-tight">—</p></div>
+                    </div>
+                    <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start border-t border-slate-800/60 pt-2">
+                        <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Defensa</span>
+                        <div class="min-w-0"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-defensa-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p></div>
+                        <div class="min-w-0"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-defensa-peor" class="font-bold text-rose-300 truncate leading-tight">—</p></div>
                     </div>
                 </div>
             </div>
@@ -3023,8 +3024,10 @@
             if (peorEl) peorEl.innerText = fmtDest(b.a_mejorar);
         };
         setDest('dest-ataque-mejor', 'dest-ataque-peor', 'ataque');
+        setDest('dest-recep-mejor', 'dest-recep-peor', 'recepcion');
         setDest('dest-saque-mejor', 'dest-saque-peor', 'saque');
-        setDest('dest-control-mejor', 'dest-control-peor', 'control_balon');
+        setDest('dest-bloqueo-mejor', 'dest-bloqueo-peor', 'bloqueo');
+        setDest('dest-defensa-mejor', 'dest-defensa-peor', 'defensa');
 
         const k1 = res.k1_efi !== undefined ? res.k1_efi : 0;
         const k2 = res.k2_efi !== undefined ? res.k2_efi : 0;
@@ -3196,24 +3199,30 @@
         }
     }
 
+    async function fetchStatsSet(setNum) {
+        const r = await fetchConReintentos('{% url "stats_app:api_obtener_stats_set" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ partido_id: state.partido_id, set_numero: setNum })
+        });
+        return r.json();
+    }
+
     // Refresh live stats (marcador del set en juego + panel de indicadores del set seleccionado)
     async function updateFlashboard() {
         try {
-            const body = { partido_id: state.partido_id, set_numero: state.set_numero };
-            const r = await fetchConReintentos('{% url "stats_app:api_obtener_stats_set" %}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify(body)
-            });
-            const res = await r.json();
+            const verOtroSet = state.indicadores_set !== state.set_numero;
+            const promesas = [fetchStatsSet(state.set_numero)];
+            if (verOtroSet) promesas.push(fetchStatsSet(state.indicadores_set));
 
-            if (res.status === 'ok') {
-                updateMarcadorFromResponse(res);
-                if (state.indicadores_set === state.set_numero) {
-                    paintIndicadoresFromResponse(res);
-                } else {
-                    await updateIndicadoresPanel();
-                }
+            const [resMarcador, resIndicadores] = await Promise.all(promesas);
+
+            if (resMarcador.status === 'ok') {
+                updateMarcadorFromResponse(resMarcador);
+            }
+            const resPanel = verOtroSet ? resIndicadores : resMarcador;
+            if (resPanel && resPanel.status === 'ok') {
+                paintIndicadoresFromResponse(resPanel);
             }
         } catch(e) {
             console.error("Error al actualizar flashboard: ", e);

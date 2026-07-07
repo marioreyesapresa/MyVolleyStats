@@ -233,14 +233,24 @@
                 <td>{% if d.ataque.a_mejorar %}#{{ d.ataque.a_mejorar.dorsal }} {{ d.ataque.a_mejorar.detalle }}{% else %}—{% endif %}</td>
             </tr>
             <tr>
+                <td class="left">Recepción</td>
+                <td>{% if d.recepcion.mejor %}#{{ d.recepcion.mejor.dorsal }} {{ d.recepcion.mejor.detalle }}{% else %}—{% endif %}</td>
+                <td>{% if d.recepcion.a_mejorar %}#{{ d.recepcion.a_mejorar.dorsal }} {{ d.recepcion.a_mejorar.detalle }}{% else %}—{% endif %}</td>
+            </tr>
+            <tr>
                 <td class="left">Saque</td>
                 <td>{% if d.saque.mejor %}#{{ d.saque.mejor.dorsal }} {{ d.saque.mejor.detalle }}{% else %}—{% endif %}</td>
                 <td>{% if d.saque.a_mejorar %}#{{ d.saque.a_mejorar.dorsal }} {{ d.saque.a_mejorar.detalle }}{% else %}—{% endif %}</td>
             </tr>
             <tr>
-                <td class="left">Control de balón</td>
-                <td>{% if d.control_balon.mejor %}#{{ d.control_balon.mejor.dorsal }} {{ d.control_balon.mejor.detalle }}{% else %}—{% endif %}</td>
-                <td>{% if d.control_balon.a_mejorar %}#{{ d.control_balon.a_mejorar.dorsal }} {{ d.control_balon.a_mejorar.detalle }}{% else %}—{% endif %}</td>
+                <td class="left">Bloqueo</td>
+                <td>{% if d.bloqueo.mejor %}#{{ d.bloqueo.mejor.dorsal }} {{ d.bloqueo.mejor.detalle }}{% else %}—{% endif %}</td>
+                <td>{% if d.bloqueo.a_mejorar %}#{{ d.bloqueo.a_mejorar.dorsal }} {{ d.bloqueo.a_mejorar.detalle }}{% else %}—{% endif %}</td>
+            </tr>
+            <tr>
+                <td class="left">Defensa</td>
+                <td>{% if d.defensa.mejor %}#{{ d.defensa.mejor.dorsal }} {{ d.defensa.mejor.detalle }}{% else %}—{% endif %}</td>
+                <td>{% if d.defensa.a_mejorar %}#{{ d.defensa.a_mejorar.dorsal }} {{ d.defensa.a_mejorar.detalle }}{% else %}—{% endif %}</td>
             </tr>
             {% endwith %}
         </tbody>
