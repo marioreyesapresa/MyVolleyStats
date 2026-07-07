@@ -113,6 +113,7 @@ class RegistroEstadistica(models.Model):
         ('ERROR_RIVAL', 'Error del Rival'),
         ('PUNTO_RIVAL', 'Punto del Rival'),
         ('SUSTITUCION', 'Sustitución'),
+        ('RED', 'Red'),
     ]
     CALIDADES = [
         ('++', '++'),

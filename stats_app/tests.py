@@ -30,9 +30,11 @@ from .services.reporting import (
     build_set_leaders,
     build_destacados_por_accion,
     build_quick_set_report,
+    build_set_report,
     build_partido_snapshot,
     calc_racha,
     calc_racha_maxima,
+    calc_set_score,
     _candidata_cambio,
 )
 
@@ -1424,6 +1426,46 @@ class ReportingHelpersTests(TestCase):
             f"build_full_report ejecutó {len(ctx.captured_queries)} queries; "
             "no debería escalar con el número de sets/jugadoras/acciones."
         )
+
+    def test_accion_red_cuenta_como_punto_para_el_rival(self):
+        """RED = la jugadora seleccionada ha tocado la red: punto directo
+        para el rival, igual que un error nuestro cualquiera."""
+        j = Jugadora.objects.create(equipo=self.equipo, nombre='Ana', dorsal=4)
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K1',
+            accion='RED', calidad='--', set_numero=1,
+        )
+        local, rival = calc_set_score(self.partido, 1)
+        self.assertEqual((local, rival), (0, 1))
+
+    def test_accion_red_cuenta_como_error_individual_de_la_jugadora(self):
+        """El toque de red debe reflejarse en el balance/errores de la
+        jugadora en el informe, aunque no tenga columna propia."""
+        j = Jugadora.objects.create(equipo=self.equipo, nombre='Ana', dorsal=4)
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=1,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K1',
+            accion='RED', calidad='--', set_numero=1,
+        )
+        report = build_set_report(self.partido, 1)
+        fila = next(row for row in report['jugadoras'] if row['dorsal'] == 4)
+        self.assertEqual(fila['puntos'], 1)
+        self.assertEqual(fila['errores'], 1)
+        self.assertEqual(fila['balance'], 0)
+        self.assertEqual(fila['acciones'], 2)
+
+    def test_resumen_sets_incluye_puntos_merito_y_error_rival_por_set(self):
+        self._punto('ATAQUE', '++')      # mérito
+        self._punto('ERROR_RIVAL', '')   # error rival
+        reporte = build_full_report(self.partido, 'global')
+        set_resumen = reporte['resumen_sets'][0]
+        self.assertEqual(set_resumen['puntos_merito'], 1)
+        self.assertEqual(set_resumen['puntos_err_rival'], 1)
+        self.assertEqual(reporte['resumen_totales']['puntos_merito'], 1)
+        self.assertEqual(reporte['resumen_totales']['puntos_err_rival'], 1)
 
 
 class CrudAdministracionTests(TestCase):

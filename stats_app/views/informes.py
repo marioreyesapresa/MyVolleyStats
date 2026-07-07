@@ -152,6 +152,7 @@ class DescargarInformeCompletoPDF(BaseInformePDFView):
             'resumen_sets': reporte['resumen_sets'],
             'detalle_sets': reporte['detalle_sets'],
             'detalle_total': reporte.get('detalle_total'),
+            'resumen_totales': reporte.get('resumen_totales'),
             'destacadas': reporte['destacadas'],
         }
         return render_to_pdf('stats_app/informe_completo_pdf.html', context)

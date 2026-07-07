@@ -293,137 +293,172 @@
 
 <!-- Tab: Scout en Vivo -->
 <div id="tab-scout-content" class="tab-content hidden w-full space-y-8 -mt-6 md:-mt-8">
-    <!-- Contenedor del Modo Avanzado (Diseño Tradicional) -->
-    <div id="scout-avanzado-container" class="space-y-8">
-        <!-- Roster Selector Card & Scoreboard -->
-        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl">
-            <div class="flex flex-col lg:flex-row items-center justify-between gap-6 w-full">
-                <!-- Bloque Izquierdo: Selección Jugadora (Flexible) -->
-                <div class="flex-1 min-w-0 space-y-3 w-full lg:w-auto">
-                    <div class="flex items-center justify-between lg:justify-start lg:space-x-4">
+    <!-- Contenedor del Modo Avanzado (misma estructura de pestañas + barra
+         flotante que el Modo Rápido: Juego / Acciones / Ajustes / Archivos /
+         Configuración. Las tres últimas son paneles COMPARTIDOS con el Modo
+         Rápido — ver más abajo, fuera de #scout-rapido-container — para no
+         duplicar ajustes de partido/equipo entre ambos modos. -->
+    <div id="scout-avanzado-container" class="hidden w-full space-y-2">
+        <!-- MENÚ DE NAVEGACIÓN FLOTANTE (estilo píldora, igual que Rápido) -->
+        <div class="sticky top-2 z-50 flex items-center justify-center gap-2 px-1">
+            <button class="sidebar-toggle-trigger hidden md:flex items-center justify-center w-8 h-8 rounded-full bg-neutral-800/90 backdrop-blur-sm shadow-md text-neutral-300 hover:text-white transition-all active:scale-95 flex-shrink-0" title="Mostrar/Ocultar menú">
+                <i data-lucide="panel-left" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="flex items-center gap-1 bg-neutral-800/90 backdrop-blur-sm rounded-full shadow-md px-3 py-1.5 max-w-[92vw] overflow-x-auto scrollbar-hide">
+                <button onclick="switchRapidoTab('avjuego')" data-tab="avjuego" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full bg-neutral-600 text-white">
+                    Juego
+                </button>
+                <button onclick="switchRapidoTab('avacciones')" data-tab="avacciones" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Acciones
+                </button>
+                <button onclick="switchRapidoTab('adjust')" data-tab="adjust" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Ajustes
+                </button>
+                <button onclick="switchRapidoTab('file')" data-tab="file" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Archivos
+                </button>
+                <button onclick="switchRapidoTab('settings')" data-tab="settings" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Configuración
+                </button>
+                <button onclick="cambiarModoScout('rapido')" class="text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-blue-300 hover:text-white border border-blue-500/30 ml-1 flex-shrink-0" title="Cambiar a Modo Rápido">
+                    ⇄ Rápido
+                </button>
+            </div>
+        </div>
+
+        <!-- PESTAÑA: [Juego] -->
+        <div id="rapido-avjuego-content" class="rapido-tab-content space-y-6">
+            <!-- Marcador y Botones de Acción -->
+            <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl">
+                <div class="flex flex-col lg:flex-row items-center justify-between gap-6 w-full">
+                    <!-- Marcador Central: Sets y Puntos (Blindado) -->
+                    <div class="flex items-center justify-center space-x-6 flex-shrink-0 text-center px-4 py-3 lg:py-0 w-full lg:w-auto">
+                        <!-- Sets status (discrete) -->
+                        <div class="flex flex-col items-center space-y-0.5 flex-shrink-0">
+                            <span class="text-[9px] font-black text-slate-500 uppercase tracking-[0.15em]">SETS GLOBAL</span>
+                            <span id="scoreboard-sets" class="text-xs font-black text-slate-300 tracking-widest font-mono">
+                                ({{ marcador_inicial.sets_local }}) - ({{ marcador_inicial.sets_rival }})
+                            </span>
+                        </div>
+
+                        <!-- Digital Scoreboard current set points (Clean, flat & massive) -->
+                        <div class="flex items-center space-x-4 select-none flex-shrink-0">
+                            <!-- Local team points (Massive emerald digital) -->
+                            <div class="flex flex-col items-center min-w-0 max-w-[120px] lg:max-w-[160px]">
+                                <span id="score-local" class="text-4xl lg:text-5xl font-black font-mono text-emerald-400 tracking-tight leading-none min-w-[48px] text-center">{{ marcador_inicial.puntos_local|stringformat:"02d" }}</span>
+                                <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5 truncate w-full text-center" title="{{ partido.equipo.nombre }}">{{ partido.equipo.nombre }}</span>
+                            </div>
+
+                            <!-- Colon divider -->
+                            <span class="text-slate-700 font-black font-mono text-3xl leading-none -mt-4">:</span>
+
+                            <!-- Rival team points (Massive rose digital) -->
+                            <div class="flex flex-col items-center min-w-0 max-w-[120px] lg:max-w-[160px]">
+                                <span id="score-rival" class="text-4xl lg:text-5xl font-black font-mono text-rose-500 tracking-tight leading-none min-w-[48px] text-center">{{ marcador_inicial.puntos_rival|stringformat:"02d" }}</span>
+                                <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5 truncate w-full text-center" title="{{ partido.rival }}">{{ partido.rival }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bloque Derecho: Botones de Acción (Blindado) -->
+                    <div class="flex items-center justify-center lg:justify-end gap-3 flex-shrink-0 w-full lg:w-auto border-t lg:border-t-0 border-slate-800/80 pt-4 lg:pt-0">
+                        <!-- Toggle Switch Modo Scout -->
+                        <div class="flex items-center bg-[#090d16] p-1 rounded-2xl border border-slate-800 shadow-inner">
+                            <button id="btn-modo-rapido" 
+                                    onclick="cambiarModoScout('rapido')" 
+                                    class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white">
+                                Rápido
+                            </button>
+                            <button id="btn-modo-avanzado" 
+                                    onclick="cambiarModoScout('avanzado')" 
+                                    class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md">
+                                Avanzado
+                            </button>
+                        </div>
+
+                        <!-- Finalizar Partido Button -->
+                        <button id="btn-finalizar-partido" 
+                                onclick="confirmarFinalizarPartido()" 
+                                class="flex items-center justify-center px-4 py-2.5 bg-rose-600/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 rounded-2xl text-rose-400 hover:text-white font-black text-xs transition-all active:scale-95 shadow-lg uppercase tracking-wider" 
+                                title="Finalizar Partido">
+                            <i data-lucide="flag" class="w-3.5 h-3.5 mr-1.5"></i>
+                            <span>Finalizar Partido</span>
+                        </button>
+
+                        <!-- Desktop Settings button -->
+                        <button onclick="toggleModal('modal-config')" class="hidden lg:flex items-center justify-center p-3 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl text-slate-400 hover:text-white transition-all active:scale-95 shadow-lg" title="Ajustes Set">
+                            <i data-lucide="settings" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selección Jugadora: debajo del marcador, a todo lo ancho, para verla completa -->
+                <div class="mt-6 pt-6 border-t border-slate-800/80 space-y-3">
+                    <div class="flex items-center justify-between">
                         <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Selección Jugadora</h3>
-                        <!-- Mobile settings button if screen is small -->
                         <button onclick="toggleModal('modal-config')" class="lg:hidden text-slate-400 hover:text-white transition-all flex items-center space-x-1" title="Ajustes Set">
                             <i data-lucide="settings" class="w-4 h-4"></i>
                         </button>
                     </div>
-                    <div id="active-roster-container" class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide py-1">
+                    <div id="active-roster-container" class="flex flex-wrap gap-2 pb-2 py-1">
                         <!-- Dynamically populated from JS -->
                     </div>
                 </div>
-                
-                <!-- Marcador Central: Sets y Puntos (Blindado) -->
-                <div class="flex items-center justify-center space-x-6 flex-shrink-0 text-center px-4 py-3 lg:py-0 border-t lg:border-t-0 border-slate-800/80 w-full lg:w-auto">
-                    <!-- Sets status (discrete) -->
-                    <div class="flex flex-col items-center space-y-0.5 flex-shrink-0">
-                        <span class="text-[9px] font-black text-slate-500 uppercase tracking-[0.15em]">SETS GLOBAL</span>
-                        <span id="scoreboard-sets" class="text-xs font-black text-slate-300 tracking-widest font-mono">
-                            ({{ marcador_inicial.sets_local }}) - ({{ marcador_inicial.sets_rival }})
-                        </span>
-                    </div>
-                    
-                    <!-- Digital Scoreboard current set points (Clean, flat & massive) -->
-                    <div class="flex items-center space-x-4 select-none flex-shrink-0">
-                        <!-- Local team points (Massive emerald digital) -->
-                        <div class="flex flex-col items-center min-w-0 max-w-[120px] lg:max-w-[160px]">
-                            <span id="score-local" class="text-4xl lg:text-5xl font-black font-mono text-emerald-400 tracking-tight leading-none min-w-[48px] text-center">{{ marcador_inicial.puntos_local|stringformat:"02d" }}</span>
-                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5 truncate w-full text-center" title="{{ partido.equipo.nombre }}">{{ partido.equipo.nombre }}</span>
-                        </div>
-                        
-                        <!-- Colon divider -->
-                        <span class="text-slate-700 font-black font-mono text-3xl leading-none -mt-4">:</span>
-                        
-                        <!-- Rival team points (Massive rose digital) -->
-                        <div class="flex flex-col items-center min-w-0 max-w-[120px] lg:max-w-[160px]">
-                            <span id="score-rival" class="text-4xl lg:text-5xl font-black font-mono text-rose-500 tracking-tight leading-none min-w-[48px] text-center">{{ marcador_inicial.puntos_rival|stringformat:"02d" }}</span>
-                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5 truncate w-full text-center" title="{{ partido.rival }}">{{ partido.rival }}</span>
+            </div>
+
+            <!-- Stat Registration Panel -->
+            <div class="bg-[#121824] rounded-3xl p-6 md:p-8 border border-slate-800 shadow-xl space-y-6">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div class="flex items-center space-x-3">
+                        <h3 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Acciones Técnicas</h3>
+                        <div class="flex items-center space-x-2">
+                            <!-- Badge Fase K0/K1/K2 -->
+                            <div id="fase-badge" class="flex items-center space-x-1.5 px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all duration-300
+                                 bg-blue-500/10 border-blue-500/30 text-blue-400">
+                                <span id="fase-dot" class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                                <span id="fase-label">K1 — Recepción</span>
+                            </div>
+                            <!-- Badge Rotación R1-R6 -->
+                            <div id="rot-badge" class="flex items-center space-x-1 px-2.5 py-1 rounded-lg border
+                                 bg-slate-800/60 border-slate-700 text-slate-300 text-[9px] font-black uppercase tracking-widest">
+                                <i data-lucide="rotate-cw" class="w-2.5 h-2.5 text-slate-400"></i>
+                                <span id="rot-label">R1</span>
+                            </div>
                         </div>
                     </div>
+                    <button onclick="eliminarUltimo()" class="px-4 py-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-black rounded-xl active:scale-95 transition-all flex items-center uppercase tracking-widest hover:bg-rose-500/20 shadow-md">
+                        <i data-lucide="undo-2" class="w-4 h-4 mr-2"></i> Deshacer
+                    </button>
                 </div>
 
-                <!-- Bloque Derecho: Botones de Acción (Blindado) -->
-                <div class="flex items-center justify-center lg:justify-end gap-3 flex-shrink-0 w-full lg:w-auto border-t lg:border-t-0 border-slate-800/80 pt-4 lg:pt-0">
-                    <!-- Toggle Switch Modo Scout -->
-                    <div class="flex items-center bg-[#090d16] p-1 rounded-2xl border border-slate-800 shadow-inner">
-                        <button id="btn-modo-rapido" 
-                                onclick="cambiarModoScout('rapido')" 
-                                class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md">
-                            Rápido
-                        </button>
-                        <button id="btn-modo-avanzado" 
-                                onclick="cambiarModoScout('avanzado')" 
-                                class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white">
-                            Avanzado
-                        </button>
-                    </div>
+                <!-- Actions grid -->
+                <div id="scout-actions-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
+                    <!-- Populated dynamically by renderBotonerasAcciones() -->
+                </div>
 
-                    <!-- Finalizar Partido Button -->
-                    <button id="btn-finalizar-partido" 
-                            onclick="confirmarFinalizarPartido()" 
-                            class="flex items-center justify-center px-4 py-2.5 bg-rose-600/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 rounded-2xl text-rose-400 hover:text-white font-black text-xs transition-all active:scale-95 shadow-lg uppercase tracking-wider" 
-                            title="Finalizar Partido">
-                        <i data-lucide="flag" class="w-3.5 h-3.5 mr-1.5"></i>
-                        <span>Finalizar Partido</span>
+                <!-- Opponent buttons (Red & Orange) -->
+                <div id="scout-opponent-grid" class="grid grid-cols-2 gap-6 border-t border-slate-800/60 pt-6 transition-all duration-300">
+                    <button onclick="registrar('ERROR_RIVAL', '')" class="py-5 md:py-6 bg-orange-950/20 hover:bg-orange-900/20 border-2 border-orange-850 text-orange-400 font-black rounded-2xl active:scale-95 transition-all text-xs md:text-sm uppercase tracking-widest flex items-center justify-center shadow-lg">
+                        <i data-lucide="award" class="w-5 h-5 mr-3"></i> Error Rival
                     </button>
-
-                    <!-- Desktop Settings button -->
-                    <button onclick="toggleModal('modal-config')" class="hidden lg:flex items-center justify-center p-3 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl text-slate-400 hover:text-white transition-all active:scale-95 shadow-lg" title="Ajustes Set">
-                        <i data-lucide="settings" class="w-4 h-4"></i>
+                    <button onclick="registrar('PUNTO_RIVAL', '')" class="py-5 md:py-6 bg-rose-950/20 hover:bg-rose-900/20 border-2 border-rose-800/30 text-rose-400 font-black rounded-2xl active:scale-95 transition-all text-xs md:text-sm uppercase tracking-widest flex items-center justify-center shadow-lg">
+                        <i data-lucide="zap-off" class="w-5 h-5 mr-3"></i> Punto Rival
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Stat Registration Panel -->
-        <div class="bg-[#121824] rounded-3xl p-6 md:p-8 border border-slate-800 shadow-xl space-y-6">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
-                <div class="flex items-center space-x-3">
-                    <h3 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Acciones Técnicas</h3>
-                    <div class="flex items-center space-x-2">
-                        <!-- Badge Fase K0/K1/K2 -->
-                        <div id="fase-badge" class="flex items-center space-x-1.5 px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all duration-300
-                             bg-blue-500/10 border-blue-500/30 text-blue-400">
-                            <span id="fase-dot" class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
-                            <span id="fase-label">K1 — Recepción</span>
-                        </div>
-                        <!-- Badge Rotación R1-R6 -->
-                        <div id="rot-badge" class="flex items-center space-x-1 px-2.5 py-1 rounded-lg border
-                             bg-slate-800/60 border-slate-700 text-slate-300 text-[9px] font-black uppercase tracking-widest">
-                            <i data-lucide="rotate-cw" class="w-2.5 h-2.5 text-slate-400"></i>
-                            <span id="rot-label">R1</span>
-                        </div>
-                    </div>
+        <!-- PESTAÑA: [Acciones / Historial] -->
+        <div id="rapido-avacciones-content" class="rapido-tab-content hidden space-y-6">
+            <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800/60 pb-3">
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Registro Histórico</h3>
+                    <span id="counter-text" class="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 shadow-sm">0 ACCIONES</span>
                 </div>
-                <button onclick="eliminarUltimo()" class="px-4 py-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-black rounded-xl active:scale-95 transition-all flex items-center uppercase tracking-widest hover:bg-rose-500/20 shadow-md">
-                    <i data-lucide="undo-2" class="w-4 h-4 mr-2"></i> Deshacer
-                </button>
-            </div>
 
-            <!-- Actions grid -->
-            <div id="scout-actions-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
-                <!-- Populated dynamically by renderBotonerasAcciones() -->
-            </div>
-
-            <!-- Opponent buttons (Red & Orange) -->
-            <div id="scout-opponent-grid" class="grid grid-cols-2 gap-6 border-t border-slate-800/60 pt-6 transition-all duration-300">
-                <button onclick="registrar('ERROR_RIVAL', '')" class="py-5 md:py-6 bg-orange-950/20 hover:bg-orange-900/20 border-2 border-orange-850 text-orange-400 font-black rounded-2xl active:scale-95 transition-all text-xs md:text-sm uppercase tracking-widest flex items-center justify-center shadow-lg">
-                    <i data-lucide="award" class="w-5 h-5 mr-3"></i> Error Rival
-                </button>
-                <button onclick="registrar('PUNTO_RIVAL', '')" class="py-5 md:py-6 bg-rose-950/20 hover:bg-rose-900/20 border-2 border-rose-800/30 text-rose-400 font-black rounded-2xl active:scale-95 transition-all text-xs md:text-sm uppercase tracking-widest flex items-center justify-center shadow-lg">
-                    <i data-lucide="zap-off" class="w-5 h-5 mr-3"></i> Punto Rival
-                </button>
-            </div>
-        </div>
-
-        <!-- Recent Logs (History box) -->
-        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800/60 pb-3">
-                <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Registro Histórico</h3>
-                <span id="counter-text" class="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 shadow-sm">0 ACCIONES</span>
-            </div>
-            
-            <div id="historial-list" class="space-y-2.5 max-h-64 overflow-y-auto pr-1 scrollbar-hide">
-                <!-- Dynamically populated -->
+                <div id="historial-list" class="space-y-2.5 max-h-[65vh] overflow-y-auto pr-1 scrollbar-hide">
+                    <!-- Dynamically populated -->
+                </div>
             </div>
         </div>
     </div>
@@ -434,6 +469,13 @@
            Las filas con flex-1 se comprimían por debajo del min-height de
            los botones y acababan montándose unas sobre otras. */
         #gameplay-grid-container {
+            /* Tamaño natural, NUNCA se recorta: las zonas (sobre todo las
+               zagueras 5/6/1, que son las que más se usan) deben verse
+               siempre completas. Si falta espacio, el scroll ocurre en
+               #gameplay-bottom-scroll (colocación + puntos), no aquí. */
+            overflow: visible;
+        }
+        #gameplay-bottom-scroll {
             overflow-y: auto;
             overscroll-behavior: contain;
             -webkit-overflow-scrolling: touch;
@@ -516,23 +558,26 @@
                 <i data-lucide="panel-left" class="w-3.5 h-3.5"></i>
             </button>
             <div class="flex items-center gap-1 bg-neutral-800/90 backdrop-blur-sm rounded-full shadow-md px-3 py-1.5 max-w-[92vw] overflow-x-auto scrollbar-hide">
-                <button onclick="switchRapidoTab('gameplay')" id="tab-btn-gameplay" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full bg-neutral-600 text-white">
+                <button onclick="switchRapidoTab('gameplay')" data-tab="gameplay" id="tab-btn-gameplay" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full bg-neutral-600 text-white">
                     Juego
                 </button>
-                <button onclick="switchRapidoTab('acciones')" id="tab-btn-acciones" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                <button onclick="switchRapidoTab('acciones')" data-tab="acciones" id="tab-btn-acciones" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
                     Acciones
                 </button>
-                <button onclick="switchRapidoTab('score')" id="tab-btn-score" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                <button onclick="switchRapidoTab('score')" data-tab="score" id="tab-btn-score" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
                     Marcador
                 </button>
-                <button onclick="switchRapidoTab('adjust')" id="tab-btn-adjust" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                <button onclick="switchRapidoTab('adjust')" data-tab="adjust" id="tab-btn-adjust" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
                     Ajustes
                 </button>
-                <button onclick="switchRapidoTab('file')" id="tab-btn-file" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                <button onclick="switchRapidoTab('file')" data-tab="file" id="tab-btn-file" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
                     Archivos
                 </button>
-                <button onclick="switchRapidoTab('settings')" id="tab-btn-settings" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                <button onclick="switchRapidoTab('settings')" data-tab="settings" id="tab-btn-settings" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
                     Configuración
+                </button>
+                <button onclick="cambiarModoScout('avanzado')" class="text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-blue-300 hover:text-white border border-blue-500/30 ml-1 flex-shrink-0" title="Cambiar a Modo Avanzado">
+                    ⇄ Avanzado
                 </button>
             </div>
         </div>
@@ -588,25 +633,31 @@
             <!-- Líberos: dos rectángulos (izq / der) encima del campo -->
             <div id="libero-quick-bar" class="flex-shrink-0 hidden grid grid-cols-2 gap-2"></div>
 
-            <!-- Contenedor del Grid Dinámico de Zonas del Campo (Poblado por JS) -->
-            <div id="gameplay-grid-container" class="flex-1 min-h-0">
+            <!-- Contenedor del Grid Dinámico de Zonas del Campo (Poblado por JS).
+                 flex-shrink-0: tamaño natural siempre completo, incluida la fila
+                 de zonas zagueras (5/6/1), que son las que más se usan. -->
+            <div id="gameplay-grid-container" class="flex-shrink-0">
                 <!-- Poblado dinámicamente por renderGameplayGrid() -->
             </div>
 
-            <!-- Colocación: barra fija compartida (no depende de la zona), asignada
-                 automáticamente a la colocadora en pista. Poblada por renderColocacionBar() -->
-            <div id="colocacion-bar-container" class="flex-shrink-0"></div>
+            <!-- Si falta espacio en pantalla, el scroll ocurre AQUÍ (colocación +
+                 puntos), nunca en el grid de zonas de arriba. -->
+            <div id="gameplay-bottom-scroll" class="flex-1 min-h-0 flex flex-col gap-2">
+                <!-- Colocación: barra fija compartida (no depende de la zona), asignada
+                     automáticamente a la colocadora en pista. Poblada por renderColocacionBar() -->
+                <div id="colocacion-bar-container" class="flex-shrink-0"></div>
 
-            <!-- Botonera Inferior: Score point for Us / Them -->
-            <div class="flex-shrink-0 grid grid-cols-2 gap-3 min-w-0">
-                <button onclick="registrar('ERROR_RIVAL', '')" class="py-4 px-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 min-w-0">
-                    <i data-lucide="plus-circle" class="w-5 h-5 flex-shrink-0"></i>
-                    <span class="truncate">Punto para {{ partido.equipo.nombre }}</span>
-                </button>
-                <button onclick="registrar('PUNTO_RIVAL', '')" class="py-4 px-2 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 min-w-0">
-                    <i data-lucide="minus-circle" class="w-5 h-5 flex-shrink-0"></i>
-                    <span class="truncate">Punto para {{ partido.rival }}</span>
-                </button>
+                <!-- Botonera Inferior: Score point for Us / Them -->
+                <div class="flex-shrink-0 grid grid-cols-2 gap-3 min-w-0">
+                    <button onclick="registrar('ERROR_RIVAL', '')" class="py-4 px-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 min-w-0">
+                        <i data-lucide="plus-circle" class="w-5 h-5 flex-shrink-0"></i>
+                        <span class="truncate">Punto para {{ partido.equipo.nombre }}</span>
+                    </button>
+                    <button onclick="registrar('PUNTO_RIVAL', '')" class="py-4 px-2 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 min-w-0">
+                        <i data-lucide="minus-circle" class="w-5 h-5 flex-shrink-0"></i>
+                        <span class="truncate">Punto para {{ partido.rival }}</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -666,222 +717,228 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- 5. PESTAÑA: [Adjust] -->
-        <div id="rapido-adjust-content" class="rapido-tab-content hidden space-y-6">
-            <!-- Posesión del Saque -->
-            <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
-                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Posesión del Saque</h3>
-                <div class="flex items-center gap-3">
-                    <button id="ajustes-serve-btn-nosotros" onclick="setServePossession(true)" class="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 bg-emerald-600 text-white shadow-md">
-                        Nosotros Sacamos
-                    </button>
-                    <button id="ajustes-serve-btn-rival" onclick="setServePossession(false)" class="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 bg-[#1e293b] border border-slate-700 text-slate-400 hover:text-white">
-                        Rival Saca
-                    </button>
-                </div>
-                <p class="text-[10px] text-slate-500 font-bold">Corrige aquí quién tiene el saque si el marcador se ha desincronizado del juego real.</p>
-            </div>
+    <!-- Paneles COMPARTIDOS entre Rápido y Avanzado (Ajustes / Archivos /
+         Configuración): viven fuera de scout-rapido-container y
+         scout-avanzado-container para no duplicarse entre ambos modos;
+         cualquiera de las dos barras flotantes puede mostrarlos vía
+         switchRapidoTab('adjust'|'file'|'settings'). -->
 
-            <!-- Reglas del Set -->
-            <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
-                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Reglas del Set</h3>
-                <div class="form-field-grid form-field-grid--3">
-                    <div class="min-w-0">
-                        <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Puntos por set</label>
-                        <input id="input-puntos-set" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
-                    </div>
-                    <div class="min-w-0">
-                        <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Set decisivo</label>
-                        <input id="input-puntos-set-decisivo" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
-                    </div>
-                    <div class="min-w-0">
-                        <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Sets para ganar</label>
-                        <input id="input-sets-para-ganar" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
-                    </div>
-                </div>
-                <button onclick="guardarReglasSet()" class="w-full py-3 bg-blue-600/20 hover:bg-blue-600 border border-blue-500/30 text-blue-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                    <i data-lucide="save" class="w-4 h-4"></i>
-                    <span>Guardar Reglas del Set</span>
+    <!-- PESTAÑA COMPARTIDA: [Ajustes] -->
+    <div id="rapido-adjust-content" class="rapido-tab-content hidden space-y-6">
+        <!-- Posesión del Saque -->
+        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+            <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Posesión del Saque</h3>
+            <div class="flex items-center gap-3">
+                <button id="ajustes-serve-btn-nosotros" onclick="setServePossession(true)" class="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 bg-emerald-600 text-white shadow-md">
+                    Nosotros Sacamos
+                </button>
+                <button id="ajustes-serve-btn-rival" onclick="setServePossession(false)" class="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 bg-[#1e293b] border border-slate-700 text-slate-400 hover:text-white">
+                    Rival Saca
                 </button>
             </div>
-
-            <!-- Preferencias -->
-            <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-5">
-                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Preferencias</h3>
-
-                <label class="flex items-center justify-between cursor-pointer gap-4">
-                    <span class="text-xs font-bold text-slate-300">Auto-rotación al ganar el saque</span>
-                    <div class="relative flex-shrink-0">
-                        <input type="checkbox" id="toggle-auto-rotacion" class="sr-only peer" onchange="togglePref('autoRotacion', 'voley_pref_auto_rotacion', this.checked)">
-                        <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
-                        <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
-                    </div>
-                </label>
-
-                <label class="flex items-center justify-between cursor-pointer gap-4">
-                    <span class="text-xs font-bold text-slate-300">Vibración táctil al registrar</span>
-                    <div class="relative flex-shrink-0">
-                        <input type="checkbox" id="toggle-vibracion" class="sr-only peer" onchange="togglePref('vibracion', 'voley_pref_vibracion', this.checked)">
-                        <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
-                        <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
-                    </div>
-                </label>
-
-                <label class="flex items-center justify-between cursor-pointer gap-4">
-                    <span class="text-xs font-bold text-slate-300">Confirmar antes de deshacer / restar punto</span>
-                    <div class="relative flex-shrink-0">
-                        <input type="checkbox" id="toggle-confirmar-borrado" class="sr-only peer" onchange="togglePref('confirmarBorrado', 'voley_pref_confirmar_borrado', this.checked)">
-                        <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
-                        <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
-                    </div>
-                </label>
-            </div>
-
-            <!-- Otras Acciones -->
-            <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
-                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Otras Acciones</h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="clearPlayers()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="users" class="w-4 h-4"></i>
-                        <span>Quitar Jugadoras</span>
-                    </button>
-                    <button onclick="confirmarFinalSet()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="check-square" class="w-4 h-4"></i>
-                        <span>Finalizar Set</span>
-                    </button>
-                    <button onclick="confirmarFinalizarPartido()" class="py-4 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="flag" class="w-4 h-4"></i>
-                        <span>Finalizar Partido</span>
-                    </button>
-                    <button onclick="window.location.href = '{% url 'stats_app:partido_nuevo' %}';" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                        <span>Nuevo Partido</span>
-                    </button>
-                </div>
-            </div>
+            <p class="text-[10px] text-slate-500 font-bold">Corrige aquí quién tiene el saque si el marcador se ha desincronizado del juego real.</p>
         </div>
 
-        <!-- 6. PESTAÑA: [File] -->
-        <div id="rapido-file-content" class="rapido-tab-content hidden space-y-4">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <!-- Partidos del equipo -->
-                <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
-                    <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Partidos del Equipo</h3>
-                    <a href="{% url 'stats_app:modo_partido' partido.id %}" class="block bg-blue-600/10 border border-blue-500/30 rounded-xl p-3.5">
-                        <div class="font-black text-xs text-white truncate">vs {{ partido.rival }} <span class="text-blue-400">(actual)</span></div>
-                        <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
-                            <span>{{ partido.fecha|date:"d/m/Y" }}</span>
-                            <span class="font-bold text-blue-400 uppercase">{{ partido.modalidad }}</span>
-                        </div>
-                    </a>
-                    <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
-                        {% if partidos_guardados %}
-                            {% for p in partidos_guardados %}
-                                <a href="{% url 'stats_app:modo_partido' p.id %}" class="block bg-slate-900 border border-slate-800 rounded-xl p-3.5 hover:border-slate-700 transition-all">
-                                    <div class="font-black text-xs text-white truncate">vs {{ p.rival }}</div>
-                                    <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
-                                        <span>{{ p.fecha|date:"d/m/Y" }}</span>
-                                        <span class="font-bold text-slate-400 uppercase">{{ p.modalidad }}</span>
-                                    </div>
-                                </a>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-xs text-slate-500 text-center py-6 font-bold uppercase tracking-wider">No hay otros partidos de este equipo</p>
-                        {% endif %}
-                    </div>
+        <!-- Reglas del Set -->
+        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+            <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Reglas del Set</h3>
+            <div class="form-field-grid form-field-grid--3">
+                <div class="min-w-0">
+                    <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Puntos por set</label>
+                    <input id="input-puntos-set" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
                 </div>
-
-                <!-- Exportar -->
-                <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
-                    <h3 class="text-sm font-black text-emerald-400 uppercase tracking-widest border-b border-slate-800 pb-2">Exportar</h3>
-                    <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-3 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
-                        <span>Resumen PDF (rápido)</span>
-                    </a>
-                    <a href="{% url 'stats_app:descargar_informe_completo' partido.id %}?set=global" class="py-3 bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        <span>Informe completo PDF</span>
-                    </a>
-                    <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-400"></i>
-                        <span>Ver Informe Completo</span>
-                    </a>
-                    <button onclick="exportData()" class="w-full py-4 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        <span>Exportar JSON</span>
-                    </button>
+                <div class="min-w-0">
+                    <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Set decisivo</label>
+                    <input id="input-puntos-set-decisivo" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="min-w-0">
+                    <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Sets para ganar</label>
+                    <input id="input-sets-para-ganar" type="number" min="1" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-black text-center focus:outline-none focus:border-blue-500">
                 </div>
             </div>
-
-            <!-- Acciones -->
-            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <a href="{% url 'stats_app:dashboard' %}" class="py-3.5 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                        <span>Ir al Dashboard</span>
-                    </a>
-                    <a href="{% url 'stats_app:partido_nuevo' %}" class="py-3.5 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                        <span>Nuevo Partido</span>
-                    </a>
-                    <button onclick="confirmarFinalizarPartido()" class="py-3.5 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="flag" class="w-4 h-4"></i>
-                        <span>Finalizar Partido</span>
-                    </button>
-                </div>
-            </div>
+            <button onclick="guardarReglasSet()" class="w-full py-3 bg-blue-600/20 hover:bg-blue-600 border border-blue-500/30 text-blue-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                <span>Guardar Reglas del Set</span>
+            </button>
         </div>
 
-        <!-- 7. PESTAÑA: [Settings] -->
-        <div id="rapido-settings-content" class="rapido-tab-content hidden space-y-4">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <!-- Partido -->
-                <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
-                    <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Partido</h3>
-                    <a href="{% url 'stats_app:partido_editar' partido.id %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="pencil" class="w-4 h-4 text-blue-400"></i>
-                        <span>Editar Partido</span>
-                    </a>
-                    <button onclick="toggleModal('modal-config')" class="w-full py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
-                        <span>Configurar Set y Alineación</span>
-                    </button>
-                    <p class="text-[10px] text-slate-500 font-bold px-1">Edita rival, fecha y modalidad. Desde el modal puedes elegir set activo y jugadoras en pista.</p>
-                </div>
+        <!-- Preferencias -->
+        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-5">
+            <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Preferencias</h3>
 
-                <!-- Equipo -->
-                <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
-                    <h3 class="text-sm font-black text-violet-400 uppercase tracking-widest border-b border-slate-800 pb-2">Equipo</h3>
-                    <a href="{% url 'stats_app:equipo_editar' partido.equipo.id %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="users" class="w-4 h-4 text-violet-400"></i>
-                        <span>Gestionar Plantilla</span>
-                    </a>
-                    <a href="{% url 'stats_app:equipos_list' %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
-                        <i data-lucide="list" class="w-4 h-4 text-slate-400"></i>
-                        <span>Ver Todos los Equipos</span>
-                    </a>
-                    <p class="text-[10px] text-slate-500 font-bold px-1">{{ partido.equipo.nombre }} — añade, edita o elimina jugadoras del equipo.</p>
+            <label class="flex items-center justify-between cursor-pointer gap-4">
+                <span class="text-xs font-bold text-slate-300">Auto-rotación al ganar el saque</span>
+                <div class="relative flex-shrink-0">
+                    <input type="checkbox" id="toggle-auto-rotacion" class="sr-only peer" onchange="togglePref('autoRotacion', 'voley_pref_auto_rotacion', this.checked)">
+                    <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                    <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
                 </div>
+            </label>
+
+            <label class="flex items-center justify-between cursor-pointer gap-4">
+                <span class="text-xs font-bold text-slate-300">Vibración táctil al registrar</span>
+                <div class="relative flex-shrink-0">
+                    <input type="checkbox" id="toggle-vibracion" class="sr-only peer" onchange="togglePref('vibracion', 'voley_pref_vibracion', this.checked)">
+                    <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                    <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+                </div>
+            </label>
+
+            <label class="flex items-center justify-between cursor-pointer gap-4">
+                <span class="text-xs font-bold text-slate-300">Confirmar antes de deshacer / restar punto</span>
+                <div class="relative flex-shrink-0">
+                    <input type="checkbox" id="toggle-confirmar-borrado" class="sr-only peer" onchange="togglePref('confirmarBorrado', 'voley_pref_confirmar_borrado', this.checked)">
+                    <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                    <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+                </div>
+            </label>
+        </div>
+
+        <!-- Otras Acciones -->
+        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+            <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Otras Acciones</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="clearPlayers()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    <span>Quitar Jugadoras</span>
+                </button>
+                <button onclick="confirmarFinalSet()" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="check-square" class="w-4 h-4"></i>
+                    <span>Finalizar Set</span>
+                </button>
+                <button onclick="confirmarFinalizarPartido()" class="py-4 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="flag" class="w-4 h-4"></i>
+                    <span>Finalizar Partido</span>
+                </button>
+                <button onclick="window.location.href = '{% url 'stats_app:partido_nuevo' %}';" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Nuevo Partido</span>
+                </button>
             </div>
+        </div>
+    </div>
 
-            <!-- Modo de scout -->
+    <!-- PESTAÑA COMPARTIDA: [Archivos] -->
+    <div id="rapido-file-content" class="rapido-tab-content hidden space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Partidos del equipo -->
             <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
-                <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-2">Modo de Scout</h3>
-                <div class="flex items-center bg-[#090d16] p-1 rounded-2xl border border-slate-800 shadow-inner max-w-xs mx-auto">
-                    <button id="settings-btn-modo-rapido"
-                            onclick="cambiarModoScout('rapido')"
-                            class="flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md">
-                        Rápido
-                    </button>
-                    <button id="settings-btn-modo-avanzado"
-                            onclick="cambiarModoScout('avanzado')"
-                            class="flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white">
-                        Avanzado
-                    </button>
+                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Partidos del Equipo</h3>
+                <a href="{% url 'stats_app:modo_partido' partido.id %}" class="block bg-blue-600/10 border border-blue-500/30 rounded-xl p-3.5">
+                    <div class="font-black text-xs text-white truncate">vs {{ partido.rival }} <span class="text-blue-400">(actual)</span></div>
+                    <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
+                        <span>{{ partido.fecha|date:"d/m/Y" }}</span>
+                        <span class="font-bold text-blue-400 uppercase">{{ partido.modalidad }}</span>
+                    </div>
+                </a>
+                <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                    {% if partidos_guardados %}
+                        {% for p in partidos_guardados %}
+                            <a href="{% url 'stats_app:modo_partido' p.id %}" class="block bg-slate-900 border border-slate-800 rounded-xl p-3.5 hover:border-slate-700 transition-all">
+                                <div class="font-black text-xs text-white truncate">vs {{ p.rival }}</div>
+                                <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
+                                    <span>{{ p.fecha|date:"d/m/Y" }}</span>
+                                    <span class="font-bold text-slate-400 uppercase">{{ p.modalidad }}</span>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-xs text-slate-500 text-center py-6 font-bold uppercase tracking-wider">No hay otros partidos de este equipo</p>
+                    {% endif %}
                 </div>
-                <p class="text-[10px] text-slate-500 font-bold text-center">Rápido: cuadrícula por zonas. Avanzado: matriz completa de acciones.</p>
             </div>
+
+            <!-- Exportar -->
+            <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+                <h3 class="text-sm font-black text-emerald-400 uppercase tracking-widest border-b border-slate-800 pb-2">Exportar</h3>
+                <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set=global" class="py-3 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
+                    <span>Resumen PDF (rápido)</span>
+                </a>
+                <a href="{% url 'stats_app:descargar_informe_completo' partido.id %}?set=global" class="py-3 bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Informe completo PDF</span>
+                </a>
+                <a href="{% url 'stats_app:partido_stats_final' partido.id %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-400"></i>
+                    <span>Ver Informe Completo</span>
+                </a>
+                <button onclick="exportData()" class="w-full py-4 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Exportar JSON</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <a href="{% url 'stats_app:dashboard' %}" class="py-3.5 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>Ir al Dashboard</span>
+                </a>
+                <a href="{% url 'stats_app:partido_nuevo' %}" class="py-3.5 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Nuevo Partido</span>
+                </a>
+                <button onclick="confirmarFinalizarPartido()" class="py-3.5 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="flag" class="w-4 h-4"></i>
+                    <span>Finalizar Partido</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑA COMPARTIDA: [Configuración] -->
+    <div id="rapido-settings-content" class="rapido-tab-content hidden space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Partido -->
+            <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest border-b border-slate-800 pb-2">Partido</h3>
+                <a href="{% url 'stats_app:partido_editar' partido.id %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="pencil" class="w-4 h-4 text-blue-400"></i>
+                    <span>Editar Partido</span>
+                </a>
+                <button onclick="toggleModal('modal-config')" class="w-full py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
+                    <span>Configurar Set y Alineación</span>
+                </button>
+                <p class="text-[10px] text-slate-500 font-bold px-1">Edita rival, fecha y modalidad. Desde el modal puedes elegir set activo y jugadoras en pista.</p>
+            </div>
+
+            <!-- Equipo -->
+            <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+                <h3 class="text-sm font-black text-violet-400 uppercase tracking-widest border-b border-slate-800 pb-2">Equipo</h3>
+                <a href="{% url 'stats_app:equipo_editar' partido.equipo.id %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-violet-400"></i>
+                    <span>Gestionar Plantilla</span>
+                </a>
+                <a href="{% url 'stats_app:equipos_list' %}" class="py-4 bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="list" class="w-4 h-4 text-slate-400"></i>
+                    <span>Ver Todos los Equipos</span>
+                </a>
+                <p class="text-[10px] text-slate-500 font-bold px-1">{{ partido.equipo.nombre }} — añade, edita o elimina jugadoras del equipo.</p>
+            </div>
+        </div>
+
+        <!-- Modo de scout -->
+        <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+            <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-2">Modo de Scout</h3>
+            <div class="flex items-center bg-[#090d16] p-1 rounded-2xl border border-slate-800 shadow-inner max-w-xs mx-auto">
+                <button id="settings-btn-modo-rapido"
+                        onclick="cambiarModoScout('rapido')"
+                        class="flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 bg-blue-600 text-white shadow-md">
+                    Rápido
+                </button>
+                <button id="settings-btn-modo-avanzado"
+                        onclick="cambiarModoScout('avanzado')"
+                        class="flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 text-slate-400 hover:text-white">
+                    Avanzado
+                </button>
+            </div>
+            <p class="text-[10px] text-slate-500 font-bold text-center">Rápido: cuadrícula por zonas. Avanzado: matriz completa de acciones.</p>
         </div>
     </div>
 </div>
@@ -3557,6 +3614,14 @@
                 { calidad: '-', label: '-', title: 'Negativa (-)', class: 'bg-orange-500 hover:bg-orange-400 text-white' },
                 { calidad: '--', label: '--', title: 'Error (--)', class: 'bg-rose-600 hover:bg-rose-500 text-white' }
             ]
+        },
+        'RED': {
+            label: 'Red',
+            // Sin escala de calidad: la jugadora seleccionada ha tocado la
+            // red, siempre es punto directo para el rival (un único botón).
+            avanzado: [
+                { calidad: '--', label: 'Red — Punto Rival', title: 'La jugadora seleccionada ha tocado la red: punto para el rival', class: 'bg-rose-700 hover:bg-rose-600 text-white' }
+            ]
         }
     };
 
@@ -3723,16 +3788,20 @@
         } else {
             Object.entries(ACCIONES_CONFIG).forEach(([accionKey, config]) => {
                 const card = document.createElement('div');
-                card.className = 'bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between';
+                card.className = accionKey === 'RED'
+                    ? 'bg-[#090d16] p-6 rounded-3xl border-2 border-rose-800/60 space-y-4 shadow-inner flex flex-col justify-between'
+                    : 'bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between';
                 
                 const labelSpan = document.createElement('span');
                 labelSpan.className = 'text-xs font-black text-slate-400 uppercase tracking-widest block';
-                labelSpan.innerText = config.label;
+                labelSpan.innerText = accionKey === 'RED' ? '🥅 ' + config.label : config.label;
                 card.appendChild(labelSpan);
 
                 const buttonsContainer = document.createElement('div');
                 
-                if (accionKey === 'SAQUE') {
+                if (accionKey === 'RED') {
+                    buttonsContainer.className = 'grid grid-cols-1';
+                } else if (accionKey === 'SAQUE') {
                     buttonsContainer.className = 'ui-quality-grid ui-quality-grid--4';
                 } else {
                     buttonsContainer.className = 'ui-quality-grid ui-quality-grid--5';
@@ -3795,7 +3864,7 @@
             if (containerAvanzado) containerAvanzado.classList.remove('hidden');
             if (containerRapido) containerRapido.classList.add('hidden');
             
-            renderBotonerasAcciones();
+            switchRapidoTab('avjuego');
         }
 
         showToast(`⚡ Modo de scout cambiado a: ${modo === 'rapido' ? 'RÁPIDO' : 'AVANZADO'}`);
@@ -3810,19 +3879,26 @@
             target.classList.remove('hidden');
         }
 
+        // Los botones de pestaña se identifican por `data-tab` (no por id):
+        // Ajustes/Archivos/Configuración son paneles compartidos entre Rápido
+        // y Avanzado, así que existen dos botones (uno por barra flotante)
+        // apuntando al mismo `tabName`; con ids únicos por tabName solo se
+        // podría resaltar uno de los dos (el primero en el DOM).
         document.querySelectorAll('.rapido-tab-btn').forEach(btn => {
-            btn.className = 'rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white';
+            const isActive = btn.dataset.tab === tabName;
+            btn.className = isActive
+                ? 'rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full bg-neutral-600 text-white'
+                : 'rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white';
         });
-        const activeBtn = document.getElementById(`tab-btn-${tabName}`);
-        if (activeBtn) {
-            activeBtn.className = 'rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full bg-neutral-600 text-white';
-        }
 
         if (tabName === 'gameplay') {
             renderGameplayGrid();
         }
         if (tabName === 'acciones') {
             renderQuickHistory();
+        }
+        if (tabName === 'avjuego') {
+            renderBotonerasAcciones();
         }
         if (tabName === 'adjust') {
             renderAjustesPrefs();
@@ -4120,9 +4196,10 @@
         resizeGameplayLayout();
     }
 
-    // ── Ajusta la altura del panel de juego al viewport. Si las tarjetas de
-    // zona no caben, el scroll ocurre dentro de #gameplay-grid-container (sin
-    // solapar botones).
+    // ── Ajusta la altura del panel de juego al viewport. Las tarjetas de zona
+    // (incluida la fila zaguera 5/6/1, la más usada) se muestran siempre
+    // completas; si no cabe todo, el scroll ocurre en #gameplay-bottom-scroll
+    // (colocación + botones de punto), nunca en el grid de zonas.
     function resizeGameplayLayout() {
         const gameplayContent = document.getElementById('rapido-gameplay-content');
         if (!gameplayContent || gameplayContent.classList.contains('hidden')) return;

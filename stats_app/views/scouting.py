@@ -43,6 +43,15 @@ from ..services.reporting import (
 logger = logging.getLogger('stats_app.security')
 
 
+def _accion_texto(accion, calidad, display):
+    """Texto legible para el historial de acciones. RED no tiene escala de
+    calidad (siempre es punto directo para el rival), así que se muestra sin
+    el sufijo de calidad, con un icono que la distingue de un fundamento."""
+    if accion == 'RED':
+        return '🥅 Red (punto rival)'
+    return f"{display} {calidad if calidad else ''}".strip()
+
+
 def _partido_del_entrenador(request, partido_id):
     """Devuelve el partido solo si pertenece a un equipo del usuario autenticado.
 
@@ -146,7 +155,7 @@ class ModoPartidoView(LoginRequiredMixin, View):
             historial_data.append({
                 'id': reg.id,
                 'dorsal': reg.jugadora.dorsal if reg.jugadora else 'EQ',
-                'accion_texto': f"{reg.get_accion_display()} {reg.calidad if reg.calidad else ''}".strip(),
+                'accion_texto': _accion_texto(reg.accion, reg.calidad, reg.get_accion_display()),
                 'calidad': reg.calidad
             })
 
@@ -209,7 +218,7 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
                 'status': 'ok',
                 'id': registro.id,
                 'dorsal': jugadora.dorsal if jugadora else 'EQ',
-                'accion_texto': f"{registro.get_accion_display()} {registro.calidad if registro.calidad else ''}".strip(),
+                'accion_texto': _accion_texto(registro.accion, registro.calidad, registro.get_accion_display()),
                 'total_acciones_set': total_set
             })
         except Http404:
@@ -595,6 +604,7 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
             'resumen_sets': reporte['resumen_sets'],
             'detalle_sets': reporte['detalle_sets'],
             'detalle_total': reporte.get('detalle_total'),
+            'resumen_totales': reporte.get('resumen_totales'),
             'labels_sets': json.dumps(labels_sets),
             'puntos_merito': json.dumps(p_merito),
             'puntos_err_rival': json.dumps(p_err_rival),

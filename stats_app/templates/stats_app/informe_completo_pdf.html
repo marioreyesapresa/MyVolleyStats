@@ -161,6 +161,8 @@
                 <th class="col-team left">{{ partido.equipo.nombre }}<br/><span style="font-weight:normal;">Side-out %</span></th>
                 <th class="col-team left">{{ partido.rival }}<br/><span style="font-weight:normal;">Side-out %</span></th>
                 <th class="col-efic">Breakpoint %</th>
+                <th class="col-efic">Pts. Mérito</th>
+                <th class="col-efic">Pts. Err. Rival</th>
                 <th colspan="3" class="hl-head">{{ destacadas.titulo }}</th>
             </tr>
         </thead>
@@ -173,6 +175,8 @@
                     <td class="left">{% if s.sideout_pct != None %}{{ s.sideout_pct }}%{% else %}—{% endif %}</td>
                     <td class="left">{% if s.rival_sideout_pct != None %}{{ s.rival_sideout_pct }}%{% else %}—{% endif %}</td>
                     <td>{% if s.breakpoint_pct != None %}{{ s.breakpoint_pct }}%{% else %}—{% endif %}</td>
+                    <td>{{ s.puntos_merito }}</td>
+                    <td>{{ s.puntos_err_rival }}</td>
                     {% if forloop.first %}
                     <td class="hl-col" rowspan="{{ resumen_sets|length }}">
                         <span class="hl-label">&#11088; Estrella del set</span><br/>
@@ -198,9 +202,20 @@
                     {% endif %}
                 </tr>
                 {% endfor %}
+                {% if resumen_totales and resumen_sets|length > 1 %}
+                <tr class="totals">
+                    <td class="left">TOTAL PARTIDO</td>
+                    <td>—</td>
+                    <td class="left">—</td>
+                    <td class="left">—</td>
+                    <td>—</td>
+                    <td>{{ resumen_totales.puntos_merito }}</td>
+                    <td>{{ resumen_totales.puntos_err_rival }}</td>
+                </tr>
+                {% endif %}
             {% else %}
                 <tr>
-                    <td colspan="5">Sin datos</td>
+                    <td colspan="7">Sin datos</td>
                     <td class="hl-col">
                         <span class="hl-label">&#11088; Estrella</span><br/><span class="hl-empty">—</span>
                     </td>

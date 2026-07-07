@@ -114,7 +114,7 @@ def _es_punto_local(r):
 
 
 def _es_punto_rival(r):
-    return r['accion'] == 'PUNTO_RIVAL' or r['calidad'] == '--'
+    return r['accion'] in ('PUNTO_RIVAL', 'RED') or r['calidad'] == '--'
 
 
 def calc_set_score(partido, set_num):
@@ -259,9 +259,10 @@ def _fund_counts(rows, accion):
 
 def player_box_row(jugadora, rows_jugadora):
     """`rows_jugadora`: filas del set ya filtradas a esta jugadora (cualquier
-    acción); aquí se restringe a los fundamentos de scouting."""
+    acción); aquí se restringe a los fundamentos de scouting (más los toques
+    de red, que cuentan como error individual aunque no tengan columna propia)."""
     fund_set = set(FUNDAMENTOS_SCOUT)
-    j_rows = [r for r in rows_jugadora if r['accion'] in fund_set]
+    j_rows = [r for r in rows_jugadora if r['accion'] in fund_set or r['accion'] == 'RED']
     if not j_rows:
         return None
 
@@ -273,7 +274,7 @@ def player_box_row(jugadora, rows_jugadora):
     defn = _fund_counts(j_rows, 'DEFENSA')
 
     puntos = sum(1 for r in j_rows if r['calidad'] == '++')
-    errores = sum(1 for r in j_rows if r['calidad'] == '--')
+    errores = sum(1 for r in j_rows if r['calidad'] == '--' or r['accion'] == 'RED')
     balance = puntos - errores
     acciones = len(j_rows)
 
@@ -706,6 +707,7 @@ def build_match_summary(partido):
     resumen = []
     for s in sorted(_rows_by_set(partido).keys()):
         local, rival = calc_set_score(partido, s)
+        merito, err_rival = merito_y_error_rival(partido, s)
         resumen.append({
             'set_num': s,
             'score_local': local,
@@ -714,6 +716,8 @@ def build_match_summary(partido):
             'sideout_pct': calc_sideout_pct(partido, s),
             'rival_sideout_pct': calc_rival_sideout_pct(partido, s),
             'breakpoint_pct': calc_breakpoint_pct(partido, s),
+            'puntos_merito': merito,
+            'puntos_err_rival': err_rival,
         })
     return resumen
 
@@ -743,12 +747,24 @@ def build_full_report(partido, set_filter='global'):
 
     detalle_total = build_match_totals(partido, detalle_sets) if set_filter == 'global' else None
 
+    resumen_relevante = summary if set_filter == 'global' else [
+        r for r in summary if r['set_num'] in sets_nums
+    ]
+    puntos_merito_total = sum(r['puntos_merito'] for r in resumen_relevante)
+    puntos_err_rival_total = sum(r['puntos_err_rival'] for r in resumen_relevante)
+    puntos_rival_total = sum(r['score_rival'] for r in resumen_relevante)
+
     return {
         'resumen_sets': summary,
         'detalle_sets': detalle_sets,
         'detalle_total': detalle_total,
         'set_filter': set_filter,
         'destacadas': build_destacadas(detalle_sets),
+        'resumen_totales': {
+            'puntos_merito': puntos_merito_total,
+            'puntos_err_rival': puntos_err_rival_total,
+            'puntos_rival': puntos_rival_total,
+        },
     }
 
 

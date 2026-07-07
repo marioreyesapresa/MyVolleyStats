@@ -91,6 +91,8 @@
                     <th>{{ partido.equipo.nombre|truncatechars:12 }}<br/><span style="font-weight:normal;font-size:9px;">Side-out %</span></th>
                     <th>{{ partido.rival|truncatechars:12 }}<br/><span style="font-weight:normal;font-size:9px;">Side-out %</span></th>
                     <th>Breakpoint %</th>
+                    <th title="Puntos ganados por acción directa nuestra (++)">Pts. Mérito</th>
+                    <th title="Puntos ganados por error directo del rival">Pts. Err. Rival</th>
                 </tr>
             </thead>
             <tbody>
@@ -101,10 +103,23 @@
                     <td class="num">{% if s.sideout_pct != None %}{{ s.sideout_pct }}%{% else %}—{% endif %}</td>
                     <td class="num">{% if s.rival_sideout_pct != None %}{{ s.rival_sideout_pct }}%{% else %}—{% endif %}</td>
                     <td class="num">{% if s.breakpoint_pct != None %}{{ s.breakpoint_pct }}%{% else %}—{% endif %}</td>
+                    <td class="num cell-kill">{{ s.puntos_merito }}</td>
+                    <td class="num cell-err">{{ s.puntos_err_rival }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5" class="p-6 text-center text-slate-500">Sin datos de partido</td></tr>
+                <tr><td colspan="7" class="p-6 text-center text-slate-500">Sin datos de partido</td></tr>
                 {% endfor %}
+                {% if resumen_totales and resumen_sets|length > 1 %}
+                <tr class="totals">
+                    <td class="player-name">TOTAL PARTIDO</td>
+                    <td class="num">—</td>
+                    <td class="num">—</td>
+                    <td class="num">—</td>
+                    <td class="num">—</td>
+                    <td class="num cell-kill">{{ resumen_totales.puntos_merito }}</td>
+                    <td class="num cell-err">{{ resumen_totales.puntos_err_rival }}</td>
+                </tr>
+                {% endif %}
             </tbody>
         </table>
     </div>
