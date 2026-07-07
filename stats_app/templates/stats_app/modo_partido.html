@@ -1272,6 +1272,7 @@
         activeRoster: [],
         rotation: null,
         set_finished: false,
+        set_modal_suppressed: false,
         // ── Fases de juego (K0=Saque propio, K1=Recepción, K2=Defensa) ──
         fase_actual: 'K1',   // default: start receiving (rival serves first)
         tenemos_saque: false, // true when we are serving
@@ -1440,6 +1441,9 @@
 
         // Initialize scout mode layout container (rapid vs advanced)
         cambiarModoScout(state.modo_scout);
+
+        // Tras mostrar la pestaña Scout, comprobar si el set ya está cerrado en BD
+        checkSetEnd(state.marcador.local, state.marcador.rival);
     });
 
     // Helper to get url params
@@ -1497,6 +1501,9 @@
 
         if (tabId === 'metricas') {
             updateIndicadoresPanel(false);
+        }
+        if (tabId === 'scout') {
+            checkSetEnd(state.marcador.local, state.marcador.rival);
         }
     }
 
@@ -2505,10 +2512,12 @@
             state.marcador.local++;
             updateUIMarcador();
             persistMarcadorCache();
+            checkSetEnd(state.marcador.local, state.marcador.rival);
         } else if (esPuntoRival) {
             state.marcador.rival++;
             updateUIMarcador();
             persistMarcadorCache();
+            checkSetEnd(state.marcador.local, state.marcador.rival);
         }
 
         // ── Determine the fase to tag this action with ───────────────────
@@ -2899,8 +2908,7 @@
     }
 
     function dismissFinSetModal() {
-        markSetModalAcknowledged(state.set_numero);
-        state.set_finished = true;
+        state.set_modal_suppressed = true;
         const modal = document.getElementById('modal-fin-set');
         if (modal) {
             modal.classList.add('hidden');
@@ -2908,102 +2916,131 @@
         }
     }
 
+    function limitePuntosSet(setNum) {
+        return (setNum === state.reglas.setDecisivoNumero)
+            ? state.reglas.puntosSetDecisivo
+            : state.reglas.puntosPorSet;
+    }
+
+    function isSetScoreClosed(pLocal, pRival, setNum = state.set_numero) {
+        const limit = limitePuntosSet(setNum);
+        return (pLocal >= limit || pRival >= limit) && Math.abs(pLocal - pRival) >= 2;
+    }
+
+    function proyectaSetsTrasSetActual(pLocal, pRival) {
+        let sL = setsLocal;
+        let sR = setsRival;
+        if (!isSetScoreClosed(pLocal, pRival)) {
+            return { sL, sR };
+        }
+        const setsCerrados = sL + sR;
+        if (setsCerrados < state.set_numero) {
+            if (pLocal > pRival) sL += 1;
+            else sR += 1;
+        }
+        return { sL, sR };
+    }
+
+    function partidoDecididoTrasSetActual(pLocal, pRival) {
+        const { sL, sR } = proyectaSetsTrasSetActual(pLocal, pRival);
+        const meta = state.reglas.setsParaGanar;
+        return sL >= meta || sR >= meta;
+    }
+
+    function lockGameplayUI() {
+        ['scout-actions-grid', 'scout-opponent-grid', 'rapido-gameplay-content', 'rapido-score-content'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('pointer-events-none', 'opacity-30');
+        });
+    }
+
+    function unlockGameplayUI() {
+        ['scout-actions-grid', 'scout-opponent-grid', 'rapido-gameplay-content', 'rapido-score-content'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('pointer-events-none', 'opacity-30');
+        });
+    }
+
     function checkSetEnd(pLocal, pRival) {
         // Solo interrumpir en Scout en vivo; Indicadores/Pizarra son consulta
         if (!isScoutTabActive()) return;
 
-        if (getSetsModalAcknowledged().includes(state.set_numero)) return;
+        const atEnd = isSetScoreClosed(pLocal, pRival);
+        const modal = document.getElementById('modal-fin-set');
+        const modalVisible = modal && !modal.classList.contains('hidden');
 
-        // ── Si el set ya fue guardado (guardarFinSet lo pone a false y resetea), no hacer nada
-        // Esto evita que el modal se reactive cuando updateFlashboard lee el marcador anterior
-        // antes de que la BD devuelva los datos del nuevo set.
-        if (state.set_finished) return;  // modal ya fue mostrado y está visible, no re-abrir
-
-        const currentSet = state.set_numero;
-        const limit = (currentSet === state.reglas.setDecisivoNumero) ? state.reglas.puntosSetDecisivo : state.reglas.puntosPorSet;
-        
-        const actionsGrid = document.getElementById('scout-actions-grid');
-        const opponentGrid = document.getElementById('scout-opponent-grid');
-        
-        if ((pLocal >= limit || pRival >= limit) && Math.abs(pLocal - pRival) >= 2) {
-            state.set_finished = true;
-            
-            // Disable action grids
-            if (actionsGrid) {
-                actionsGrid.classList.add('pointer-events-none', 'opacity-30');
-            }
-            if (opponentGrid) {
-                opponentGrid.classList.add('pointer-events-none', 'opacity-30');
-            }
-            
-            // Show modal ONLY if it's not already visible
-            const modal = document.getElementById('modal-fin-set');
-            if (modal && modal.classList.contains('hidden')) {
-                const winnerText = pLocal > pRival ? "¡Tu equipo ha ganado el set!" : "El rival ha ganado el set.";
-                document.getElementById('modal-fin-set-title').innerText = winnerText;
-                document.getElementById('modal-fin-set-score').innerText = `${pLocal} - ${pRival}`;
-                toggleModal('modal-fin-set');
-            }
-        } else {
-            // Score is below set-end threshold — ensure grids are enabled
+        if (!atEnd) {
             state.set_finished = false;
-            if (actionsGrid)  actionsGrid.classList.remove('pointer-events-none', 'opacity-30');
-            if (opponentGrid) opponentGrid.classList.remove('pointer-events-none', 'opacity-30');
+            state.set_modal_suppressed = false;
+            unlockGameplayUI();
+            return;
         }
+
+        state.set_finished = true;
+        lockGameplayUI();
+
+        if (state.set_modal_suppressed || modalVisible) return;
+
+        const partidoGanado = partidoDecididoTrasSetActual(pLocal, pRival);
+        const btnGuardar = document.querySelector('#modal-fin-set button[onclick="guardarFinSet()"]');
+        if (partidoGanado) {
+            const ganamos = pLocal > pRival;
+            document.getElementById('modal-fin-set-title').innerText = ganamos
+                ? '¡Partido ganado!'
+                : 'Partido perdido';
+            if (btnGuardar) btnGuardar.innerText = 'Finalizar partido';
+        } else {
+            const winnerText = pLocal > pRival ? '¡Tu equipo ha ganado el set!' : 'El rival ha ganado el set.';
+            document.getElementById('modal-fin-set-title').innerText = winnerText;
+            if (btnGuardar) btnGuardar.innerText = 'Guardar y Siguiente';
+        }
+        document.getElementById('modal-fin-set-score').innerText = `${pLocal} - ${pRival}`;
+        toggleModal('modal-fin-set');
     }
 
     function guardarFinSet() {
         const duracion = parseInt(document.getElementById('input-set-duracion').value) || 20;
         const setGuardado = state.set_numero;
+        const pLocal = state.marcador.local;
+        const pRival = state.marcador.rival;
+        const { sL: setsLocalProy, sR: setsRivalProy } = proyectaSetsTrasSetActual(pLocal, pRival);
+        const setsParaGanar = state.reglas.setsParaGanar;
+        const partidoTerminado = setsLocalProy >= setsParaGanar
+            || setsRivalProy >= setsParaGanar
+            || setGuardado >= state.reglas.setDecisivoNumero;
 
         markSetModalAcknowledged(setGuardado);
-
         invalidateIndicadoresCache();
 
-        // Save duration
         localStorage.setItem(`partido_${state.partido_id}_set_${setGuardado}_duration`, duracion);
 
-        // ── CRITICAL STATE RESET ─────────────────────────────────
-        // 1. Mark set as NOT finished BEFORE setSet() so checkSetEnd() won't
-        //    re-open the modal when updateFlashboard() fires with stale DB scores
-        state.set_finished = false;
+        const modal = document.getElementById('modal-fin-set');
+        if (modal) modal.classList.add('hidden');
 
-        // 2. Reset DOM scoreboard to 00-00 immediately so any updateFlashboard
-        //    call that fires before the API responds sees 0 and skips checkSetEnd
+        if (partidoTerminado) {
+            state.set_modal_suppressed = false;
+            showToast(`✅ Set ${setGuardado} guardado (${duracion} min)`);
+            showToast(`🏁 Partido finalizado`);
+            finalizarPartido();
+            return;
+        }
+
+        // ── CRITICAL STATE RESET (solo si continúa otro set) ─────
+        state.set_finished = false;
+        state.set_modal_suppressed = false;
+
         const scoreLocal = document.getElementById('score-local');
         const scoreRival = document.getElementById('score-rival');
         if (scoreLocal) scoreLocal.innerText = '00';
         if (scoreRival) scoreRival.innerText = '00';
-
-        // 3. Close the modal
-        const modal = document.getElementById('modal-fin-set');
-        if (modal) modal.classList.add('hidden');
-
-        // 4. Re-enable action grids
-        ['scout-actions-grid', 'scout-opponent-grid'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.remove('pointer-events-none', 'opacity-30');
-        });
+        state.marcador.local = 0;
+        state.marcador.rival = 0;
+        persistMarcadorCache();
+        unlockGameplayUI();
         // ─────────────────────────────────────────────────
 
         showToast(`✅ Set ${setGuardado} guardado (${duracion} min)`);
-
-        // Check if global sets won reaches the configured target BEFORE advancing
-        const setsParaGanar = state.reglas.setsParaGanar;
-        if (setsLocal >= setsParaGanar || setsRival >= setsParaGanar) {
-            finalizarPartido();
-            showToast(`🏁 Partido finalizado automáticamente (${setsParaGanar} sets ganados)`);
-            return;
-        }
-
-        if (setGuardado < state.reglas.setDecisivoNumero) {
-            // Advance to next set — setSet() calls updateFlashboard() which will
-            // read 0-0 from the new set and NOT trigger checkSetEnd() again.
-            setSet(setGuardado + 1);
-        } else {
-            showToast(`🏁 Partido finalizado (${state.reglas.setDecisivoNumero} sets completados)`);
-            finalizarPartido();
-        }
+        setSet(setGuardado + 1);
     }
 
     // ── Registro de Parones helpers ─────────────────────────────────────────
@@ -3280,8 +3317,7 @@
         }
 
         const setsParaGanar = state.reglas.setsParaGanar;
-        const isFinalizado = res.partido_finalizado || (sLocal >= setsParaGanar) || (sRival >= setsParaGanar);
-        if (isFinalizado) {
+        if (res.partido_finalizado) {
             state.partido_finalizado = true;
             lockScoutInterface();
         } else if (!state.partido_finalizado && isScoutTabActive()) {
@@ -3364,11 +3400,7 @@
 
     function lockScoutInterface() {
         state.partido_finalizado = true;
-        // 1. Disable grids
-        ['scout-actions-grid', 'scout-opponent-grid'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('pointer-events-none', 'opacity-30');
-        });
+        lockGameplayUI();
         
         // 2. Hide / Disable manual rotation buttons, deshacer button, active roster swap
         const deshacerBtn = document.querySelector('button[onclick="deshacer()"]');
@@ -3407,11 +3439,9 @@
     }
 
     function unlockScoutInterface() {
-        // Re-enable actions
-        ['scout-actions-grid', 'scout-opponent-grid'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.classList.remove('pointer-events-none', 'opacity-30');
-        });
+        if (!state.set_finished) {
+            unlockGameplayUI();
+        }
         
         const deshacerBtn = document.querySelector('button[onclick="deshacer()"]');
         if (deshacerBtn) deshacerBtn.classList.remove('pointer-events-none', 'opacity-30');
@@ -3421,10 +3451,26 @@
     }
 
     function confirmarFinalizarPartido() {
-        if (state.partido_finalizado) return;
+        if (state.partido_finalizado) {
+            showToast('ℹ️ El partido ya está finalizado');
+            return;
+        }
         if (confirm("¿Estás seguro de que deseas FINALIZAR EL PARTIDO de forma definitiva? Se cerrará el acta en el estado actual y se guardarán las estadísticas.")) {
             finalizarPartido();
         }
+    }
+
+    function confirmarFinalSet() {
+        const pLocal = state.marcador.local;
+        const pRival = state.marcador.rival;
+        if (!isSetScoreClosed(pLocal, pRival)) {
+            if (!confirm('El marcador no indica fin de set. ¿Guardar y continuar igualmente?')) {
+                return;
+            }
+        } else if (!confirm('¿Estás seguro de que quieres finalizar y guardar este set?')) {
+            return;
+        }
+        guardarFinSet();
     }
 
     async function finalizarPartido() {
@@ -4129,11 +4175,6 @@
         }
     }
 
-    function confirmarFinalSet() {
-        if (confirm("¿Estás seguro de que quieres finalizar y guardar este set?")) {
-            guardarFinSet();
-        }
-    }
 
     async function exportData() {
         const maxSet = state.reglas?.setDecisivoNumero || 5;
