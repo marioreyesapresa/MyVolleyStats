@@ -43,6 +43,11 @@
             <a href="{% url 'stats_app:descargar_informe_completo' partido.id %}?set={{ set_actual }}" class="px-4 py-2 bg-emerald-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
                 <i data-lucide="download" class="w-4 h-4"></i> Informe completo PDF
             </a>
+            <button type="button"
+                    onclick="compartirInformePDF(this, '{% url 'stats_app:descargar_informe_completo' partido.id %}?set={{ set_actual }}', 'Informe_Completo_{{ partido.rival }}.pdf')"
+                    class="px-4 py-2 bg-blue-600 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i data-lucide="share-2" class="w-4 h-4"></i> Compartir por WhatsApp
+            </button>
         </div>
     </div>
 
@@ -447,6 +452,49 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // Comparte el PDF usando el panel nativo del dispositivo (WhatsApp, Mail,
+    // AirDrop, Mensajes...) vía la Web Share API. En iPad/iPhone (Safari 15+)
+    // y Android esto abre directamente el selector de apps con el PDF ya
+    // adjunto; si el navegador no soporta compartir ficheros (p.ej. la
+    // mayoría de navegadores de escritorio), se descarga el PDF y se avisa
+    // de que hay que compartirlo a mano desde Descargas.
+    async function compartirInformePDF(btnEl, url, filename) {
+        const originalHTML = btnEl.innerHTML;
+        btnEl.disabled = true;
+        btnEl.innerHTML = '<span>Generando…</span>';
+
+        try {
+            const resp = await fetch(url, { credentials: 'same-origin' });
+            if (!resp.ok) throw new Error('No se pudo generar el PDF (' + resp.status + ')');
+            const blob = await resp.blob();
+            const file = new File([blob], filename, { type: 'application/pdf' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'MyVolleyStats',
+                    text: filename.replace(/_/g, ' ').replace('.pdf', ''),
+                });
+            } else {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                alert('Tu navegador no permite compartir directamente. Se ha descargado el PDF: compártelo desde tus Descargas (por ejemplo, adjuntándolo en WhatsApp Web o por correo).');
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error(err);
+                alert('No se ha podido compartir el informe. Inténtalo de nuevo.');
+            }
+        } finally {
+            btnEl.disabled = false;
+            btnEl.innerHTML = originalHTML;
+        }
+    }
+
     const labelsSets = {{ labels_sets|safe }};
     const puntosMerito = {{ puntos_merito|safe }};
     const puntosErrRival = {{ puntos_err_rival|safe }};
