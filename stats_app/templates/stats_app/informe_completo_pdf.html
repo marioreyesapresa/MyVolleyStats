@@ -257,6 +257,113 @@
     </table>
     {% endif %}
 
+    {% if detalle_total %}
+    <div class="set-block">
+        <div class="set-title">
+            TOTAL PARTIDO — Sets {{ detalle_total.score }}
+            {% if detalle_total.sideout_pct != None %} · Side-out {{ detalle_total.sideout_pct }}%{% endif %}
+            · Complejos K1 {{ detalle_total.k1_efi }}% / K2 {{ detalle_total.k2_efi }}%
+        </div>
+        <table class="detail">
+            <thead>
+                <tr>
+                    <th class="left" rowspan="2">Jugadora</th>
+                    <th rowspan="2">Toques</th>
+                    <th rowspan="2">Puntos</th>
+                    <th rowspan="2">Errores</th>
+                    <th rowspan="2">Saldo</th>
+                    <th colspan="4">Ataque</th>
+                    <th colspan="3">Bloqueo</th>
+                    <th colspan="2">Coloc.</th>
+                    <th colspan="2">Defensa</th>
+                    <th colspan="2">Recepción</th>
+                    <th colspan="3">Saque</th>
+                </tr>
+                <tr>
+                    <th>Int.</th>
+                    <th class="th-good">Pts</th>
+                    <th class="th-bad">Err.</th>
+                    <th>Efic.%</th>
+                    <th class="th-good">Pts</th>
+                    <th>Toq.</th>
+                    <th class="th-bad">Err.</th>
+                    <th>Asist.</th>
+                    <th class="th-bad">Err.</th>
+                    <th>Def.</th>
+                    <th class="th-bad">Err.</th>
+                    <th>Nº</th>
+                    <th class="th-bad">Err.</th>
+                    <th>Tot.</th>
+                    <th class="th-good">Ace</th>
+                    <th class="th-bad">Err.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for j in detalle_total.jugadoras %}
+                <tr class="{% if forloop.counter|divisibleby:2 %}row-even{% else %}row-odd{% endif %}">
+                    <td class="left">#{{ j.dorsal }} {{ j.nombre }}</td>
+                    <td>{% if j.acciones %}{{ j.acciones }}{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{% if j.puntos %}<span class="num-good">{{ j.puntos }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{% if j.errores %}<span class="num-bad">{{ j.errores }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>
+                        {% if j.balance > 0 %}<span class="num-saldo-pos">+{{ j.balance }}</span>
+                        {% elif j.balance < 0 %}<span class="num-saldo-neg">{{ j.balance }}</span>
+                        {% else %}<span class="num-empty">—</span>{% endif %}
+                    </td>
+                    <td>{{ j.ataque_swings|pdf_cell }}</td>
+                    <td>{% if j.ataque_kills %}<span class="num-good">{{ j.ataque_kills }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{% if j.ataque_err %}<span class="num-bad">{{ j.ataque_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.ataque_pct|pdf_efic_pct }}</td>
+                    <td>{% if j.bloqueo_pts %}<span class="num-good">{{ j.bloqueo_pts }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.bloqueo_toques|pdf_cell }}</td>
+                    <td>{% if j.bloqueo_err %}<span class="num-bad">{{ j.bloqueo_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.asistencias|pdf_cell }}</td>
+                    <td>{% if j.colocacion_err %}<span class="num-bad">{{ j.colocacion_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.defensas|pdf_cell }}</td>
+                    <td>{% if j.defensa_err %}<span class="num-bad">{{ j.defensa_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.recepciones|pdf_cell }}</td>
+                    <td>{% if j.recepcion_err %}<span class="num-bad">{{ j.recepcion_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{{ j.saques|pdf_cell }}</td>
+                    <td>{% if j.saque_aces %}<span class="num-good">{{ j.saque_aces }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                    <td>{% if j.saque_err %}<span class="num-bad">{{ j.saque_err }}</span>{% else %}<span class="num-empty">—</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+                {% if detalle_total.totales %}
+                {% with t=detalle_total.totales %}
+                <tr class="totals">
+                    <td class="left">TOTAL EQUIPO</td>
+                    <td>{{ t.acciones|pdf_cell:"1" }}</td>
+                    <td><span class="num-good">{{ t.puntos|pdf_cell:"1" }}</span></td>
+                    <td><span class="num-bad">{{ t.errores|pdf_cell:"1" }}</span></td>
+                    <td>
+                        {% if t.balance > 0 %}<span class="num-saldo-pos">+{{ t.balance }}</span>
+                        {% elif t.balance < 0 %}<span class="num-saldo-neg">{{ t.balance }}</span>
+                        {% else %}0{% endif %}
+                    </td>
+                    <td>{{ t.ataque_swings|pdf_cell:"1" }}</td>
+                    <td><span class="num-good">{{ t.ataque_kills|pdf_cell:"1" }}</span></td>
+                    <td><span class="num-bad">{{ t.ataque_err|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.ataque_pct|pdf_efic_pct }}</td>
+                    <td><span class="num-good">{{ t.bloqueo_pts|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.bloqueo_toques|pdf_cell:"1" }}</td>
+                    <td><span class="num-bad">{{ t.bloqueo_err|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.asistencias|pdf_cell:"1" }}</td>
+                    <td><span class="num-bad">{{ t.colocacion_err|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.defensas|pdf_cell:"1" }}</td>
+                    <td><span class="num-bad">{{ t.defensa_err|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.recepciones|pdf_cell:"1" }}</td>
+                    <td><span class="num-bad">{{ t.recepcion_err|pdf_cell:"1" }}</span></td>
+                    <td>{{ t.saques|pdf_cell:"1" }}</td>
+                    <td><span class="num-good">{{ t.saque_aces|pdf_cell:"1" }}</span></td>
+                    <td><span class="num-bad">{{ t.saque_err|pdf_cell:"1" }}</span></td>
+                </tr>
+                {% endwith %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
     {% for set_data in detalle_sets %}
     <div class="set-block">
         <div class="set-title">

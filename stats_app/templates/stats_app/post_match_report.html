@@ -173,6 +173,95 @@
     </div>
 
     <!-- Detalle por set — tabla completa estilo box score -->
+    {% if detalle_total %}
+    <div class="report-sheet rounded-2xl overflow-hidden shadow-2xl border border-slate-700 mb-6">
+        <div class="set-title">
+            TOTAL PARTIDO — Sets {{ detalle_total.score }}
+            {% if detalle_total.sideout_pct != None %} · Side-out {{ detalle_total.sideout_pct }}%{% endif %}
+            · Complejos K1 {{ detalle_total.k1_efi }}% / K2 {{ detalle_total.k2_efi }}%
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse min-w-[1100px]">
+                <thead>
+                    <tr>
+                        <th class="player-name" rowspan="2">Jugadora</th>
+                        <th rowspan="2">Toques</th>
+                        <th rowspan="2">Puntos</th>
+                        <th rowspan="2">Errores</th>
+                        <th rowspan="2" title="Puntos − Errores">Saldo</th>
+                        <th colspan="4">Ataque</th>
+                        <th colspan="3">Bloqueo</th>
+                        <th colspan="2">Coloc.</th>
+                        <th colspan="2">Defensa</th>
+                        <th colspan="2">Recepción</th>
+                        <th colspan="3">Saque</th>
+                    </tr>
+                    <tr>
+                        <th>Intentos</th><th class="cell-kill">Puntos</th><th class="cell-err">Err.</th><th>Efic.%</th>
+                        <th class="cell-kill">Pts</th><th>Toques</th><th class="cell-err">Err.</th>
+                        <th>Asist.</th><th class="cell-err">Err.</th>
+                        <th>Defensas</th><th class="cell-err">Err.</th>
+                        <th>Nº</th><th class="cell-err">Err.</th>
+                        <th>Total</th><th class="cell-kill">Aces</th><th class="cell-err">Err.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for j in detalle_total.jugadoras %}
+                    <tr>
+                        <td class="player-name">#{{ j.dorsal }} {{ j.nombre }}</td>
+                        <td class="num">{{ j.acciones }}</td>
+                        <td class="num cell-kill">{{ j.puntos }}</td>
+                        <td class="num cell-err">{{ j.errores }}</td>
+                        <td class="num {% if j.balance < 0 %}cell-neg{% endif %}">{{ j.balance }}</td>
+                        <td class="num">{{ j.ataque_swings }}</td>
+                        <td class="num cell-kill">{{ j.ataque_kills }}</td>
+                        <td class="num cell-err">{{ j.ataque_err }}</td>
+                        <td class="num {% if j.ataque_pct != None and j.ataque_pct < 0 %}cell-neg{% endif %}">{% if j.ataque_pct != None %}{{ j.ataque_pct|floatformat:3 }}{% else %}—{% endif %}</td>
+                        <td class="num cell-kill">{{ j.bloqueo_pts }}</td>
+                        <td class="num">{{ j.bloqueo_toques }}</td>
+                        <td class="num cell-err">{{ j.bloqueo_err }}</td>
+                        <td class="num">{{ j.asistencias }}</td>
+                        <td class="num cell-err">{{ j.colocacion_err }}</td>
+                        <td class="num">{{ j.defensas }}</td>
+                        <td class="num cell-err">{{ j.defensa_err }}</td>
+                        <td class="num">{{ j.recepciones }}</td>
+                        <td class="num cell-err">{{ j.recepcion_err }}</td>
+                        <td class="num">{{ j.saques }}</td>
+                        <td class="num cell-kill">{{ j.saque_aces }}</td>
+                        <td class="num cell-err">{{ j.saque_err }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if detalle_total.totales %}
+                    <tr class="totals">
+                        <td class="player-name">TOTAL EQUIPO</td>
+                        <td class="num">{{ detalle_total.totales.acciones }}</td>
+                        <td class="num">{{ detalle_total.totales.puntos }}</td>
+                        <td class="num">{{ detalle_total.totales.errores }}</td>
+                        <td class="num">{{ detalle_total.totales.balance }}</td>
+                        <td class="num">{{ detalle_total.totales.ataque_swings }}</td>
+                        <td class="num">{{ detalle_total.totales.ataque_kills }}</td>
+                        <td class="num">{{ detalle_total.totales.ataque_err }}</td>
+                        <td class="num">{% if detalle_total.totales.ataque_pct != None %}{{ detalle_total.totales.ataque_pct|floatformat:3 }}{% else %}—{% endif %}</td>
+                        <td class="num">{{ detalle_total.totales.bloqueo_pts }}</td>
+                        <td class="num">{{ detalle_total.totales.bloqueo_toques }}</td>
+                        <td class="num">{{ detalle_total.totales.bloqueo_err }}</td>
+                        <td class="num">{{ detalle_total.totales.asistencias }}</td>
+                        <td class="num">{{ detalle_total.totales.colocacion_err }}</td>
+                        <td class="num">{{ detalle_total.totales.defensas }}</td>
+                        <td class="num">{{ detalle_total.totales.defensa_err }}</td>
+                        <td class="num">{{ detalle_total.totales.recepciones }}</td>
+                        <td class="num">{{ detalle_total.totales.recepcion_err }}</td>
+                        <td class="num">{{ detalle_total.totales.saques }}</td>
+                        <td class="num">{{ detalle_total.totales.saque_aces }}</td>
+                        <td class="num">{{ detalle_total.totales.saque_err }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
     {% for set_data in detalle_sets %}
     <div class="report-sheet rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
         <div class="set-title">

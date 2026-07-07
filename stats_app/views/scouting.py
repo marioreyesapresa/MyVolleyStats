@@ -31,6 +31,11 @@ from ..services.reporting import (
     count_sets_won,
     rotation_matrix,
     zone_performance,
+    get_sets_con_datos,
+    merito_y_error_rival,
+    origen_puntos_totales,
+    _rows_for,
+    _fund_counts,
     _leaders_from_players,
     _destacados_from_players,
 )
@@ -133,7 +138,9 @@ class ModoPartidoView(LoginRequiredMixin, View):
             ('DEFENSA', 'Defensa'),
         ]
 
-        historial = RegistroEstadistica.objects.filter(partido=partido, set_numero=1).order_by('-id')
+        historial = RegistroEstadistica.objects.filter(
+            partido=partido, set_numero=1
+        ).select_related('jugadora').order_by('-id')
         historial_data = []
         for reg in historial:
             historial_data.append({
@@ -350,19 +357,14 @@ def ObtenerStatsSetAPI(request):
     equipo_stats = {}
     stats_por_jugadora = {}
     if not ligero:
-        stats_base = RegistroEstadistica.objects.filter(partido_id=partido_id, set_numero=set_num)
+        rows_set = _rows_for(partido, set_num)
         fundamentos = ['SAQUE', 'RECEPCION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
 
         for fund in fundamentos:
-            qs = stats_base.filter(accion=fund)
-            total = qs.count()
+            c = _fund_counts(rows_set, fund)
+            total = c['total']
             if total > 0:
-                pp = qs.filter(calidad='++').count()
-                p = qs.filter(calidad='+').count()
-                n = qs.filter(calidad='=').count()
-                m = qs.filter(calidad='-').count()
-                mm = qs.filter(calidad='--').count()
-
+                pp, p, n, m, mm = c['pp'], c['p'], c['eq'], c['m'], c['mm']
                 perfeccion = ((pp + p) / total) * 100
                 eficacia = ((pp - mm) / total) * 100
 
@@ -383,18 +385,24 @@ def ObtenerStatsSetAPI(request):
                     'mm_perc': 0, 'perfeccion': 0, 'eficacia': 0, 'errores': 0,
                 }
 
-        jugadoras_en_partido = Jugadora.objects.filter(
-            id__in=stats_base.values_list('jugadora_id', flat=True)
-        )
+        rows_por_jugadora = {}
+        for r in rows_set:
+            jid = r['jugadora_id']
+            if jid is None:
+                continue
+            rows_por_jugadora.setdefault(jid, []).append(r)
+
+        jugadoras_en_partido = Jugadora.objects.filter(id__in=rows_por_jugadora.keys())
+        jugadoras_por_id = {j.id: j for j in jugadoras_en_partido}
         for fund in fundamentos:
             lista_fund = []
-            for j in jugadoras_en_partido:
-                j_qs = stats_base.filter(jugadora=j, accion=fund)
-                t = j_qs.count()
+            for jid, j_rows in rows_por_jugadora.items():
+                c = _fund_counts(j_rows, fund)
+                t = c['total']
                 if t > 0:
-                    pp = j_qs.filter(calidad='++').count()
-                    mm = j_qs.filter(calidad='--').count()
+                    pp, mm = c['pp'], c['mm']
                     efi = ((pp - mm) / t) * 100
+                    j = jugadoras_por_id[jid]
                     lista_fund.append({
                         'id': j.id, 'dorsal': j.dorsal, 'nombre': j.nombre,
                         'total': t, 'eficiencia': round(efi, 1), 'pp': pp, 'mm': mm
@@ -413,11 +421,7 @@ def ObtenerStatsSetAPI(request):
     puntos_rival = informe_rapido['score_rival']
 
     sets_local, sets_rival = count_sets_won(partido)
-    sets_con_datos = sorted(
-        RegistroEstadistica.objects.filter(partido=partido)
-        .values_list('set_numero', flat=True)
-        .distinct()
-    )
+    sets_con_datos = get_sets_con_datos(partido)
 
     payload = {
         'status': 'ok',
@@ -458,12 +462,23 @@ def get_stats_json(request, partido_id, set_n):
     
     qs_set = RegistroEstadistica.objects.filter(partido=partido, set_numero=set_n).select_related('jugadora')
     jug_stats = {}
+    equipo_counts = {f: {'pp': 0, 'p': 0, 'eq': 0, 'm': 0, 'mm': 0, 'total': 0} for f in fundamentos}
     for r in qs_set:
+        fund = r.accion
+        if fund not in fundamentos:
+            continue
+
+        ec = equipo_counts[fund]
+        ec['total'] += 1
+        if r.calidad == '++': ec['pp'] += 1
+        elif r.calidad == '+': ec['p'] += 1
+        elif r.calidad == '=': ec['eq'] += 1
+        elif r.calidad == '-': ec['m'] += 1
+        elif r.calidad == '--': ec['mm'] += 1
+
         if not r.jugadora: continue
         jid = r.jugadora.id
-        fund = r.accion
-        if fund not in fundamentos: continue
-        
+
         if jid not in jug_stats:
             jug_stats[jid] = {'nombre': r.jugadora.nombre, 'dorsal': r.jugadora.dorsal, 'funds': {}}
         if fund not in jug_stats[jid]['funds']:
@@ -475,15 +490,10 @@ def get_stats_json(request, partido_id, set_n):
         elif r.calidad == '--': jug_stats[jid]['funds'][fund]['mm'] += 1
 
     for fund in fundamentos:
-        qs = RegistroEstadistica.objects.filter(partido=partido, set_numero=set_n, accion=fund)
-        total = qs.count()
+        ec = equipo_counts[fund]
+        total = ec['total']
         if total > 0:
-            pp = qs.filter(calidad='++').count()
-            p = qs.filter(calidad='+').count()
-            n = qs.filter(calidad='=').count()
-            m = qs.filter(calidad='-').count()
-            mm = qs.filter(calidad='--').count()
-            
+            pp, p, n, m, mm = ec['pp'], ec['p'], ec['eq'], ec['m'], ec['mm']
             eficacia = ((pp + p) - mm) / total * 100
             
             stats[fund] = {
@@ -564,35 +574,19 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
         set_filtro = request.GET.get('set', 'global')
         reporte = build_full_report(partido, set_filtro)
 
-        sets_disponibles = (
-            RegistroEstadistica.objects.filter(partido=partido)
-            .values_list('set_numero', flat=True)
-            .distinct()
-            .order_by('set_numero')
-        )
-
-        # Gráficos (origen global o del set filtrado)
-        stats_base = RegistroEstadistica.objects.filter(partido=partido)
-        if set_filtro != 'global':
-            stats_base = stats_base.filter(set_numero=set_filtro)
+        sets_disponibles = get_sets_con_datos(partido)
+        set_num_grafico = None if set_filtro == 'global' else set_filtro
 
         labels_sets, p_merito, p_err_rival, p_rival = [], [], [], []
         for s in sets_disponibles:
             labels_sets.append(f"Set {s}")
             local, rival = calc_set_score(partido, s)
-            qs_s = RegistroEstadistica.objects.filter(partido=partido, set_numero=s)
-            p_merito.append(
-                qs_s.filter(accion__in=['SAQUE', 'ATAQUE', 'BLOQUEO'], calidad='++').count()
-            )
-            p_err_rival.append(qs_s.filter(accion='ERROR_RIVAL').count())
+            merito, err_rival = merito_y_error_rival(partido, s)
+            p_merito.append(merito)
+            p_err_rival.append(err_rival)
             p_rival.append(rival)
 
-        origen_puntos = {
-            'Ataque': stats_base.filter(accion='ATAQUE', calidad='++').count(),
-            'Saque': stats_base.filter(accion='SAQUE', calidad='++').count(),
-            'Bloqueo': stats_base.filter(accion='BLOQUEO', calidad='++').count(),
-            'Error Rival': stats_base.filter(accion='ERROR_RIVAL').count(),
-        }
+        origen_puntos = origen_puntos_totales(partido, set_num_grafico)
 
         context = {
             'partido': partido,
@@ -600,6 +594,7 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
             'sets_disponibles': sets_disponibles,
             'resumen_sets': reporte['resumen_sets'],
             'detalle_sets': reporte['detalle_sets'],
+            'detalle_total': reporte.get('detalle_total'),
             'labels_sets': json.dumps(labels_sets),
             'puntos_merito': json.dumps(p_merito),
             'puntos_err_rival': json.dumps(p_err_rival),

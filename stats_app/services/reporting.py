@@ -1,39 +1,133 @@
-"""Agregación de estadísticas para informes en vivo y post-partido."""
+"""Agregación de estadísticas para informes en vivo y post-partido.
 
-from django.db.models import Q
+Rendimiento
+-----------
+Todas las funciones de este módulo parten de una única consulta a BD por
+partido (`_get_match_rows`), cacheada en la propia instancia de `Partido`
+mientras dure la petición. El resto de cálculos (por set, por jugadora, por
+zona, por rotación...) se hacen en memoria sobre esa lista de filas.
+
+Esto evita el patrón N+1 que tenía la versión anterior (una `.count()` por
+cada combinación de set × jugadora × fundamento × calidad), que en un
+partido de varios sets podía disparar miles de consultas y bloquear la
+generación del informe completo, especialmente contra una BD remota
+(Neon) con latencia de red por consulta.
+"""
+
+from collections import defaultdict
 
 from stats_app.models import Jugadora, RegistroEstadistica, RotacionSet
 
 FUNDAMENTOS = ['SAQUE', 'RECEPCION', 'COLOCACION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
 FUNDAMENTOS_SCOUT = ['SAQUE', 'RECEPCION', 'COLOCACION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
 
+_ACCIONES_PUNTO_LOCAL = {'SAQUE', 'ATAQUE', 'BLOQUEO'}
+_ROTACIONES_CAMPOS = [
+    'pos1_id', 'pos2_id', 'pos3_id', 'pos4_id', 'pos5_id', 'pos6_id',
+    'libero1_id', 'libero2_id',
+]
 
-def _qs_partido(partido, set_num=None):
-    qs = RegistroEstadistica.objects.filter(partido=partido)
-    if set_num is not None:
-        qs = qs.filter(set_numero=set_num)
-    return qs
+
+# ── Carga y caché de datos por partido ───────────────────────────────────
+# Todo lo que sigue evita re-consultar la BD dentro de la misma petición:
+# el objeto `partido` vive durante toda la generación del informe y todas
+# las funciones de este módulo reciben la misma instancia, así que cachear
+# en un atributo del propio objeto es seguro y no requiere tocar las firmas
+# públicas (usadas también directamente en tests).
+
+def _get_match_rows(partido):
+    cached = getattr(partido, '_reporting_rows_cache', None)
+    if cached is not None:
+        return cached
+    rows = list(
+        RegistroEstadistica.objects.filter(partido=partido)
+        .order_by('id')
+        .values('id', 'set_numero', 'jugadora_id', 'accion', 'calidad', 'tipo_fase', 'rotacion_num', 'zona')
+    )
+    partido._reporting_rows_cache = rows
+    return rows
+
+
+def _rows_by_set(partido):
+    cached = getattr(partido, '_reporting_rows_by_set_cache', None)
+    if cached is not None:
+        return cached
+    grouped = defaultdict(list)
+    for r in _get_match_rows(partido):
+        grouped[r['set_numero']].append(r)
+    partido._reporting_rows_by_set_cache = grouped
+    return grouped
+
+
+def _rows_for(partido, set_num):
+    """Filas del partido, de un set concreto o de todos si `set_num` es None."""
+    if set_num is None:
+        return _get_match_rows(partido)
+    return _rows_by_set(partido).get(int(set_num), [])
+
+
+def _rotaciones_por_set(partido):
+    cached = getattr(partido, '_reporting_rotaciones_cache', None)
+    if cached is not None:
+        return cached
+    grouped = defaultdict(list)
+    for rot in RotacionSet.objects.filter(partido=partido):
+        grouped[rot.set_numero].append(rot)
+    partido._reporting_rotaciones_cache = grouped
+    return grouped
+
+
+def _jugadoras_map(partido):
+    """Todas las jugadoras que aparecen en el partido (acciones o rotaciones),
+    indexadas por id, en una única consulta reutilizada para todos los sets.
+    """
+    cached = getattr(partido, '_reporting_jugadoras_cache', None)
+    if cached is not None:
+        return cached
+    ids = {r['jugadora_id'] for r in _get_match_rows(partido) if r['jugadora_id'] is not None}
+    for rots in _rotaciones_por_set(partido).values():
+        for rot in rots:
+            for field in _ROTACIONES_CAMPOS:
+                val = getattr(rot, field)
+                if val:
+                    ids.add(val)
+    mapa = {j.id: j for j in Jugadora.objects.filter(id__in=ids)}
+    partido._reporting_jugadoras_cache = mapa
+    return mapa
+
+
+def invalidar_cache_reporting(partido):
+    """Limpia la caché de reporting de la instancia (por si se reutiliza tras
+    escribir nuevos registros con el mismo objeto `partido` en memoria)."""
+    for attr in (
+        '_reporting_rows_cache', '_reporting_rows_by_set_cache',
+        '_reporting_rotaciones_cache', '_reporting_jugadoras_cache',
+    ):
+        if hasattr(partido, attr):
+            delattr(partido, attr)
+
+
+# ── Cálculos base sobre filas en memoria ─────────────────────────────────
+
+def _es_punto_local(r):
+    return (r['accion'] in _ACCIONES_PUNTO_LOCAL and r['calidad'] == '++') or r['accion'] == 'ERROR_RIVAL'
+
+
+def _es_punto_rival(r):
+    return r['accion'] == 'PUNTO_RIVAL' or r['calidad'] == '--'
 
 
 def calc_set_score(partido, set_num):
-    qs = _qs_partido(partido, set_num)
-    local = (
-        qs.filter(accion__in=['SAQUE', 'ATAQUE', 'BLOQUEO'], calidad='++').count()
-        + qs.filter(accion='ERROR_RIVAL').count()
-    )
-    rival = qs.filter(Q(accion='PUNTO_RIVAL') | Q(calidad='--')).count()
+    rows = _rows_for(partido, set_num)
+    local = sum(1 for r in rows if _es_punto_local(r))
+    rival = sum(1 for r in rows if _es_punto_rival(r))
     return local, rival
 
 
 def count_sets_won(partido):
     """Sets ganados por cada equipo según marcadores cerrados en BD."""
-    all_sets = (
-        RegistroEstadistica.objects.filter(partido=partido)
-        .values_list('set_numero', flat=True)
-        .distinct()
-    )
     sets_local = sets_rival = 0
-    for s in all_sets:
+    for s in _rows_by_set(partido).keys():
         p_l, p_r = calc_set_score(partido, s)
         limit = partido.limite_puntos_set(s)
         if (p_l >= limit or p_r >= limit) and abs(p_l - p_r) >= 2:
@@ -46,11 +140,7 @@ def count_sets_won(partido):
 
 def detect_set_activo(partido):
     """Primer set sin cerrar; si todos están cerrados, el último con datos."""
-    sets_nums = sorted(
-        RegistroEstadistica.objects.filter(partido=partido)
-        .values_list('set_numero', flat=True)
-        .distinct()
-    )
+    sets_nums = sorted(_rows_by_set(partido).keys())
     if not sets_nums:
         return 1
     for s in sets_nums:
@@ -61,34 +151,54 @@ def detect_set_activo(partido):
     return max(sets_nums)
 
 
+def get_sets_con_datos(partido):
+    """Lista ordenada de números de set con al menos un registro."""
+    return sorted(_rows_by_set(partido).keys())
+
+
 def build_partido_snapshot(partido):
     """Marcador y set activo desde BD para pintar la UI sin esperar al fetch."""
     set_activo = detect_set_activo(partido)
     p_local, p_rival = calc_set_score(partido, set_activo)
     sets_local, sets_rival = count_sets_won(partido)
-    sets_con_datos = sorted(
-        RegistroEstadistica.objects.filter(partido=partido)
-        .values_list('set_numero', flat=True)
-        .distinct()
-    )
     return {
         'set_activo': set_activo,
         'puntos_local': p_local,
         'puntos_rival': p_rival,
         'sets_local': sets_local,
         'sets_rival': sets_rival,
-        'sets_con_datos': sets_con_datos,
+        'sets_con_datos': get_sets_con_datos(partido),
     }
 
 
-def _phase_efficiency(qs, fases, acciones=None):
-    phase_qs = qs.filter(tipo_fase__in=fases)
+def merito_y_error_rival(partido, set_num):
+    """(puntos de mérito propio en saque/ataque/bloqueo, errores forzados al rival)."""
+    rows = _rows_for(partido, set_num)
+    merito = sum(1 for r in rows if r['accion'] in _ACCIONES_PUNTO_LOCAL and r['calidad'] == '++')
+    err_rival = sum(1 for r in rows if r['accion'] == 'ERROR_RIVAL')
+    return merito, err_rival
+
+
+def origen_puntos_totales(partido, set_num=None):
+    """Desglose de puntos propios por fundamento + errores forzados (gráfico
+    'Origen de los puntos')."""
+    rows = _rows_for(partido, set_num)
+    return {
+        'Ataque': sum(1 for r in rows if r['accion'] == 'ATAQUE' and r['calidad'] == '++'),
+        'Saque': sum(1 for r in rows if r['accion'] == 'SAQUE' and r['calidad'] == '++'),
+        'Bloqueo': sum(1 for r in rows if r['accion'] == 'BLOQUEO' and r['calidad'] == '++'),
+        'Error Rival': sum(1 for r in rows if r['accion'] == 'ERROR_RIVAL'),
+    }
+
+
+def _phase_efficiency(rows, fases, acciones=None):
+    fases_set = set(fases)
+    phase_rows = [r for r in rows if r['tipo_fase'] in fases_set]
     if acciones:
-        phase_qs = phase_qs.filter(accion__in=acciones)
-    wins = phase_qs.filter(
-        Q(accion__in=['SAQUE', 'ATAQUE', 'BLOQUEO'], calidad='++') | Q(accion='ERROR_RIVAL')
-    ).count()
-    losses = phase_qs.filter(Q(accion='PUNTO_RIVAL') | Q(calidad='--')).count()
+        acciones_set = set(acciones)
+        phase_rows = [r for r in phase_rows if r['accion'] in acciones_set]
+    wins = sum(1 for r in phase_rows if _es_punto_local(r))
+    losses = sum(1 for r in phase_rows if _es_punto_rival(r))
     total = wins + losses
     if total == 0:
         return None
@@ -97,73 +207,80 @@ def _phase_efficiency(qs, fases, acciones=None):
 
 def calc_sideout_pct(partido, set_num):
     """% de side-out cuando recibimos (fases K1/K2)."""
-    qs = _qs_partido(partido, set_num)
-    pct = _phase_efficiency(qs, ['K1', 'K2'])
+    rows = _rows_for(partido, set_num)
+    pct = _phase_efficiency(rows, ['K1', 'K2'])
     if pct is not None:
         return pct
-    rec = qs.filter(accion='RECEPCION')
-    total = rec.count()
+    rec = [r for r in rows if r['accion'] == 'RECEPCION']
+    total = len(rec)
     if total == 0:
         return None
-    positivos = rec.filter(calidad__in=['++', '+']).count()
+    positivos = sum(1 for r in rec if r['calidad'] in ('++', '+'))
     return round(positivos / total * 100, 1)
 
 
 def calc_breakpoint_pct(partido, set_num):
     """% de puntos ganados con nuestro saque (fase K0)."""
-    qs = _qs_partido(partido, set_num)
-    return _phase_efficiency(qs, ['K0'])
+    rows = _rows_for(partido, set_num)
+    return _phase_efficiency(rows, ['K0'])
 
 
 def calc_rival_sideout_pct(partido, set_num):
     """Aproximación del side-out rival cuando nosotros sacamos (K0)."""
-    qs = _qs_partido(partido, set_num)
-    k0 = qs.filter(tipo_fase='K0')
-    rival_wins = k0.filter(Q(accion='PUNTO_RIVAL') | Q(calidad='--')).count()
-    our_wins = k0.filter(
-        Q(accion__in=['SAQUE', 'ATAQUE', 'BLOQUEO'], calidad='++') | Q(accion='ERROR_RIVAL')
-    ).count()
+    rows = _rows_for(partido, set_num)
+    k0 = [r for r in rows if r['tipo_fase'] == 'K0']
+    rival_wins = sum(1 for r in k0 if _es_punto_rival(r))
+    our_wins = sum(1 for r in k0 if _es_punto_local(r))
     total = rival_wins + our_wins
     if total == 0:
         return None
     return round(rival_wins / total * 100, 1)
 
 
-def _fund_counts(j_qs, accion):
-    f = j_qs.filter(accion=accion)
-    pp = f.filter(calidad='++').count()
-    p = f.filter(calidad='+').count()
-    eq = f.filter(calidad='=').count()
-    m = f.filter(calidad='-').count()
-    mm = f.filter(calidad='--').count()
+def _fund_counts(rows, accion):
+    pp = p = eq = m = mm = 0
+    for r in rows:
+        if r['accion'] != accion:
+            continue
+        cal = r['calidad']
+        if cal == '++':
+            pp += 1
+        elif cal == '+':
+            p += 1
+        elif cal == '=':
+            eq += 1
+        elif cal == '-':
+            m += 1
+        elif cal == '--':
+            mm += 1
     total = pp + p + eq + m + mm
     return {'pp': pp, 'p': p, 'eq': eq, 'm': m, 'mm': mm, 'total': total}
 
 
-def player_box_row(jugadora, qs_set):
-    j_qs = qs_set.filter(jugadora=jugadora, accion__in=FUNDAMENTOS_SCOUT)
-    if not j_qs.exists():
+def player_box_row(jugadora, rows_jugadora):
+    """`rows_jugadora`: filas del set ya filtradas a esta jugadora (cualquier
+    acción); aquí se restringe a los fundamentos de scouting."""
+    fund_set = set(FUNDAMENTOS_SCOUT)
+    j_rows = [r for r in rows_jugadora if r['accion'] in fund_set]
+    if not j_rows:
         return None
 
-    saque = _fund_counts(j_qs, 'SAQUE')
-    rec = _fund_counts(j_qs, 'RECEPCION')
-    col = _fund_counts(j_qs, 'COLOCACION')
-    atq = _fund_counts(j_qs, 'ATAQUE')
-    blo = _fund_counts(j_qs, 'BLOQUEO')
-    defn = _fund_counts(j_qs, 'DEFENSA')
+    saque = _fund_counts(j_rows, 'SAQUE')
+    rec = _fund_counts(j_rows, 'RECEPCION')
+    col = _fund_counts(j_rows, 'COLOCACION')
+    atq = _fund_counts(j_rows, 'ATAQUE')
+    blo = _fund_counts(j_rows, 'BLOQUEO')
+    defn = _fund_counts(j_rows, 'DEFENSA')
 
-    puntos = j_qs.filter(calidad='++').count()
-    errores = j_qs.filter(calidad='--').count()
+    puntos = sum(1 for r in j_rows if r['calidad'] == '++')
+    errores = sum(1 for r in j_rows if r['calidad'] == '--')
     balance = puntos - errores
-    acciones = j_qs.count()
+    acciones = len(j_rows)
 
     swings = atq['total']
     kills = atq['pp']
     hit_err = atq['mm']
-    if swings > 0:
-        hit_pct = round((kills - hit_err) / swings, 3)
-    else:
-        hit_pct = None
+    hit_pct = round((kills - hit_err) / swings, 3) if swings > 0 else None
 
     rec_pos = rec['pp'] + rec['p']
     def_pos = defn['pp'] + defn['p']
@@ -203,15 +320,17 @@ def player_box_row(jugadora, qs_set):
 
 
 def _jugadoras_en_set(partido, set_num):
-    qs = _qs_partido(partido, set_num)
-    ids = set(qs.filter(jugadora__isnull=False).values_list('jugadora_id', flat=True))
-    rotaciones = RotacionSet.objects.filter(partido=partido, set_numero=set_num)
-    for rot in rotaciones:
-        for field in ['pos1_id', 'pos2_id', 'pos3_id', 'pos4_id', 'pos5_id', 'pos6_id', 'libero1_id', 'libero2_id']:
+    rows = _rows_for(partido, set_num)
+    ids = {r['jugadora_id'] for r in rows if r['jugadora_id'] is not None}
+    for rot in _rotaciones_por_set(partido).get(int(set_num), []):
+        for field in _ROTACIONES_CAMPOS:
             val = getattr(rot, field)
             if val:
                 ids.add(val)
-    return Jugadora.objects.filter(id__in=ids).order_by('dorsal')
+    mapa = _jugadoras_map(partido)
+    jugadoras = [mapa[i] for i in ids if i in mapa]
+    jugadoras.sort(key=lambda j: (j.dorsal is None, j.dorsal))
+    return jugadoras
 
 
 def _totals_row(players):
@@ -243,11 +362,17 @@ def _totals_row(players):
 
 
 def build_set_report(partido, set_num):
-    qs = _qs_partido(partido, set_num)
+    rows_set = _rows_for(partido, set_num)
     local, rival = calc_set_score(partido, set_num)
+
+    rows_by_jugadora = defaultdict(list)
+    for r in rows_set:
+        if r['jugadora_id'] is not None:
+            rows_by_jugadora[r['jugadora_id']].append(r)
+
     players = []
     for j in _jugadoras_en_set(partido, set_num):
-        row = player_box_row(j, qs)
+        row = player_box_row(j, rows_by_jugadora.get(j.id, []))
         if row:
             players.append(row)
     players.sort(key=lambda x: (-x['balance'], -x['puntos']))
@@ -328,13 +453,52 @@ def _player_destacado(p, detalle):
     }
 
 
+def _eficacia_recepcion(p):
+    total = p.get('recepciones') or 0
+    if total == 0:
+        return None
+    err = p.get('recepcion_err') or 0
+    return (total - err) / total
+
+
+def _eficacia_defensa(p):
+    buenas = p.get('defensas') or 0
+    err = p.get('defensa_err') or 0
+    total = buenas + err
+    if total == 0:
+        return None
+    return buenas / total
+
+
+def _mejor_fundamento_volumen_min_eficacia(
+    players, volumen_fn, eficacia_fn, detalle_fn, min_eficacia=0.80,
+):
+    """Entre jugadoras con eficacia >= umbral, gana la de mayor volumen."""
+    candidatas = []
+    for p in players:
+        vol = volumen_fn(p)
+        efic = eficacia_fn(p)
+        if vol < 1 or efic is None or efic < min_eficacia:
+            continue
+        candidatas.append((vol, efic, p))
+    if not candidatas:
+        return None
+    top = max(candidatas, key=lambda x: (x[0], x[1]))[2]
+    return _player_destacado(top, detalle_fn(top))
+
+
 def calc_k1_complex_pct(partido, set_num):
     """Calidad del complejo recepción+ataque: (++ − −−) / total acciones."""
-    qs = _qs_partido(partido, set_num)
-    acciones = ['RECEPCION', 'ATAQUE']
-    pp = sum(qs.filter(accion=a, calidad='++').count() for a in acciones)
-    mm = sum(qs.filter(accion=a, calidad='--').count() for a in acciones)
-    total = sum(qs.filter(accion=a).count() for a in acciones)
+    rows = _rows_for(partido, set_num)
+    acciones = {'RECEPCION', 'ATAQUE'}
+    pp = mm = total = 0
+    for r in rows:
+        if r['accion'] in acciones:
+            total += 1
+            if r['calidad'] == '++':
+                pp += 1
+            elif r['calidad'] == '--':
+                mm += 1
     if total == 0:
         return 0
     return round(max(0, ((pp - mm) / total) * 100))
@@ -342,11 +506,16 @@ def calc_k1_complex_pct(partido, set_num):
 
 def calc_k2_complex_pct(partido, set_num):
     """Calidad del complejo saque+bloqueo+defensa: (++ − −−) / total acciones."""
-    qs = _qs_partido(partido, set_num)
-    acciones = ['SAQUE', 'BLOQUEO', 'DEFENSA']
-    pp = sum(qs.filter(accion=a, calidad='++').count() for a in acciones)
-    mm = sum(qs.filter(accion=a, calidad='--').count() for a in acciones)
-    total = sum(qs.filter(accion=a).count() for a in acciones)
+    rows = _rows_for(partido, set_num)
+    acciones = {'SAQUE', 'BLOQUEO', 'DEFENSA'}
+    pp = mm = total = 0
+    for r in rows:
+        if r['accion'] in acciones:
+            total += 1
+            if r['calidad'] == '++':
+                pp += 1
+            elif r['calidad'] == '--':
+                mm += 1
     if total == 0:
         return 0
     return round(max(0, ((pp - mm) / total) * 100))
@@ -421,13 +590,15 @@ def _destacados_from_players(players, min_ataques=3):
 
     peor_ataque = _peor_errores(players, 'ataque_err')
 
-    mejor_recepcion = None
-    with_rec = [p for p in players if p.get('recepcion_pos', 0) > 0]
-    if with_rec:
-        top = max(with_rec, key=lambda p: (p['recepcion_pos'], -(p.get('recepcion_err') or 0)))
-        mejor_recepcion = _player_destacado(
-            top, f"{top['recepcion_pos']} pos / {top.get('recepcion_err', 0)} err"
-        )
+    mejor_recepcion = _mejor_fundamento_volumen_min_eficacia(
+        players,
+        volumen_fn=lambda p: p.get('recepciones') or 0,
+        eficacia_fn=_eficacia_recepcion,
+        detalle_fn=lambda p: (
+            f"{p.get('recepciones', 0)} rec · {round(_eficacia_recepcion(p) * 100)}%"
+            f" · {p.get('recepcion_err', 0)} err"
+        ),
+    )
 
     mejor_saque = None
     with_aces = [p for p in players if p['saque_aces'] > 0]
@@ -449,13 +620,15 @@ def _destacados_from_players(players, min_ataques=3):
             detalle = f"{top['bloqueo_toques']} toques"
         mejor_bloqueo = _player_destacado(top, detalle)
 
-    mejor_defensa = None
-    with_def = [p for p in players if p.get('defensas', 0) > 0]
-    if with_def:
-        top = max(with_def, key=lambda p: (p['defensas'], -(p.get('defensa_err') or 0)))
-        mejor_defensa = _player_destacado(
-            top, f"{top['defensas']} def / {top.get('defensa_err', 0)} err"
-        )
+    mejor_defensa = _mejor_fundamento_volumen_min_eficacia(
+        players,
+        volumen_fn=lambda p: p.get('defensas') or 0,
+        eficacia_fn=_eficacia_defensa,
+        detalle_fn=lambda p: (
+            f"{p.get('defensas', 0)} def · {round(_eficacia_defensa(p) * 100)}%"
+            f" · {p.get('defensa_err', 0)} err"
+        ),
+    )
 
     return {
         'ataque': {'mejor': mejor_ataque, 'a_mejorar': peor_ataque},
@@ -470,8 +643,8 @@ def _aggregate_players_stats(detalle_sets):
     """Suma estadísticas de jugadoras a través de varios sets."""
     agg = {}
     sum_keys = [
-        'balance', 'puntos', 'ataque_kills', 'ataque_err', 'ataque_swings',
-        'saque_aces', 'saque_err', 'recepcion_pos', 'recepcion_err',
+        'balance', 'puntos', 'errores', 'ataque_kills', 'ataque_err', 'ataque_swings',
+        'saque_aces', 'saque_err', 'saques', 'recepcion_pos', 'recepcion_err', 'recepciones',
         'bloqueo_pts', 'bloqueo_toques', 'bloqueo_err',
         'defensas', 'defensa_err', 'asistencias', 'colocacion_err',
     ]
@@ -497,6 +670,26 @@ def _aggregate_players_stats(detalle_sets):
     return players
 
 
+def build_match_totals(partido, detalle_sets):
+    """Box score agregado de todo el partido (solo si hay más de un set)."""
+    if len(detalle_sets) <= 1:
+        return None
+    players = _aggregate_players_stats(detalle_sets)
+    players.sort(key=lambda x: (-x['balance'], -x['puntos']))
+    sets_local, sets_rival = count_sets_won(partido)
+    return {
+        'label': 'TOTAL PARTIDO',
+        'score': f'{sets_local}–{sets_rival}',
+        'score_local': sets_local,
+        'score_rival': sets_rival,
+        'jugadoras': players,
+        'totales': _totals_row(players),
+        'sideout_pct': calc_sideout_pct(partido, None),
+        'k1_efi': calc_k1_complex_pct(partido, None),
+        'k2_efi': calc_k2_complex_pct(partido, None),
+    }
+
+
 def build_set_leaders(partido, set_num):
     """Tres líderes independientes del set para el panel en banquillo."""
     report = build_set_report(partido, set_num)
@@ -510,14 +703,8 @@ def build_destacados_por_accion(partido, set_num, min_ataques=3):
 
 
 def build_match_summary(partido):
-    sets = (
-        RegistroEstadistica.objects.filter(partido=partido)
-        .values_list('set_numero', flat=True)
-        .distinct()
-        .order_by('set_numero')
-    )
     resumen = []
-    for s in sets:
+    for s in sorted(_rows_by_set(partido).keys()):
         local, rival = calc_set_score(partido, s)
         resumen.append({
             'set_num': s,
@@ -554,9 +741,12 @@ def build_full_report(partido, set_filter='global'):
         sd['destacados_por_accion'] = _destacados_from_players(sd['jugadoras'])
         detalle_sets.append(sd)
 
+    detalle_total = build_match_totals(partido, detalle_sets) if set_filter == 'global' else None
+
     return {
         'resumen_sets': summary,
         'detalle_sets': detalle_sets,
+        'detalle_total': detalle_total,
         'set_filter': set_filter,
         'destacadas': build_destacadas(detalle_sets),
     }
@@ -588,12 +778,16 @@ def zone_performance(partido, set_num):
     Devuelve una lista de dicts por zona con puntos/errores/% de acierto de
     Ataque, y lo mismo de Bloqueo cuando la zona es de red (2, 3, 4).
     """
-    qs = _qs_partido(partido, set_num).filter(zona__isnull=False)
+    rows = [r for r in _rows_for(partido, set_num) if r['zona'] is not None]
+    rows_by_zone = defaultdict(list)
+    for r in rows:
+        rows_by_zone[r['zona']].append(r)
+
     zonas = []
     for z in range(1, 7):
-        z_qs = qs.filter(zona=z)
-        atq = _fund_counts(z_qs, 'ATAQUE')
-        blo = _fund_counts(z_qs, 'BLOQUEO')
+        z_rows = rows_by_zone.get(z, [])
+        atq = _fund_counts(z_rows, 'ATAQUE')
+        blo = _fund_counts(z_rows, 'BLOQUEO')
         atq_pct = round((atq['pp'] - atq['mm']) / atq['total'] * 100, 1) if atq['total'] else None
         blo_pct = round((blo['pp'] - blo['mm']) / blo['total'] * 100, 1) if blo['total'] else None
         zonas.append({
@@ -611,19 +805,18 @@ def zone_performance(partido, set_num):
     return zonas
 
 
-def _lado_del_punto(registro):
-    """Determina qué lado se anotó el punto representado por este registro
-    de estadística, o `None` si es una acción intermedia sin desenlace de
-    punto (p.ej. una recepción o colocación en juego, calidad '=').
+def _lado_del_punto_row(r):
+    """Determina qué lado se anotó el punto representado por esta fila, o
+    `None` si es una acción intermedia sin desenlace de punto (p.ej. una
+    recepción o colocación en juego, calidad '=').
 
     Mismo criterio que `calc_set_score`: cualquier '++' en Saque/Ataque/
     Bloqueo o un Error del Rival es punto propio; un Punto del Rival o
     cualquier '--' (error directo, sea cual sea la acción) es punto rival.
     """
-    if (registro.accion in ('SAQUE', 'ATAQUE', 'BLOQUEO') and registro.calidad == '++') \
-            or registro.accion == 'ERROR_RIVAL':
+    if _es_punto_local(r):
         return 'nosotros'
-    if registro.accion == 'PUNTO_RIVAL' or registro.calidad == '--':
+    if _es_punto_rival(r):
         return 'rival'
     return None
 
@@ -636,11 +829,11 @@ def calc_racha(partido, set_num):
     estado actual del marcador (las acciones sin desenlace de punto se
     ignoran).
     """
-    qs = _qs_partido(partido, set_num).order_by('-id').only('id', 'accion', 'calidad')
+    rows = _rows_for(partido, set_num)
     racha = 0
     lado = None
-    for r in qs:
-        lado_actual = _lado_del_punto(r)
+    for r in reversed(rows):
+        lado_actual = _lado_del_punto_row(r)
         if lado_actual is None:
             continue
         if lado is None:
@@ -660,13 +853,13 @@ def calc_racha_maxima(partido, set_num):
     (a diferencia de `calc_racha`, que solo mira el momento actual). Útil
     para el informe post-partido: "mayor racha: 5 puntos seguidos".
     """
-    qs = _qs_partido(partido, set_num).order_by('id').only('id', 'accion', 'calidad')
+    rows = _rows_for(partido, set_num)
     lado_actual = None
     racha_actual = 0
     mejor_lado = None
     mejor_racha = 0
-    for r in qs:
-        lado = _lado_del_punto(r)
+    for r in rows:
+        lado = _lado_del_punto_row(r)
         if lado is None:
             continue
         if lado == lado_actual:
@@ -688,11 +881,11 @@ def build_run_chart(partido, set_num):
     cronológico. Sirve para dibujar un "run chart" que visualiza rachas y
     momentos clave de un vistazo.
     """
-    qs = _qs_partido(partido, set_num).order_by('id').only('id', 'accion', 'calidad')
+    rows = _rows_for(partido, set_num)
     diffs = []
     score_local = score_rival = 0
-    for r in qs:
-        lado = _lado_del_punto(r)
+    for r in rows:
+        lado = _lado_del_punto_row(r)
         if lado is None:
             continue
         if lado == 'nosotros':
@@ -704,16 +897,20 @@ def build_run_chart(partido, set_num):
 
 
 def rotation_matrix(partido, set_num):
-    qs = _qs_partido(partido, set_num)
+    rows = _rows_for(partido, set_num)
+    rows_by_rotacion = defaultdict(list)
+    for r in rows:
+        rows_by_rotacion[r['rotacion_num']].append(r)
+
     matrix = []
-    for r in range(1, 7):
-        r_qs = qs.filter(rotacion_num=r)
-        k1 = _phase_efficiency(r_qs, ['K1', 'K2'], ['RECEPCION', 'ATAQUE', 'COLOCACION'])
-        k2 = _phase_efficiency(r_qs, ['K0'], ['SAQUE', 'BLOQUEO', 'DEFENSA'])
+    for r_num in range(1, 7):
+        r_rows = rows_by_rotacion.get(r_num, [])
+        k1 = _phase_efficiency(r_rows, ['K1', 'K2'], ['RECEPCION', 'ATAQUE', 'COLOCACION'])
+        k2 = _phase_efficiency(r_rows, ['K0'], ['SAQUE', 'BLOQUEO', 'DEFENSA'])
         matrix.append({
-            'rotacion': r,
+            'rotacion': r_num,
             'k1': k1 if k1 is not None else 0,
             'k2': k2 if k2 is not None else 0,
-            'acciones': r_qs.count(),
+            'acciones': len(r_rows),
         })
     return matrix

@@ -8,12 +8,14 @@ automáticamente (nunca tocan db.sqlite3). Ejecutar con:
 import json
 import threading
 from datetime import date, time
+from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
-from django.db import OperationalError
+from django.db import OperationalError, connection
+from django.test.utils import CaptureQueriesContext
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
@@ -944,6 +946,76 @@ class FlujoCompletoPartidoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
 
+    def test_informe_completo_pdf_partido_finalizado_se_cachea_en_bd(self):
+        """Primera descarga tras finalizar genera y guarda el PDF; la
+        segunda debe servirse de la caché sin volver a invocar xhtml2pdf."""
+        self.partido.finalizado = True
+        self.partido.save()
+        url = reverse('stats_app:descargar_informe_completo', args=[self.partido.pk])
+
+        from .views import informes as informes_module
+        with patch.object(
+            informes_module, 'render_to_pdf', wraps=informes_module.render_to_pdf
+        ) as spy_render:
+            resp1 = self.client.get(url)
+            self.assertEqual(resp1.status_code, 200)
+            self.assertEqual(spy_render.call_count, 1)
+
+            self.partido.refresh_from_db()
+            self.assertIsNotNone(self.partido.informe_pdf_cache)
+            self.assertEqual(
+                self.partido.informe_pdf_cache_num_registros,
+                RegistroEstadistica.objects.filter(partido=self.partido).count(),
+            )
+
+            resp2 = self.client.get(url)
+            self.assertEqual(resp2.status_code, 200)
+            # La segunda petición no debe volver a renderizar: sigue en 1.
+            self.assertEqual(spy_render.call_count, 1)
+            self.assertEqual(resp1.content, resp2.content)
+
+    def test_informe_completo_pdf_cache_se_invalida_si_cambian_los_datos(self):
+        """Añadir una acción tras finalizar (p.ej. una corrección) debe
+        invalidar la caché y regenerar el PDF con los datos actualizados."""
+        self.partido.finalizado = True
+        self.partido.save()
+        url = reverse('stats_app:descargar_informe_completo', args=[self.partido.pk])
+
+        from .views import informes as informes_module
+        with patch.object(
+            informes_module, 'render_to_pdf', wraps=informes_module.render_to_pdf
+        ) as spy_render:
+            self.client.get(url)
+            self.assertEqual(spy_render.call_count, 1)
+
+            RegistroEstadistica.objects.create(
+                partido=self.partido, jugadora=self.jugadoras[0], tipo_fase='K1',
+                accion='ATAQUE', calidad='++', set_numero=1,
+            )
+            self.client.get(url)
+            self.assertEqual(spy_render.call_count, 2)
+
+            self.partido.refresh_from_db()
+            self.assertEqual(
+                self.partido.informe_pdf_cache_num_registros,
+                RegistroEstadistica.objects.filter(partido=self.partido).count(),
+            )
+
+    def test_informe_completo_pdf_no_cachea_si_partido_no_finalizado(self):
+        url = reverse('stats_app:descargar_informe_completo', args=[self.partido.pk])
+        self.client.get(url)
+        self.partido.refresh_from_db()
+        self.assertIsNone(self.partido.informe_pdf_cache)
+
+    def test_informe_completo_pdf_por_set_no_usa_ni_llena_la_cache(self):
+        self.partido.finalizado = True
+        self.partido.save()
+        url = reverse('stats_app:descargar_informe_completo', args=[self.partido.pk])
+        response = self.client.get(url, {'set': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.partido.refresh_from_db()
+        self.assertIsNone(self.partido.informe_pdf_cache)
+
     def test_registrar_cambio_happy_path(self):
         response = self.client.post(
             reverse('stats_app:api_registrar_cambio'),
@@ -1170,11 +1242,26 @@ class ReportingHelpersTests(TestCase):
         self._punto('ATAQUE', '++')
         reporte = build_full_report(self.partido, 'global')
         self.assertEqual(len(reporte['detalle_sets']), 1)
+        self.assertIsNone(reporte['detalle_total'])
         set_data = reporte['detalle_sets'][0]
         for clave in ('zonas', 'rotacion', 'racha_maxima', 'run_chart', 'k1_efi', 'k2_efi', 'lideres', 'destacados_por_accion'):
             self.assertIn(clave, set_data)
         self.assertEqual(len(set_data['zonas']), 6)
         self.assertEqual(len(set_data['rotacion']), 6)
+
+    def test_build_full_report_incluye_detalle_total_con_varios_sets(self):
+        j = Jugadora.objects.create(equipo=self.equipo, nombre='Test', dorsal=7)
+        for set_n in (1, 2):
+            for _ in range(3):
+                RegistroEstadistica.objects.create(
+                    partido=self.partido, jugadora=j, tipo_fase='K1',
+                    accion='ATAQUE', calidad='++', set_numero=set_n,
+                )
+        reporte = build_full_report(self.partido, 'global')
+        self.assertIsNotNone(reporte['detalle_total'])
+        self.assertEqual(len(reporte['detalle_total']['jugadoras']), 1)
+        self.assertEqual(reporte['detalle_total']['totales']['puntos'], 6)
+        self.assertEqual(reporte['detalle_total']['totales']['ataque_kills'], 6)
 
     def test_build_set_leaders_prioriza_saldo_y_puntos_sobre_eficiencia_puntual(self):
         """Victoria 14/2 debe ganar a Lucía 1/1 en estrella y máxima anotadora."""
@@ -1210,6 +1297,52 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(dest['recepcion']['mejor']['dorsal'], 25)
         self.assertIn('defensa', dest)
         self.assertIn('bloqueo', dest)
+
+    def test_destacados_mejor_recepcion_prioriza_volumen_con_eficacia_minima(self):
+        """100 rec al 80% gana a 12 rec perfectas: más peso en recepción."""
+        libero = Jugadora.objects.create(equipo=self.equipo, nombre='Líbero', dorsal=29, posicion='LIBERO')
+        otra = Jugadora.objects.create(equipo=self.equipo, nombre='Lucía', dorsal=18)
+        for _ in range(80):
+            RegistroEstadistica.objects.create(
+                partido=self.partido, jugadora=libero, tipo_fase='K1',
+                accion='RECEPCION', calidad='+', set_numero=1,
+            )
+        for _ in range(20):
+            RegistroEstadistica.objects.create(
+                partido=self.partido, jugadora=libero, tipo_fase='K1',
+                accion='RECEPCION', calidad='--', set_numero=1,
+            )
+        for _ in range(12):
+            RegistroEstadistica.objects.create(
+                partido=self.partido, jugadora=otra, tipo_fase='K1',
+                accion='RECEPCION', calidad='++', set_numero=1,
+            )
+
+        dest = build_destacados_por_accion(self.partido, 1)
+        self.assertEqual(dest['recepcion']['mejor']['dorsal'], 29)
+
+    def test_destacados_mejor_defensa_prioriza_volumen_con_eficacia_minima(self):
+        """Más defensas con >=80% eficacia gana a pocas defensas perfectas."""
+        libero = Jugadora.objects.create(equipo=self.equipo, nombre='Líbero', dorsal=29, posicion='LIBERO')
+        otra = Jugadora.objects.create(equipo=self.equipo, nombre='Lucía', dorsal=18)
+        for _ in range(50):
+            RegistroEstadistica.objects.create(
+                partido=self.partido, jugadora=libero, tipo_fase='K2',
+                accion='DEFENSA', calidad='+', set_numero=1,
+            )
+        for _ in range(10):
+            RegistroEstadistica.objects.create(
+                partido=self.partido, jugadora=libero, tipo_fase='K2',
+                accion='DEFENSA', calidad='--', set_numero=1,
+            )
+        for _ in range(12):
+            RegistroEstadistica.objects.create(
+                partido=self.partido, jugadora=otra, tipo_fase='K2',
+                accion='DEFENSA', calidad='+', set_numero=1,
+            )
+
+        dest = build_destacados_por_accion(self.partido, 1)
+        self.assertEqual(dest['defensa']['mejor']['dorsal'], 29)
 
     def test_candidata_cambio_no_penaliza_libero_con_alta_eficacia_defensiva(self):
         """26 defensas buenas y 2 errores (saldo -2) no debe marcar fila roja."""
@@ -1247,6 +1380,50 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(snap['puntos_local'], 25)
         self.assertEqual(snap['puntos_rival'], 17)
         self.assertEqual(snap['sets_local'], 1)
+
+    def test_build_full_report_no_hace_n_mas_1_queries(self):
+        """Regresión de rendimiento: el informe completo generaba miles de
+        queries (una por cada combinación set × jugadora × fundamento ×
+        calidad), lo que bloqueaba la app en producción contra una BD remota
+        con latencia de red por consulta. Debe resolverse con un puñado de
+        queries fijas, sin importar cuántos sets/jugadoras/acciones haya."""
+        jugadoras = [
+            Jugadora.objects.create(equipo=self.equipo, nombre=f'J{i}', dorsal=i)
+            for i in range(1, 9)
+        ]
+        acciones = ['SAQUE', 'RECEPCION', 'COLOCACION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
+        calidades = ['++', '+', '=', '-', '--']
+        fases = ['K0', 'K1', 'K2']
+        for set_n in (1, 2, 3):
+            registros = [
+                RegistroEstadistica(
+                    partido=self.partido,
+                    jugadora=jugadoras[i % len(jugadoras)],
+                    set_numero=set_n,
+                    tipo_fase=fases[i % len(fases)],
+                    accion=acciones[i % len(acciones)],
+                    calidad=calidades[i % len(calidades)],
+                    rotacion_num=(i % 6) + 1,
+                    zona=(i % 6) + 1,
+                )
+                for i in range(150)
+            ]
+            RegistroEstadistica.objects.bulk_create(registros)
+            RotacionSet.objects.create(
+                partido=self.partido, set_numero=set_n,
+                pos1=jugadoras[0], pos2=jugadoras[1], pos3=jugadoras[2],
+                pos4=jugadoras[3], pos5=jugadoras[4], pos6=jugadoras[5],
+            )
+
+        with CaptureQueriesContext(connection) as ctx:
+            reporte = build_full_report(self.partido, 'global')
+
+        self.assertEqual(len(reporte['detalle_sets']), 3)
+        self.assertLess(
+            len(ctx.captured_queries), 10,
+            f"build_full_report ejecutó {len(ctx.captured_queries)} queries; "
+            "no debería escalar con el número de sets/jugadoras/acciones."
+        )
 
 
 class CrudAdministracionTests(TestCase):

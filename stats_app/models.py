@@ -71,6 +71,21 @@ class Partido(models.Model):
     puntos_set_decisivo = models.PositiveIntegerField(default=15, verbose_name="Puntos del set decisivo")
     sets_para_ganar = models.PositiveIntegerField(default=3, verbose_name="Sets para ganar el partido")
 
+    # ── Caché del PDF del informe completo (solo partidos finalizados) ─────
+    # Un partido finalizado es un registro histórico que no cambia, así que
+    # regenerar el PDF (xhtml2pdf) en cada descarga es trabajo desperdiciado.
+    # Se guarda el PDF ya renderizado directamente en BD (no en disco local:
+    # Cloud Run tiene el filesystem efímero y puede repartir peticiones entre
+    # varias instancias, así que un fichero guardado en una no estaría
+    # disponible en las demás; Postgres es el único almacén compartido que
+    # ya existe sin añadir infraestructura nueva). Se invalida solo comparando
+    # el número de registros de estadística: si no coincide con el que había
+    # al generar la caché, los datos cambiaron (alta/baja de una acción) y se
+    # regenera de forma transparente en la siguiente petición.
+    informe_pdf_cache = models.BinaryField(null=True, blank=True, editable=False)
+    informe_pdf_cache_num_registros = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    informe_pdf_cache_generado_en = models.DateTimeField(null=True, blank=True, editable=False)
+
     def __str__(self):
         return f"{self.equipo.nombre} vs {self.rival} ({self.fecha} {self.hora})"
 
@@ -132,6 +147,9 @@ class RegistroEstadistica(models.Model):
     class Meta:
         verbose_name = "Registro de Estadística"
         verbose_name_plural = "Registros de Estadísticas"
+        indexes = [
+            models.Index(fields=['partido', 'set_numero'], name='statsapp_reg_partido_set_idx'),
+        ]
 
 class RotacionSet(models.Model):
     partido = models.ForeignKey(Partido, on_delete=models.CASCADE, related_name='rotaciones')
