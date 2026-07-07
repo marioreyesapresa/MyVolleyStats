@@ -47,8 +47,10 @@
     </div>
 
     <!-- Leyenda -->
+    {% include 'stats_app/includes/leyenda_metricas.html' %}
+
     <div class="bg-[#121824] border border-slate-800 rounded-2xl p-4 text-[10px] sm:text-xs text-slate-400 space-y-2 print:hidden">
-        <p class="font-black text-slate-300 uppercase tracking-wider text-[10px]">Cómo leer las estadísticas</p>
+        <p class="font-black text-slate-300 uppercase tracking-wider text-[10px]">Fórmulas rápidas</p>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5">
             <p><span class="text-white font-bold">Saldo</span> = Puntos (++) − Errores (−−). Ej.: 10 pts y 1 err. → saldo <span class="text-emerald-400 font-bold">+9</span></p>
             <p><span class="text-white font-bold">Puntos</span> = acciones con calidad ++ (ataque punto, ace, bloqueo…)</p>
@@ -56,6 +58,9 @@
             <p><span class="text-white font-bold">Efic. recepción %</span> = % de side-out cuando recibimos saque rival</p>
             <p><span class="text-white font-bold">Efic. saque %</span> = % de puntos ganados con nuestro saque</p>
             <p><span class="text-white font-bold">Efic.% ataque</span> = (puntos − errores) ÷ intentos de ataque</p>
+            <p><span class="text-white font-bold">K1 / K2 (complejos)</span> = calidad de acciones: ( ++ − −− ) ÷ total en recep.+ataque (K1) o saque+bloq.+def. (K2)</p>
+            <p><span class="text-white font-bold">Zona %</span> = (puntos − errores) ÷ intentos de ataque/bloqueo en esa zona (solo con zona registrada)</p>
+            <p><span class="text-white font-bold">Rotación K1/K2</span> = % de rallies ganados al recibir (verde) o al sacar (azul) en cada rotación — distinto de los complejos</p>
         </div>
         <p class="text-[9px] text-slate-600 pt-1 border-t border-slate-800">
             <span class="inline-block w-3 h-3 rounded bg-[#d4edda] align-middle mr-1"></span>verde = puntos/aces &nbsp;
@@ -70,9 +75,9 @@
                 <tr>
                     <th class="player-name">Set</th>
                     <th>Marcador</th>
-                    <th>{{ partido.equipo.nombre|truncatechars:12 }} % Recepción</th>
-                    <th>{{ partido.rival|truncatechars:12 }} % Recepción</th>
-                    <th>% Efic. Saque</th>
+                    <th>{{ partido.equipo.nombre|truncatechars:12 }}<br/><span style="font-weight:normal;font-size:9px;">Side-out %</span></th>
+                    <th>{{ partido.rival|truncatechars:12 }}<br/><span style="font-weight:normal;font-size:9px;">Side-out %</span></th>
+                    <th>Breakpoint %</th>
                 </tr>
             </thead>
             <tbody>
@@ -91,6 +96,52 @@
         </table>
     </div>
 
+    <!-- Líderes y destacados del periodo filtrado -->
+    {% if destacadas %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 print:hidden">
+        <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 space-y-3">
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">{{ destacadas.titulo }}</h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-3">
+                    <span class="text-[9px] font-black text-amber-500 uppercase w-28">Estrella</span>
+                    <span class="text-white font-bold">{% if destacadas.estrella %}#{{ destacadas.estrella.dorsal }} {{ destacadas.estrella.nombre }} · {{ destacadas.estrella.detalle }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-[9px] font-black text-emerald-500 uppercase w-28">Máx. anotadora</span>
+                    <span class="text-white font-bold">{% if destacadas.max_anotadora %}#{{ destacadas.max_anotadora.dorsal }} {{ destacadas.max_anotadora.nombre }} · {{ destacadas.max_anotadora.detalle }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-[9px] font-black text-blue-500 uppercase w-28">Mejor saque</span>
+                    <span class="text-white font-bold">{% if destacadas.lider_saque %}#{{ destacadas.lider_saque.dorsal }} {{ destacadas.lider_saque.nombre }} · {{ destacadas.lider_saque.detalle }}{% else %}—{% endif %}</span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 space-y-2">
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Destacados por acción</h3>
+            <p class="text-[9px] text-slate-600">Mejor vs. a mejorar en ataque, saque y control de balón (recep.+def.)</p>
+            {% with d=destacadas.destacados_por_accion %}
+            <div class="text-[11px] space-y-1.5">
+                <div class="grid grid-cols-[4.5rem_1fr_1fr] gap-2">
+                    <span class="text-slate-500 font-black uppercase text-[9px]">Ataque</span>
+                    <span class="text-emerald-400">{% if d.ataque.mejor %}#{{ d.ataque.mejor.dorsal }} {{ d.ataque.mejor.detalle }}{% else %}—{% endif %}</span>
+                    <span class="text-rose-400">{% if d.ataque.a_mejorar %}#{{ d.ataque.a_mejorar.dorsal }} {{ d.ataque.a_mejorar.detalle }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="grid grid-cols-[4.5rem_1fr_1fr] gap-2">
+                    <span class="text-slate-500 font-black uppercase text-[9px]">Saque</span>
+                    <span class="text-emerald-400">{% if d.saque.mejor %}#{{ d.saque.mejor.dorsal }} {{ d.saque.mejor.detalle }}{% else %}—{% endif %}</span>
+                    <span class="text-rose-400">{% if d.saque.a_mejorar %}#{{ d.saque.a_mejorar.dorsal }} {{ d.saque.a_mejorar.detalle }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="grid grid-cols-[4.5rem_1fr_1fr] gap-2">
+                    <span class="text-slate-500 font-black uppercase text-[9px]">Ctrl. balón</span>
+                    <span class="text-emerald-400">{% if d.control_balon.mejor %}#{{ d.control_balon.mejor.dorsal }} {{ d.control_balon.mejor.detalle }}{% else %}—{% endif %}</span>
+                    <span class="text-rose-400">{% if d.control_balon.a_mejorar %}#{{ d.control_balon.a_mejorar.dorsal }} {{ d.control_balon.a_mejorar.detalle }}{% else %}—{% endif %}</span>
+                </div>
+            </div>
+            {% endwith %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Gráficos compactos -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 print:hidden">
         <div class="bg-[#121824] p-5 rounded-3xl border border-slate-800">
@@ -108,7 +159,8 @@
     <div class="report-sheet rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
         <div class="set-title">
             SET {{ set_data.set_num }} — {{ partido.equipo.nombre }} vs {{ partido.rival }}: Marcador {{ set_data.score }}
-            {% if set_data.sideout_pct != None %} · Efic. recepción {{ set_data.sideout_pct }}%{% endif %}
+            {% if set_data.sideout_pct != None %} · Side-out {{ set_data.sideout_pct }}%{% endif %}
+            · Complejos K1 {{ set_data.k1_efi }}% / K2 {{ set_data.k2_efi }}%
         </div>
         <div class="overflow-x-auto">
             <table class="w-full border-collapse min-w-[1100px]">
@@ -198,10 +250,31 @@
     </div>
     {% endif %}
 
+    <!-- Líderes del set -->
+    {% if set_data.lideres %}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 print:hidden">
+        <div class="bg-[#121824] rounded-2xl p-3 border border-amber-500/20 text-[10px]">
+            <span class="text-amber-500 font-black uppercase text-[9px]">Estrella del set</span>
+            <p class="text-white font-bold mt-1">{% if set_data.lideres.estrella %}#{{ set_data.lideres.estrella.dorsal }} {{ set_data.lideres.estrella.nombre }} · {{ set_data.lideres.estrella.detalle }}{% else %}—{% endif %}</p>
+        </div>
+        <div class="bg-[#121824] rounded-2xl p-3 border border-emerald-500/20 text-[10px]">
+            <span class="text-emerald-500 font-black uppercase text-[9px]">Máxima anotadora</span>
+            <p class="text-white font-bold mt-1">{% if set_data.lideres.maxima_anotadora %}#{{ set_data.lideres.maxima_anotadora.dorsal }} {{ set_data.lideres.maxima_anotadora.nombre }} · {{ set_data.lideres.maxima_anotadora.detalle }}{% else %}—{% endif %}</p>
+        </div>
+        <div class="bg-[#121824] rounded-2xl p-3 border border-blue-500/20 text-[10px]">
+            <span class="text-blue-500 font-black uppercase text-[9px]">Mejor en saque</span>
+            <p class="text-white font-bold mt-1">{% if set_data.lideres.mejor_saque %}#{{ set_data.lideres.mejor_saque.dorsal }} {{ set_data.lideres.mejor_saque.nombre }} · {{ set_data.lideres.mejor_saque.detalle }}{% else %}—{% endif %}</p>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Rendimiento por Zona + Eficacia por Rotación (Set {{ set_data.set_num }}) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="report-sheet rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
             <div class="set-title">Rendimiento por Zona — Set {{ set_data.set_num }}</div>
+            <p class="text-[10px] text-slate-600 px-3 py-2 border-b border-slate-300 bg-slate-50">
+                Solo acciones con zona (modo rápido). Ataque % = (puntos − errores) ÷ intentos. Bloqueo solo en zonas 2·3·4.
+            </p>
             <table class="w-full border-collapse">
                 <thead>
                     <tr>
@@ -228,6 +301,9 @@
 
         <div class="report-sheet rounded-2xl overflow-hidden shadow-2xl border border-slate-700">
             <div class="set-title">Eficacia por Rotación — Set {{ set_data.set_num }}</div>
+            <p class="text-[10px] text-slate-600 px-3 py-2 border-b border-slate-300 bg-slate-50">
+                K1 = % rallies ganados al recibir en esa rotación. K2 = % rallies ganados al sacar. No mide calidad de toques.
+            </p>
             <table class="w-full border-collapse">
                 <thead>
                     <tr>

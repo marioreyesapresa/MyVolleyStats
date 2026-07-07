@@ -497,6 +497,17 @@
         .gameplay-action-btn:active {
             transform: scale(0.95);
         }
+        /* Tabla rendimiento por jugadora: 12 columnas visibles en iPad sin scroll */
+        .quick-stats-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+        .quick-stats-table th,
+        .quick-stats-table td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
     <div id="scout-rapido-container" class="hidden w-full space-y-2">
         <!-- 1. MENÚ DE NAVEGACIÓN FLOTANTE (estilo píldora) -->
@@ -883,23 +894,33 @@
         <div class="lg:col-span-8 space-y-4">
 
             <!-- KPIs del set actual -->
+            <div class="space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-wider">Ver set:</span>
+                    <div id="indicadores-set-picker" class="flex flex-wrap gap-1.5" role="group" aria-label="Seleccionar set para indicadores"></div>
+                </div>
+                <p id="indicadores-set-hint" class="text-[8px] text-slate-600 font-bold"></p>
+            </div>
+            {% include 'stats_app/includes/leyenda_metricas.html' with compact=True %}
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div class="bg-[#121824] rounded-2xl p-3 border border-slate-800 text-center">
                     <span class="text-[8px] font-black text-slate-500 uppercase tracking-wider block">Marcador Set</span>
                     <span id="quick-score" class="text-lg font-black text-white">0 – 0</span>
                 </div>
                 <div class="bg-[#121824] rounded-2xl p-3 border border-emerald-900/40 text-center">
-                    <span class="text-[8px] font-black text-emerald-600 uppercase tracking-wider block">Efic. recepción %</span>
+                    <span class="text-[8px] font-black text-emerald-600 uppercase tracking-wider block" title="% de rallies ganados cuando recibimos saque rival (fases K1/K2)">Side-out %</span>
                     <span id="quick-sideout" class="text-lg font-black text-emerald-400">—</span>
                 </div>
                 <div class="bg-[#121824] rounded-2xl p-3 border border-blue-900/40 text-center">
-                    <span class="text-[8px] font-black text-blue-500 uppercase tracking-wider block">Efic. saque %</span>
+                    <span class="text-[8px] font-black text-blue-500 uppercase tracking-wider block" title="% de rallies ganados cuando sacamos nosotros (fase K0)">Breakpoint %</span>
                     <span id="quick-break" class="text-lg font-black text-blue-400">—</span>
                 </div>
                 <div class="bg-[#121824] rounded-2xl p-3 border border-slate-800 text-center">
-                    <span class="text-[8px] font-black text-slate-500 uppercase tracking-wider block">K1 / K2</span>
+                    <span class="text-[8px] font-black text-slate-500 uppercase tracking-wider block" title="Calidad de acciones: ( ++ − −− ) ÷ total en cada complejo">K1 / K2</span>
                     <span id="quick-k1k2" class="text-lg font-black text-white"><span id="quick-k1-inline">0</span>% / <span id="quick-k2-inline">0</span>%</span>
                 </div>
+            </div>
             </div>
 
             <!-- Tabla rápida por jugadora (decisiones en banquillo) -->
@@ -907,9 +928,9 @@
                 <div class="px-4 py-3 border-b border-slate-800 flex justify-between items-center">
                     <div>
                         <h3 class="text-sm font-black uppercase tracking-wider text-white">Rendimiento por Jugadora</h3>
-                        <p class="text-[9px] text-slate-500 mt-0.5">Set actual · Filas en rojo = candidatas a cambio</p>
+                        <p id="indicadores-tabla-hint" class="text-[9px] text-slate-500 mt-0.5">Filas en rojo = candidatas a cambio</p>
                     </div>
-                    <span id="quick-set-label" class="text-[9px] font-black text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 uppercase">Set 1</span>
+                    <span id="quick-set-label" class="text-[9px] font-black text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 uppercase shrink-0">Set 1</span>
                 </div>
                 <div class="px-4 py-2 bg-[#090d16]/60 border-b border-slate-800 text-[9px] text-slate-500 leading-relaxed">
                     <span class="text-slate-400 font-bold">Saldo</span> = Puntos (++) − Errores (−−).
@@ -918,21 +939,21 @@
                     <span class="text-slate-600">| Atq P/E = puntos/error ataque · Efic.% = (pts−err)/intentos</span>
                 </div>
                 <div class="overflow-x-auto max-h-[52vh] overflow-y-auto">
-                    <table class="w-full text-left border-collapse min-w-[640px]">
+                    <table class="w-full text-left border-collapse quick-stats-table">
                         <thead class="sticky top-0 z-10 bg-[#090d16]">
-                            <tr class="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-800">
-                                <th class="p-2 pl-4">#</th>
-                                <th class="p-2">Nombre</th>
-                                <th class="p-2 text-center" title="Puntos (++) − Errores (−−)">Saldo</th>
-                                <th class="p-2 text-center">Puntos</th>
-                                <th class="p-2 text-center">Errores</th>
-                                <th class="p-2 text-center">Atq P/E</th>
-                                <th class="p-2 text-center">Efic.%</th>
-                                <th class="p-2 text-center">Recep.</th>
-                                <th class="p-2 text-center">Ace/Err</th>
-                                <th class="p-2 text-center">Bloq.</th>
-                                <th class="p-2 text-center">Coloc.</th>
-                                <th class="p-2 text-center">Def.</th>
+                            <tr class="text-[7px] sm:text-[8px] font-black text-slate-500 uppercase tracking-tight border-b border-slate-800">
+                                <th class="px-1 py-1.5 pl-3">#</th>
+                                <th class="px-1 py-1.5">Nom.</th>
+                                <th class="px-1 py-1.5 text-center" title="Puntos (++) − Errores (−−)">Saldo</th>
+                                <th class="px-1 py-1.5 text-center">Pts</th>
+                                <th class="px-1 py-1.5 text-center">Err</th>
+                                <th class="px-1 py-1.5 text-center">Atq</th>
+                                <th class="px-1 py-1.5 text-center">Ef%</th>
+                                <th class="px-1 py-1.5 text-center">Rec</th>
+                                <th class="px-1 py-1.5 text-center">Sac</th>
+                                <th class="px-1 py-1.5 text-center">Blq</th>
+                                <th class="px-1 py-1.5 text-center">Col</th>
+                                <th class="px-1 py-1.5 text-center pr-3">Def</th>
                             </tr>
                         </thead>
                         <tbody id="quick-stats-body" class="text-[10px] sm:text-xs divide-y divide-slate-800/50">
@@ -949,24 +970,24 @@
             <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Líderes del Set</h3>
                 <div class="flex items-center space-x-3 py-1.5">
-                    <div class="p-2 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20 flex-none"><i data-lucide="crown" class="w-4 h-4"></i></div>
+                    <div class="p-2 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20 flex-none"><i data-lucide="star" class="w-4 h-4"></i></div>
                     <div class="min-w-0 flex-1">
-                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">MVP Ataque</span>
-                        <p id="mvp-label" class="text-xs font-black text-white truncate">--</p>
+                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Estrella del Set</span>
+                        <p id="lider-estrella-label" class="text-xs font-black text-white truncate">--</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-3 py-1.5">
-                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20 flex-none"><i data-lucide="zap" class="w-4 h-4"></i></div>
+                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20 flex-none"><i data-lucide="target" class="w-4 h-4"></i></div>
                     <div class="min-w-0 flex-1">
-                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Mejor Sacadora</span>
+                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Máxima Anotadora</span>
+                        <p id="lider-anotadora-label" class="text-xs font-black text-white truncate">--</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 py-1.5">
+                    <div class="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20 flex-none"><i data-lucide="zap" class="w-4 h-4"></i></div>
+                    <div class="min-w-0 flex-1">
+                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Mejor en Saque</span>
                         <p id="lider-saque-label" class="text-xs font-black text-white truncate">--</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-3 py-1.5">
-                    <div class="p-2 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20 flex-none"><i data-lucide="target" class="w-4 h-4"></i></div>
-                    <div class="min-w-0 flex-1">
-                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Mejor Atacante</span>
-                        <p id="lider-ataque-label" class="text-xs font-black text-white truncate">--</p>
                     </div>
                 </div>
             </div>
@@ -983,20 +1004,41 @@
                 </div>
             </div>
 
-            <div id="alerta-card" class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2 transition-colors duration-300">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Alerta Táctica</h3>
-                <div class="bg-rose-950/20 p-3 rounded-xl border border-rose-900/25 flex items-start space-x-2.5">
-                    <div class="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg border border-rose-500/20 flex-none mt-0.5">
-                        <i data-lucide="alert-triangle" class="w-4 h-4 animate-pulse"></i>
+            <div id="destacados-card" class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Destacados por Acción</h3>
+                <p class="text-[8px] text-slate-600 leading-relaxed">Cara y cruz del set · Mejor vs. a mejorar</p>
+                <div class="space-y-2 text-[10px]">
+                    <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start">
+                        <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Ataque</span>
+                        <div class="min-w-0">
+                            <span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span>
+                            <p id="dest-ataque-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span>
+                            <p id="dest-ataque-peor" class="font-bold text-rose-300 truncate leading-tight">—</p>
+                        </div>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <span class="text-[8px] font-black text-rose-400 uppercase tracking-widest block">Rendimiento Bajo</span>
-                        <p id="alerta-label" class="text-[11px] font-bold text-slate-200 mt-0.5 leading-snug">Sin alertas en el set</p>
-                        <div id="alerta-bar-wrap" class="mt-1.5 hidden">
-                            <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div id="alerta-bar" class="h-full bg-rose-500 rounded-full transition-all" style="width:0%"></div>
-                            </div>
-                            <span id="alerta-pct" class="text-[8px] font-black text-rose-400 mt-0.5 block">0% errores directos</span>
+                    <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start border-t border-slate-800/60 pt-2">
+                        <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Saque</span>
+                        <div class="min-w-0">
+                            <span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span>
+                            <p id="dest-saque-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span>
+                            <p id="dest-saque-peor" class="font-bold text-rose-300 truncate leading-tight">—</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start border-t border-slate-800/60 pt-2">
+                        <span class="text-[8px] font-black text-slate-500 uppercase pt-1 leading-tight">Ctrl. balón</span>
+                        <div class="min-w-0">
+                            <span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span>
+                            <p id="dest-control-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span>
+                            <p id="dest-control-peor" class="font-bold text-rose-300 truncate leading-tight">—</p>
                         </div>
                     </div>
                 </div>
@@ -1004,9 +1046,14 @@
 
             <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-3">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Eficacia de Complejos</h3>
+                <p class="text-[8px] text-slate-600 leading-relaxed -mt-1">
+                    <span class="text-slate-500 font-bold">No es el marcador.</span>
+                    Mide la <span class="text-emerald-400/90">calidad de las acciones</span> registradas:
+                    <span class="text-slate-400">(puntos ++ − errores −−) ÷ total de acciones</span> del complejo.
+                </p>
                 <div class="space-y-1">
                     <div class="flex justify-between items-center">
-                        <span class="text-[9px] font-black text-slate-400 uppercase">K1 Recep.+Ataque</span>
+                        <span class="text-[9px] font-black text-slate-400 uppercase" title="Recepción + Ataque">K1 Recep.+Ataque</span>
                         <span id="k1-pct-label" class="text-[10px] font-black text-emerald-400">0%</span>
                     </div>
                     <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -1026,7 +1073,12 @@
 
             <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-3">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Rendimiento por Zona</h3>
-                <p class="text-[8px] text-slate-600 leading-relaxed -mt-2">% Ataque (arriba) y % Bloqueo en zonas de red (abajo) · según de qué zona salió cada acción</p>
+                <p class="text-[8px] text-slate-600 leading-relaxed -mt-2">
+                    Solo acciones con <span class="text-slate-400">zona registrada</span> (modo rápido).
+                    <span class="text-emerald-400">Arriba</span> = efic. ataque
+                    <span class="text-slate-500">(pts − err) ÷ intentos</span> en esa zona.
+                    <span class="text-blue-400">Abajo</span> = efic. bloqueo (zonas 2·3·4).
+                </p>
                 <div id="zone-perf-grid" class="grid {% if partido.modalidad == 'MINIVOLEY' %}grid-cols-2{% else %}grid-cols-3{% endif %} gap-2">
                     {% if partido.modalidad == 'MINIVOLEY' %}
                     {% for z in "3241" %}
@@ -1049,7 +1101,12 @@
             </div>
 
             <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-3">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Eficacia por Rotación</h3>
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pb-1 border-b border-slate-800">Eficacia por Rotación</h3>
+                <p class="text-[8px] text-slate-600 leading-relaxed -mt-1">
+                    <span class="text-emerald-400">Verde</span> = % de <span class="text-slate-400">rallies ganados al recibir</span> en esa rotación (K1).
+                    <span class="text-blue-400">Azul</span> = % de <span class="text-slate-400">rallies ganados al sacar</span> (K2).
+                    <span class="text-slate-600">Distinto del bloque «Complejos».</span>
+                </p>
                 <div id="rotation-matrix" class="grid {% if partido.modalidad == 'MINIVOLEY' %}grid-cols-2 sm:grid-cols-4{% else %}grid-cols-3 sm:grid-cols-6{% endif %} gap-2">
                     {% if partido.modalidad == 'MINIVOLEY' %}
                     {% for i in "1234" %}
@@ -1196,6 +1253,8 @@
         partido_id: '{{ partido.id }}', 
         jugadora_id: null, 
         set_numero: 1,
+        indicadores_set: 1,
+        sets_con_datos: [1],
         activeRoster: [],
         rotation: null,
         set_finished: false,
@@ -1428,6 +1487,7 @@
 
     function setSet(num) {
         state.set_numero = parseInt(num);
+        state.indicadores_set = parseInt(num);
 
         // Reset phase state for the new set
         // ── Restore estado inicial from localStorage ─────────────────────
@@ -2885,7 +2945,258 @@
         if (giantScoreRival) giantScoreRival.innerText = pRival;
     }
 
-    // Refresh live stats
+    function getIndicadoresSetNums() {
+        const nums = new Set(state.sets_con_datos || []);
+        for (let s = 1; s <= state.set_numero; s++) nums.add(s);
+        return [...nums].sort((a, b) => a - b);
+    }
+
+    function renderIndicadoresSetPicker() {
+        const container = document.getElementById('indicadores-set-picker');
+        if (!container) return;
+        const sets = getIndicadoresSetNums();
+        if (!sets.includes(state.indicadores_set)) {
+            state.indicadores_set = state.set_numero;
+        }
+        container.innerHTML = sets.map(s => {
+            const active = s === state.indicadores_set;
+            const cerrado = s < state.set_numero;
+            const cls = active
+                ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-900/30'
+                : 'bg-[#090d16] border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white';
+            return `<button type="button" onclick="selectIndicadoresSet(${s})"
+                class="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase border transition-all active:scale-95 ${cls}"
+                ${active ? 'aria-pressed="true"' : ''}>Set ${s}${cerrado ? ' ✓' : ''}</button>`;
+        }).join('');
+        updateIndicadoresSetHints();
+    }
+
+    function updateIndicadoresSetHints() {
+        const hint = document.getElementById('indicadores-set-hint');
+        const tablaHint = document.getElementById('indicadores-tabla-hint');
+        const isPast = state.indicadores_set < state.set_numero;
+        const isLive = state.indicadores_set === state.set_numero;
+        if (hint) {
+            if (isPast) {
+                hint.innerText = `Consultando Set ${state.indicadores_set} (cerrado) · Scout en vivo: Set ${state.set_numero}`;
+            } else if (isLive) {
+                hint.innerText = 'Set en juego · datos en actualización';
+            } else {
+                hint.innerText = '';
+            }
+        }
+        if (tablaHint) {
+            tablaHint.innerText = isPast
+                ? `Histórico del Set ${state.indicadores_set} · Filas en rojo = candidatas a cambio`
+                : 'Filas en rojo = candidatas a cambio';
+        }
+        const qsl = document.getElementById('quick-set-label');
+        if (qsl) qsl.innerText = `Set ${state.indicadores_set}`;
+    }
+
+    function selectIndicadoresSet(n) {
+        n = parseInt(n, 10);
+        if (!getIndicadoresSetNums().includes(n)) return;
+        state.indicadores_set = n;
+        localStorage.setItem(`partido_${state.partido_id}_indicadores_set`, String(n));
+        renderIndicadoresSetPicker();
+        updateIndicadoresPanel();
+    }
+
+    function paintIndicadoresFromResponse(res) {
+        const fmtLider = (j) => j ? `#${j.dorsal} ${j.nombre} (${j.detalle})` : '--';
+        const lideres = res.lideres || {};
+        const elEstrella = document.getElementById('lider-estrella-label');
+        const elAnot = document.getElementById('lider-anotadora-label');
+        const elSaque = document.getElementById('lider-saque-label');
+        if (elEstrella) elEstrella.innerText = fmtLider(lideres.estrella);
+        if (elAnot) elAnot.innerText = fmtLider(lideres.maxima_anotadora);
+        if (elSaque) elSaque.innerText = fmtLider(lideres.mejor_saque);
+
+        const fmtDest = (j) => j ? `#${j.dorsal} ${j.nombre} · ${j.detalle}` : '—';
+        const dest = res.destacados_por_accion || {};
+        const setDest = (mejorId, peorId, bloque) => {
+            const b = dest[bloque] || {};
+            const mejorEl = document.getElementById(mejorId);
+            const peorEl = document.getElementById(peorId);
+            if (mejorEl) mejorEl.innerText = fmtDest(b.mejor);
+            if (peorEl) peorEl.innerText = fmtDest(b.a_mejorar);
+        };
+        setDest('dest-ataque-mejor', 'dest-ataque-peor', 'ataque');
+        setDest('dest-saque-mejor', 'dest-saque-peor', 'saque');
+        setDest('dest-control-mejor', 'dest-control-peor', 'control_balon');
+
+        const k1 = res.k1_efi !== undefined ? res.k1_efi : 0;
+        const k2 = res.k2_efi !== undefined ? res.k2_efi : 0;
+        const k1Lbl = document.getElementById('k1-pct-label');
+        const k2Lbl = document.getElementById('k2-pct-label');
+        const k1Bar = document.getElementById('k1-bar');
+        const k2Bar = document.getElementById('k2-bar');
+        if (k1Lbl) k1Lbl.innerText = `${k1}%`;
+        if (k2Lbl) k2Lbl.innerText = `${k2}%`;
+        if (k1Bar) k1Bar.style.width = `${k1}%`;
+        if (k2Bar) k2Bar.style.width = `${k2}%`;
+
+        const ir = res.informe_rapido;
+        if (ir) {
+            const qs = document.getElementById('quick-score');
+            const qso = document.getElementById('quick-sideout');
+            const qb = document.getElementById('quick-break');
+            const qsl = document.getElementById('quick-set-label');
+            if (qs) qs.innerText = `${ir.score_local} – ${ir.score_rival}`;
+            if (qso) qso.innerText = ir.sideout_pct != null ? `${ir.sideout_pct}%` : '—';
+            if (qb) qb.innerText = ir.breakpoint_pct != null ? `${ir.breakpoint_pct}%` : '—';
+            if (qsl) qsl.innerText = `Set ${ir.set_num}`;
+            const k1i = document.getElementById('quick-k1-inline');
+            const k2i = document.getElementById('quick-k2-inline');
+            if (k1i) k1i.innerText = k1;
+            if (k2i) k2i.innerText = k2;
+
+            const tbody = document.getElementById('quick-stats-body');
+            if (tbody && ir.tabla_rapida) {
+                if (ir.tabla_rapida.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="12" class="p-6 text-center text-slate-600 italic">Sin datos en este set</td></tr>';
+                } else {
+                    tbody.innerHTML = ir.tabla_rapida.map(j => {
+                        const hit = j.ataque_pct != null ? j.ataque_pct.toFixed(3) : '—';
+                        const rowCls = j.alerta ? 'bg-rose-950/30' : 'hover:bg-slate-800/30';
+                        const balCls = j.balance < 0 ? 'text-rose-400' : j.balance > 0 ? 'text-emerald-400' : 'text-slate-400';
+                        return `<tr class="${rowCls} transition-colors">
+                            <td class="px-1 py-1 pl-3 font-black text-white text-[9px] sm:text-[10px]">#${j.dorsal}</td>
+                            <td class="px-1 py-1 font-bold text-slate-300 truncate max-w-[72px] text-[9px] sm:text-[10px]">${j.nombre}</td>
+                            <td class="px-1 py-1 text-center font-black ${balCls} text-[9px] sm:text-[10px]">${j.balance > 0 ? '+' : ''}${j.balance}</td>
+                            <td class="px-1 py-1 text-center font-bold text-emerald-400 text-[9px] sm:text-[10px]">${j.puntos}</td>
+                            <td class="px-1 py-1 text-center font-bold text-rose-400 text-[9px] sm:text-[10px]">${j.errores}</td>
+                            <td class="px-1 py-1 text-center text-slate-300 text-[9px] sm:text-[10px]">${j.ataque_kills}/${j.ataque_err}</td>
+                            <td class="px-1 py-1 text-center text-slate-400 text-[9px] sm:text-[10px]">${hit}</td>
+                            <td class="px-1 py-1 text-center text-slate-300 text-[9px] sm:text-[10px]">${j.recepciones}<span class="text-rose-400">/${j.recepcion_err}</span></td>
+                            <td class="px-1 py-1 text-center text-slate-300 text-[9px] sm:text-[10px]"><span class="text-emerald-400">${j.saque_aces}</span>/<span class="text-rose-400">${j.saque_err}</span></td>
+                            <td class="px-1 py-1 text-center text-slate-300 text-[9px] sm:text-[10px]">${j.bloqueo_pts}</td>
+                            <td class="px-1 py-1 text-center text-slate-300 text-[9px] sm:text-[10px]">${j.asistencias}<span class="text-rose-400">/${j.colocacion_err}</span></td>
+                            <td class="px-1 py-1 text-center text-slate-300 text-[9px] sm:text-[10px] pr-3">${j.defensas}<span class="text-rose-400">/${j.defensa_err}</span></td>
+                        </tr>`;
+                    }).join('');
+                }
+            }
+        }
+
+        document.querySelectorAll('.rot-block').forEach(block => {
+            const k1el = block.querySelector('.rot-k1');
+            const k2el = block.querySelector('.rot-k2');
+            if (k1el) k1el.innerText = '—';
+            if (k2el) k2el.innerText = '—';
+        });
+        if (res.rotaciones) {
+            res.rotaciones.forEach(rot => {
+                const block = document.querySelector(`.rot-block[data-pos="${rot.rotacion}"]`);
+                if (!block) return;
+                const k1el = block.querySelector('.rot-k1');
+                const k2el = block.querySelector('.rot-k2');
+                if (k1el) k1el.innerText = rot.acciones > 0 ? `${rot.k1}%` : '—';
+                if (k2el) k2el.innerText = rot.acciones > 0 ? `${rot.k2}%` : '—';
+            });
+        }
+
+        document.querySelectorAll('.zone-perf-block').forEach(block => {
+            const atqEl = block.querySelector('.zp-ataque');
+            const bloEl = block.querySelector('.zp-bloqueo');
+            if (atqEl) atqEl.innerText = '—';
+            if (bloEl) bloEl.innerText = '—';
+        });
+        if (res.zonas) {
+            res.zonas.forEach(z => {
+                const block = document.querySelector(`.zone-perf-block[data-zona="${z.zona}"]`);
+                if (!block) return;
+                const atqEl = block.querySelector('.zp-ataque');
+                const bloEl = block.querySelector('.zp-bloqueo');
+                if (atqEl) atqEl.innerText = z.ataque_total > 0 ? `${z.ataque_pct}%` : '—';
+                if (bloEl) bloEl.innerText = z.es_red ? (z.bloqueo_total > 0 ? `${z.bloqueo_pct}%` : '—') : '';
+            });
+        }
+
+        const rachaCard = document.getElementById('racha-card');
+        if (rachaCard && res.racha) {
+            const viewingLiveSet = state.indicadores_set === state.set_numero;
+            if (viewingLiveSet && res.racha.racha >= 2) {
+                rachaCard.classList.remove('hidden');
+                const esNuestra = res.racha.lado === 'nosotros';
+                const icon = document.getElementById('racha-icon');
+                const label = document.getElementById('racha-label');
+                if (icon) {
+                    icon.className = `p-2 rounded-lg border flex-none ${esNuestra ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`;
+                }
+                rachaCard.style.borderColor = esNuestra ? 'rgba(16, 185, 129, 0.35)' : 'rgba(244, 63, 94, 0.35)';
+                if (label) {
+                    label.className = `text-xs font-black truncate ${esNuestra ? 'text-emerald-400' : 'text-rose-400'}`;
+                    label.innerText = esNuestra
+                        ? `¡${res.racha.racha} puntos seguidos a favor! 🔥`
+                        : `${res.racha.racha} puntos seguidos del rival ⚠️`;
+                }
+                if (window.lucide) lucide.createIcons();
+            } else {
+                rachaCard.classList.add('hidden');
+            }
+        }
+
+        updateIndicadoresSetHints();
+    }
+
+    function updateMarcadorFromResponse(res) {
+        const pLocal = res.puntos_local !== undefined ? res.puntos_local : 0;
+        const pRival = res.puntos_rival !== undefined ? res.puntos_rival : 0;
+        const sLocal = res.sets_local !== undefined ? res.sets_local : 0;
+        const sRival = res.sets_rival !== undefined ? res.sets_rival : 0;
+
+        setsLocal = sLocal;
+        setsRival = sRival;
+
+        state.marcador.local = pLocal;
+        state.marcador.rival = pRival;
+        updateUIMarcador();
+        const scoreboardSets = document.getElementById('scoreboard-sets');
+        if (scoreboardSets) scoreboardSets.innerText = `(${sLocal}) - (${sRival})`;
+
+        if (res.puntos_por_set !== undefined) {
+            state.reglas.puntosPorSet = res.puntos_por_set;
+            state.reglas.puntosSetDecisivo = res.puntos_set_decisivo;
+            state.reglas.setsParaGanar = res.sets_para_ganar;
+            state.reglas.setDecisivoNumero = res.set_decisivo_numero;
+        }
+
+        const setsParaGanar = state.reglas.setsParaGanar;
+        const isFinalizado = res.partido_finalizado || (sLocal >= setsParaGanar) || (sRival >= setsParaGanar);
+        if (isFinalizado) {
+            state.partido_finalizado = true;
+            lockScoutInterface();
+        } else if (!state.partido_finalizado) {
+            unlockScoutInterface();
+            checkSetEnd(pLocal, pRival);
+        }
+
+        if (res.sets_con_datos) {
+            state.sets_con_datos = res.sets_con_datos;
+        }
+        renderIndicadoresSetPicker();
+    }
+
+    async function updateIndicadoresPanel() {
+        try {
+            const body = { partido_id: state.partido_id, set_numero: state.indicadores_set };
+            const r = await fetchConReintentos('{% url "stats_app:api_obtener_stats_set" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify(body)
+            });
+            const res = await r.json();
+            if (res.status === 'ok') {
+                paintIndicadoresFromResponse(res);
+            }
+        } catch (e) {
+            console.error('Error al actualizar indicadores del set:', e);
+        }
+    }
+
+    // Refresh live stats (marcador del set en juego + panel de indicadores del set seleccionado)
     async function updateFlashboard() {
         try {
             const body = { partido_id: state.partido_id, set_numero: state.set_numero };
@@ -2895,198 +3206,13 @@
                 body: JSON.stringify(body)
             });
             const res = await r.json();
-            
-            if(res.status === 'ok') {
-                // Update Scoreboard
-                const pLocal = res.puntos_local !== undefined ? res.puntos_local : 0;
-                const pRival = res.puntos_rival !== undefined ? res.puntos_rival : 0;
-                const sLocal = res.sets_local !== undefined ? res.sets_local : 0;
-                const sRival = res.sets_rival !== undefined ? res.sets_rival : 0;
-                
-                setsLocal = sLocal;
-                setsRival = sRival;
-                
-                state.marcador.local = pLocal;
-                state.marcador.rival = pRival;
-                updateUIMarcador();
-                document.getElementById('scoreboard-sets').innerText = `(${sLocal}) - (${sRival})`;
 
-                // Mantener sincronizadas las reglas del set con la BD (por si se
-                // actualizaron desde otra sesión/dispositivo)
-                if (res.puntos_por_set !== undefined) {
-                    state.reglas.puntosPorSet = res.puntos_por_set;
-                    state.reglas.puntosSetDecisivo = res.puntos_set_decisivo;
-                    state.reglas.setsParaGanar = res.sets_para_ganar;
-                    state.reglas.setDecisivoNumero = res.set_decisivo_numero;
-                }
-
-                const setsParaGanar = state.reglas.setsParaGanar;
-                const isFinalizado = res.partido_finalizado || (sLocal >= setsParaGanar) || (sRival >= setsParaGanar);
-                if (isFinalizado) {
-                    state.partido_finalizado = true;
-                    lockScoutInterface();
+            if (res.status === 'ok') {
+                updateMarcadorFromResponse(res);
+                if (state.indicadores_set === state.set_numero) {
+                    paintIndicadoresFromResponse(res);
                 } else {
-                    if (!state.partido_finalizado) {
-                        unlockScoutInterface();
-                        // Regulation check for Set End (only check if NOT finalized)
-                        checkSetEnd(pLocal, pRival);
-                    }
-                }
-
-                // ── BLOQUE 1: Líderes del Set ──────────────────────────────
-                // MVP provisional: jugadora con más ++ globales (del ataque)
-                if (res.mvp) {
-                    document.getElementById('mvp-label').innerText =
-                        `#${res.mvp.dorsal} ${res.mvp.nombre} (${res.mvp.eficiencia}%)`;
-                } else {
-                    document.getElementById('mvp-label').innerText = 'Sin datos aún';
-                }
-
-                // Mejor sacadora
-                if (res.mejor_saque) {
-                    document.getElementById('lider-saque-label').innerText =
-                        `#${res.mejor_saque.dorsal} ${res.mejor_saque.nombre} (${res.mejor_saque.pp} directos)`;
-                } else {
-                    document.getElementById('lider-saque-label').innerText = '--';
-                }
-
-                // Mejor atacante
-                if (res.mejor_ataque) {
-                    document.getElementById('lider-ataque-label').innerText =
-                        `#${res.mejor_ataque.dorsal} ${res.mejor_ataque.nombre} (${res.mejor_ataque.pp} puntos)`;
-                } else {
-                    document.getElementById('lider-ataque-label').innerText = '--';
-                }
-
-                // ── BLOQUE 2: Alerta Táctica ───────────────────────────────
-                const alertaCard   = document.getElementById('alerta-card');
-                const alertaLabel  = document.getElementById('alerta-label');
-                const alertaBarWrap = document.getElementById('alerta-bar-wrap');
-                const alertaBar    = document.getElementById('alerta-bar');
-                const alertaPct    = document.getElementById('alerta-pct');
-
-                if (res.alerta && res.alerta.dorsal !== '--') {
-                    alertaLabel.innerText = `${res.alerta.dorsal} – ${res.alerta.nombre}: ${res.alerta.mensaje}`;
-                    alertaCard.style.borderColor = 'rgba(244, 63, 94, 0.4)';
-                    // Compute % errors for this player from desglose_jugadoras if available
-                    let pctErr = 0;
-                    if (res.desglose_jugadoras) {
-                        let totalAcc = 0, totalErr = 0;
-                        Object.values(res.desglose_jugadoras).forEach(fund => {
-                            fund.forEach(j => {
-                                if ('#' + j.dorsal === res.alerta.dorsal) {
-                                    totalAcc += j.total;
-                                    totalErr += j.mm;
-                                }
-                            });
-                        });
-                        pctErr = totalAcc > 0 ? Math.round((totalErr / totalAcc) * 100) : 0;
-                    }
-                    alertaBarWrap.classList.remove('hidden');
-                    alertaBar.style.width = `${pctErr}%`;
-                    alertaPct.innerText = `${pctErr}% errores directos`;
-                } else {
-                    alertaLabel.innerText = 'Sin alertas en el set';
-                    alertaCard.style.borderColor = '';
-                    alertaBarWrap.classList.add('hidden');
-                    alertaBar.style.width = '0%';
-                }
-
-                // ── BLOQUE 3: Complejos K1 / K2 ───────────────────────────
-                const k1 = res.k1_efi !== undefined ? res.k1_efi : 0;
-                const k2 = res.k2_efi !== undefined ? res.k2_efi : 0;
-
-                document.getElementById('k1-pct-label').innerText = `${k1}%`;
-                document.getElementById('k1-bar').style.width = `${k1}%`;
-                document.getElementById('k2-pct-label').innerText = `${k2}%`;
-                document.getElementById('k2-bar').style.width = `${k2}%`;
-
-                // ── Tabla rápida + KPIs del informe en vivo ───────────────
-                const ir = res.informe_rapido;
-                if (ir) {
-                    const qs = document.getElementById('quick-score');
-                    const qso = document.getElementById('quick-sideout');
-                    const qb = document.getElementById('quick-break');
-                    const qsl = document.getElementById('quick-set-label');
-                    if (qs) qs.innerText = `${ir.score_local} – ${ir.score_rival}`;
-                    if (qso) qso.innerText = ir.sideout_pct != null ? `${ir.sideout_pct}%` : '—';
-                    if (qb) qb.innerText = ir.breakpoint_pct != null ? `${ir.breakpoint_pct}%` : '—';
-                    if (qsl) qsl.innerText = `Set ${ir.set_num}`;
-                    const k1i = document.getElementById('quick-k1-inline');
-                    const k2i = document.getElementById('quick-k2-inline');
-                    if (k1i) k1i.innerText = k1;
-                    if (k2i) k2i.innerText = k2;
-
-                    const tbody = document.getElementById('quick-stats-body');
-                    if (tbody && ir.tabla_rapida) {
-                        if (ir.tabla_rapida.length === 0) {
-                            tbody.innerHTML = '<tr><td colspan="12" class="p-6 text-center text-slate-600 italic">Sin datos en este set</td></tr>';
-                        } else {
-                            tbody.innerHTML = ir.tabla_rapida.map(j => {
-                                const hit = j.ataque_pct != null ? j.ataque_pct.toFixed(3) : '—';
-                                const rowCls = j.alerta ? 'bg-rose-950/30' : 'hover:bg-slate-800/30';
-                                const balCls = j.balance < 0 ? 'text-rose-400' : j.balance > 0 ? 'text-emerald-400' : 'text-slate-400';
-                                return `<tr class="${rowCls} transition-colors">
-                                    <td class="p-2 pl-4 font-black text-white">#${j.dorsal}</td>
-                                    <td class="p-2 font-bold text-slate-300 truncate max-w-[100px]">${j.nombre}</td>
-                                    <td class="p-2 text-center font-black ${balCls}">${j.balance > 0 ? '+' : ''}${j.balance}</td>
-                                    <td class="p-2 text-center font-bold text-emerald-400">${j.puntos}</td>
-                                    <td class="p-2 text-center font-bold text-rose-400">${j.errores}</td>
-                                    <td class="p-2 text-center text-slate-300">${j.ataque_kills}/${j.ataque_err}</td>
-                                    <td class="p-2 text-center text-slate-400">${hit}</td>
-                                    <td class="p-2 text-center text-slate-300">${j.recepciones}<span class="text-rose-400">/${j.recepcion_err}</span></td>
-                                    <td class="p-2 text-center text-slate-300"><span class="text-emerald-400">${j.saque_aces}</span>/<span class="text-rose-400">${j.saque_err}</span></td>
-                                    <td class="p-2 text-center text-slate-300">${j.bloqueo_pts}</td>
-                                    <td class="p-2 text-center text-slate-300">${j.asistencias}<span class="text-rose-400">/${j.colocacion_err}</span></td>
-                                    <td class="p-2 text-center text-slate-300">${j.defensas}<span class="text-rose-400">/${j.defensa_err}</span></td>
-                                </tr>`;
-                            }).join('');
-                        }
-                    }
-                }
-
-                // ── Matriz de rotaciones ──────────────────────────────────
-                if (res.rotaciones) {
-                    res.rotaciones.forEach(rot => {
-                        const block = document.querySelector(`.rot-block[data-pos="${rot.rotacion}"]`);
-                        if (!block) return;
-                        const k1el = block.querySelector('.rot-k1');
-                        const k2el = block.querySelector('.rot-k2');
-                        if (k1el) k1el.innerText = rot.acciones > 0 ? `${rot.k1}%` : '—';
-                        if (k2el) k2el.innerText = rot.acciones > 0 ? `${rot.k2}%` : '—';
-                    });
-                }
-
-                // ── Rendimiento por zona (Ataque / Bloqueo) ───────────────
-                if (res.zonas) {
-                    res.zonas.forEach(z => {
-                        const block = document.querySelector(`.zone-perf-block[data-zona="${z.zona}"]`);
-                        if (!block) return;
-                        const atqEl = block.querySelector('.zp-ataque');
-                        const bloEl = block.querySelector('.zp-bloqueo');
-                        if (atqEl) atqEl.innerText = z.ataque_total > 0 ? `${z.ataque_pct}%` : '—';
-                        if (bloEl) bloEl.innerText = z.es_red ? (z.bloqueo_total > 0 ? `${z.bloqueo_pct}%` : '—') : '';
-                    });
-                }
-
-                // ── Racha / momentum ───────────────────────────────────────
-                const rachaCard = document.getElementById('racha-card');
-                if (rachaCard && res.racha) {
-                    if (res.racha.racha >= 2) {
-                        rachaCard.classList.remove('hidden');
-                        const esNuestra = res.racha.lado === 'nosotros';
-                        const icon = document.getElementById('racha-icon');
-                        const label = document.getElementById('racha-label');
-                        icon.className = `p-2 rounded-lg border flex-none ${esNuestra ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`;
-                        rachaCard.style.borderColor = esNuestra ? 'rgba(16, 185, 129, 0.35)' : 'rgba(244, 63, 94, 0.35)';
-                        label.className = `text-xs font-black truncate ${esNuestra ? 'text-emerald-400' : 'text-rose-400'}`;
-                        label.innerText = esNuestra
-                            ? `¡${res.racha.racha} puntos seguidos a favor! 🔥`
-                            : `${res.racha.racha} puntos seguidos del rival ⚠️`;
-                        if (window.lucide) lucide.createIcons();
-                    } else {
-                        rachaCard.classList.add('hidden');
-                    }
+                    await updateIndicadoresPanel();
                 }
             }
         } catch(e) {

@@ -158,9 +158,9 @@
             <tr>
                 <th class="left col-set">Set</th>
                 <th class="col-score">Marcador</th>
-                <th class="col-team left">{{ partido.equipo.nombre }}<br/><span style="font-weight:normal;">% Recepción</span></th>
-                <th class="col-team left">{{ partido.rival }}<br/><span style="font-weight:normal;">% Recepción</span></th>
-                <th class="col-efic">% Efic. saque</th>
+                <th class="col-team left">{{ partido.equipo.nombre }}<br/><span style="font-weight:normal;">Side-out %</span></th>
+                <th class="col-team left">{{ partido.rival }}<br/><span style="font-weight:normal;">Side-out %</span></th>
+                <th class="col-efic">Breakpoint %</th>
                 <th colspan="3" class="hl-head">{{ destacadas.titulo }}</th>
             </tr>
         </thead>
@@ -175,25 +175,25 @@
                     <td>{% if s.breakpoint_pct != None %}{{ s.breakpoint_pct }}%{% else %}—{% endif %}</td>
                     {% if forloop.first %}
                     <td class="hl-col" rowspan="{{ resumen_sets|length }}">
+                        <span class="hl-label">&#11088; Estrella del set</span><br/>
+                        {% if destacadas.estrella %}
+                        <span class="hl-player">#{{ destacadas.estrella.dorsal }} {{ destacadas.estrella.nombre }}</span><br/>
+                        <span class="hl-stat">{{ destacadas.estrella.detalle }}</span>
+                        {% else %}<span class="hl-empty">—</span>{% endif %}
+                    </td>
+                    <td class="hl-col" rowspan="{{ resumen_sets|length }}">
                         <span class="hl-label">&#127919; Máxima anotadora</span><br/>
                         {% if destacadas.max_anotadora %}
                         <span class="hl-player">#{{ destacadas.max_anotadora.dorsal }} {{ destacadas.max_anotadora.nombre }}</span><br/>
-                        <span class="hl-stat">{{ destacadas.max_anotadora.puntos }} Pts</span>
+                        <span class="hl-stat">{{ destacadas.max_anotadora.detalle }}</span>
                         {% else %}<span class="hl-empty">—</span>{% endif %}
                     </td>
                     <td class="hl-col" rowspan="{{ resumen_sets|length }}">
-                        <span class="hl-label">&#127952; Líder de saque</span><br/>
+                        <span class="hl-label">&#127952; Mejor en saque</span><br/>
                         {% if destacadas.lider_saque %}
                         <span class="hl-player">#{{ destacadas.lider_saque.dorsal }} {{ destacadas.lider_saque.nombre }}</span><br/>
-                        <span class="hl-stat">{{ destacadas.lider_saque.aces }} Aces</span>
+                        <span class="hl-stat-blue">{{ destacadas.lider_saque.detalle }}</span>
                         {% else %}<span class="hl-empty">—</span>{% endif %}
-                    </td>
-                    <td class="hl-col" rowspan="{{ resumen_sets|length }}">
-                        <span class="hl-label">&#128737; Eficacia en ataque</span><br/>
-                        {% if destacadas.mejor_ataque %}
-                        <span class="hl-player">#{{ destacadas.mejor_ataque.dorsal }} {{ destacadas.mejor_ataque.nombre }}</span><br/>
-                        <span class="hl-stat-blue">{{ destacadas.mejor_ataque.pct }}% <span class="hl-meta">({{ destacadas.mejor_ataque.intentos }} int.)</span></span>
-                        {% else %}<span class="hl-empty">Mín. 3 int.</span>{% endif %}
                     </td>
                     {% endif %}
                 </tr>
@@ -202,24 +202,57 @@
                 <tr>
                     <td colspan="5">Sin datos</td>
                     <td class="hl-col">
-                        <span class="hl-label">&#127919; Máxima anotadora</span><br/><span class="hl-empty">—</span>
+                        <span class="hl-label">&#11088; Estrella</span><br/><span class="hl-empty">—</span>
                     </td>
                     <td class="hl-col">
-                        <span class="hl-label">&#127952; Líder de saque</span><br/><span class="hl-empty">—</span>
+                        <span class="hl-label">&#127919; Máx. anotadora</span><br/><span class="hl-empty">—</span>
                     </td>
                     <td class="hl-col">
-                        <span class="hl-label">&#128737; Eficacia en ataque</span><br/><span class="hl-empty">—</span>
+                        <span class="hl-label">&#127952; Mejor saque</span><br/><span class="hl-empty">—</span>
                     </td>
                 </tr>
             {% endif %}
         </tbody>
     </table>
 
+    {% if destacadas.destacados_por_accion %}
+    <div class="section-title">Destacados por acción</div>
+    <table class="zona-table">
+        <thead>
+            <tr>
+                <th class="left">Fundamento</th>
+                <th>Mejor</th>
+                <th>A mejorar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% with d=destacadas.destacados_por_accion %}
+            <tr>
+                <td class="left">Ataque</td>
+                <td>{% if d.ataque.mejor %}#{{ d.ataque.mejor.dorsal }} {{ d.ataque.mejor.detalle }}{% else %}—{% endif %}</td>
+                <td>{% if d.ataque.a_mejorar %}#{{ d.ataque.a_mejorar.dorsal }} {{ d.ataque.a_mejorar.detalle }}{% else %}—{% endif %}</td>
+            </tr>
+            <tr>
+                <td class="left">Saque</td>
+                <td>{% if d.saque.mejor %}#{{ d.saque.mejor.dorsal }} {{ d.saque.mejor.detalle }}{% else %}—{% endif %}</td>
+                <td>{% if d.saque.a_mejorar %}#{{ d.saque.a_mejorar.dorsal }} {{ d.saque.a_mejorar.detalle }}{% else %}—{% endif %}</td>
+            </tr>
+            <tr>
+                <td class="left">Control de balón</td>
+                <td>{% if d.control_balon.mejor %}#{{ d.control_balon.mejor.dorsal }} {{ d.control_balon.mejor.detalle }}{% else %}—{% endif %}</td>
+                <td>{% if d.control_balon.a_mejorar %}#{{ d.control_balon.a_mejorar.dorsal }} {{ d.control_balon.a_mejorar.detalle }}{% else %}—{% endif %}</td>
+            </tr>
+            {% endwith %}
+        </tbody>
+    </table>
+    {% endif %}
+
     {% for set_data in detalle_sets %}
     <div class="set-block">
         <div class="set-title">
             SET {{ set_data.set_num }} — Marcador {{ set_data.score }}
-            {% if set_data.sideout_pct != None %} · Efic. recepción {{ set_data.sideout_pct }}%{% endif %}
+            {% if set_data.sideout_pct != None %} · Side-out {{ set_data.sideout_pct }}%{% endif %}
+            · Complejos K1 {{ set_data.k1_efi }}% / K2 {{ set_data.k2_efi }}%
         </div>
         <table class="detail">
             <thead>
@@ -327,6 +360,7 @@
         {% endif %}
 
         <div class="section-title">Rendimiento por Zona — Set {{ set_data.set_num }}</div>
+        <p style="font-size:7px;color:#64748b;margin:0 0 4px;">Solo con zona registrada. Ataque % = (pts−err)÷intentos. Bloqueo en zonas 2·3·4.</p>
         <table class="detail zona-table">
             <thead>
                 <tr>
@@ -351,6 +385,7 @@
         </table>
 
         <div class="section-title">Eficacia por Rotación — Set {{ set_data.set_num }}</div>
+        <p style="font-size:7px;color:#64748b;margin:0 0 4px;">K1 = % rallies ganados al recibir. K2 = % rallies ganados al sacar. Distinto de los complejos K1/K2 del encabezado.</p>
         <table class="detail zona-table">
             <thead>
                 <tr>
@@ -374,9 +409,14 @@
     </div>
     {% endfor %}
 
+    {% include 'stats_app/includes/leyenda_metricas.html' with pdf=True %}
+
     <div class="legend">
         <strong>Saldo</strong> = Puntos (++) − Errores (−−). Los ceros en jugadoras se omiten (—) para facilitar la lectura.
-        <strong>Efic.% ataque</strong> = porcentaje entero (puntos − errores) ÷ intentos.
+        <strong>Efic.% ataque</strong> = (puntos − errores) ÷ intentos.
+        <strong>Side-out %</strong> = % de rallies ganados cuando recibimos. <strong>Breakpoint %</strong> = % ganados con nuestro saque.
+        <strong>Complejos K1/K2</strong> = calidad de acciones: ( ++ − −− ) ÷ total en recep.+ataque (K1) o saque+bloq.+def. (K2).
+        <strong>Zona %</strong> = eficacia de ataque/bloqueo por zona de origen. <strong>Rotación K1/K2</strong> = % de rallies ganados en esa rotación al recibir (K1) o sacar (K2).
         Verde = acierto · Rojo = error · Fila oscura = totales del equipo.
         Generado por MyVolleyStats — {{ fecha }}
     </div>

@@ -110,6 +110,7 @@ def player_box_row(jugadora, qs_set):
         hit_pct = None
 
     rec_pos = rec['pp'] + rec['p']
+    def_pos = defn['pp'] + defn['p']
     rec_pct = round(rec_pos / rec['total'] * 100, 1) if rec['total'] > 0 else None
 
     return {
@@ -133,8 +134,11 @@ def player_box_row(jugadora, qs_set):
         'defensas': defn['pp'] + defn['p'] + defn['eq'],
         'defensa_err': defn['mm'],
         'recepciones': rec['total'],
+        'recepcion_pos': rec_pos,
         'recepcion_err': rec['mm'],
         'recepcion_pct': rec_pct,
+        'control_balon_pos': rec_pos + def_pos,
+        'control_balon_err': rec['mm'] + defn['mm'],
         'saques': saque['total'],
         'saque_aces': saque['pp'],
         'saque_err': saque['mm'],
@@ -234,6 +238,182 @@ def build_quick_set_report(partido, set_num):
     return report
 
 
+def _player_destacado(p, detalle):
+    return {
+        'id': p['id'],
+        'dorsal': p['dorsal'],
+        'nombre': p['nombre'],
+        'detalle': detalle,
+    }
+
+
+def calc_k1_complex_pct(partido, set_num):
+    """Calidad del complejo recepción+ataque: (++ − −−) / total acciones."""
+    qs = _qs_partido(partido, set_num)
+    acciones = ['RECEPCION', 'ATAQUE']
+    pp = sum(qs.filter(accion=a, calidad='++').count() for a in acciones)
+    mm = sum(qs.filter(accion=a, calidad='--').count() for a in acciones)
+    total = sum(qs.filter(accion=a).count() for a in acciones)
+    if total == 0:
+        return 0
+    return round(max(0, ((pp - mm) / total) * 100))
+
+
+def calc_k2_complex_pct(partido, set_num):
+    """Calidad del complejo saque+bloqueo+defensa: (++ − −−) / total acciones."""
+    qs = _qs_partido(partido, set_num)
+    acciones = ['SAQUE', 'BLOQUEO', 'DEFENSA']
+    pp = sum(qs.filter(accion=a, calidad='++').count() for a in acciones)
+    mm = sum(qs.filter(accion=a, calidad='--').count() for a in acciones)
+    total = sum(qs.filter(accion=a).count() for a in acciones)
+    if total == 0:
+        return 0
+    return round(max(0, ((pp - mm) / total) * 100))
+
+
+def _leaders_from_players(players):
+    """Tres líderes independientes a partir de filas de jugadora."""
+    if not players:
+        return {'estrella': None, 'maxima_anotadora': None, 'mejor_saque': None}
+
+    estrella = max(players, key=lambda p: (p['balance'], p['puntos']))
+    estrella_out = None
+    if estrella.get('acciones', 1) > 0:
+        sign = '+' if estrella['balance'] > 0 else ''
+        estrella_out = _player_destacado(estrella, f"{sign}{estrella['balance']} saldo")
+
+    max_anot = max(players, key=lambda p: (p['ataque_kills'], p.get('ataque_pct') or -1))
+    max_anot_out = None
+    if max_anot['ataque_kills'] > 0:
+        max_anot_out = _player_destacado(max_anot, f"{max_anot['ataque_kills']} pts")
+
+    mejor_srv = max(players, key=lambda p: p['saque_aces'])
+    mejor_srv_out = None
+    if mejor_srv['saque_aces'] > 0:
+        aces = mejor_srv['saque_aces']
+        label = f"{aces} ace" if aces == 1 else f"{aces} aces"
+        mejor_srv_out = _player_destacado(mejor_srv, label)
+
+    return {
+        'estrella': estrella_out,
+        'maxima_anotadora': max_anot_out,
+        'mejor_saque': mejor_srv_out,
+    }
+
+
+def _destacados_from_players(players, min_ataques=3):
+    """Cara y cruz por fundamento a partir de filas de jugadora."""
+    mejor_ataque = None
+    with_kills = [p for p in players if p['ataque_kills'] > 0]
+    max_kills = max(with_kills, key=lambda p: p['ataque_kills']) if with_kills else None
+    candidatas_eff = [
+        p for p in players
+        if p['ataque_swings'] >= min_ataques and p.get('ataque_pct') is not None
+    ]
+    best_eff = max(candidatas_eff, key=lambda p: p['ataque_pct']) if candidatas_eff else None
+
+    if max_kills and (
+        not best_eff
+        or max_kills['ataque_kills'] > best_eff['ataque_kills']
+        or (
+            max_kills['ataque_kills'] == best_eff['ataque_kills']
+            and (max_kills.get('ataque_pct') or -1) >= (best_eff.get('ataque_pct') or -1)
+        )
+    ):
+        mejor_ataque = _player_destacado(max_kills, f"{max_kills['ataque_kills']} pts")
+    elif best_eff:
+        pct = round(best_eff['ataque_pct'] * 100)
+        mejor_ataque = _player_destacado(
+            best_eff,
+            f"{pct}% ({best_eff['ataque_kills']}/{best_eff['ataque_err']})",
+        )
+
+    peor_ataque = None
+    with_atq_err = [p for p in players if p['ataque_err'] > 0]
+    if with_atq_err:
+        worst = max(with_atq_err, key=lambda p: p['ataque_err'])
+        err = worst['ataque_err']
+        label = f"{err} err" if err == 1 else f"{err} errores"
+        peor_ataque = _player_destacado(worst, label)
+
+    mejor_saque = None
+    with_aces = [p for p in players if p['saque_aces'] > 0]
+    if with_aces:
+        top = max(with_aces, key=lambda p: p['saque_aces'])
+        aces = top['saque_aces']
+        label = f"{aces} ace" if aces == 1 else f"{aces} aces"
+        mejor_saque = _player_destacado(top, label)
+
+    peor_saque = None
+    with_srv_err = [p for p in players if p['saque_err'] >= 2]
+    if with_srv_err:
+        worst = max(with_srv_err, key=lambda p: p['saque_err'])
+        peor_saque = _player_destacado(worst, f"{worst['saque_err']} errores")
+
+    mejor_control = None
+    with_control = [p for p in players if p.get('control_balon_pos', 0) > 0]
+    if with_control:
+        top = max(with_control, key=lambda p: (p['control_balon_pos'], -p.get('control_balon_err', 0)))
+        mejor_control = _player_destacado(
+            top, f"{top['control_balon_pos']} pos / {top.get('control_balon_err', 0)} err"
+        )
+
+    peor_control = None
+    with_ctrl_err = [p for p in players if p.get('control_balon_err', 0) > 0]
+    if with_ctrl_err:
+        worst = max(with_ctrl_err, key=lambda p: p['control_balon_err'])
+        err = worst['control_balon_err']
+        label = f"{err} err" if err == 1 else f"{err} errores"
+        peor_control = _player_destacado(worst, label)
+
+    return {
+        'ataque': {'mejor': mejor_ataque, 'a_mejorar': peor_ataque},
+        'saque': {'mejor': mejor_saque, 'a_mejorar': peor_saque},
+        'control_balon': {'mejor': mejor_control, 'a_mejorar': peor_control},
+    }
+
+
+def _aggregate_players_stats(detalle_sets):
+    """Suma estadísticas de jugadoras a través de varios sets."""
+    agg = {}
+    sum_keys = [
+        'balance', 'puntos', 'ataque_kills', 'ataque_err', 'ataque_swings',
+        'saque_aces', 'saque_err', 'control_balon_pos', 'control_balon_err',
+    ]
+    for sd in detalle_sets:
+        for j in sd['jugadoras']:
+            jid = j['id']
+            if jid not in agg:
+                agg[jid] = {
+                    'id': jid,
+                    'dorsal': j['dorsal'],
+                    'nombre': j['nombre'],
+                    'acciones': 0,
+                    **{k: 0 for k in sum_keys},
+                }
+            row = agg[jid]
+            row['acciones'] += j.get('acciones', 0) or 0
+            for k in sum_keys:
+                row[k] += j.get(k, 0) or 0
+    players = list(agg.values())
+    for p in players:
+        swings = p['ataque_swings']
+        p['ataque_pct'] = round((p['ataque_kills'] - p['ataque_err']) / swings, 3) if swings else None
+    return players
+
+
+def build_set_leaders(partido, set_num):
+    """Tres líderes independientes del set para el panel en banquillo."""
+    report = build_set_report(partido, set_num)
+    return _leaders_from_players(report['jugadoras'])
+
+
+def build_destacados_por_accion(partido, set_num, min_ataques=3):
+    """Cara y cruz por fundamento para el panel lateral en vivo."""
+    report = build_set_report(partido, set_num)
+    return _destacados_from_players(report['jugadoras'], min_ataques)
+
+
 def build_match_summary(partido):
     sets = (
         RegistroEstadistica.objects.filter(partido=partido)
@@ -269,12 +449,14 @@ def build_full_report(partido, set_filter='global'):
     detalle_sets = []
     for s in sets_nums:
         sd = build_set_report(partido, s)
-        # Desgloses adicionales, solo para el informe post-partido (no se
-        # cargan en el informe rápido en vivo para no engordar el polling).
         sd['zonas'] = zone_performance(partido, s)
         sd['rotacion'] = rotation_matrix(partido, s)
         sd['racha_maxima'] = calc_racha_maxima(partido, s)
         sd['run_chart'] = build_run_chart(partido, s)
+        sd['k1_efi'] = calc_k1_complex_pct(partido, s)
+        sd['k2_efi'] = calc_k2_complex_pct(partido, s)
+        sd['lideres'] = build_set_leaders(partido, s)
+        sd['destacados_por_accion'] = build_destacados_por_accion(partido, s)
         detalle_sets.append(sd)
 
     return {
@@ -286,69 +468,19 @@ def build_full_report(partido, set_filter='global'):
 
 
 def build_destacadas(detalle_sets, min_ataques=3):
-    """Líderes del set o partido para el bloque destacado del PDF."""
-    agg = {}
-    for sd in detalle_sets:
-        for j in sd['jugadoras']:
-            jid = j['id']
-            if jid not in agg:
-                agg[jid] = {
-                    'dorsal': j['dorsal'],
-                    'nombre': j['nombre'],
-                    'puntos': 0,
-                    'saque_aces': 0,
-                    'ataque_swings': 0,
-                    'ataque_kills': 0,
-                    'ataque_err': 0,
-                }
-            a = agg[jid]
-            a['puntos'] += j['puntos']
-            a['saque_aces'] += j['saque_aces']
-            a['ataque_swings'] += j['ataque_swings']
-            a['ataque_kills'] += j['ataque_kills']
-            a['ataque_err'] += j['ataque_err']
-
-    players = list(agg.values())
+    """Líderes y destacados del set o partido para informes."""
     titulo = 'DESTACADAS DEL PARTIDO' if len(detalle_sets) > 1 else 'DESTACADAS DEL SET'
-
-    max_anotadora = None
-    if players:
-        top = max(players, key=lambda p: p['puntos'])
-        if top['puntos'] > 0:
-            max_anotadora = {
-                'dorsal': top['dorsal'],
-                'nombre': top['nombre'],
-                'puntos': top['puntos'],
-            }
-
-    lider_saque = None
-    if players:
-        top = max(players, key=lambda p: p['saque_aces'])
-        if top['saque_aces'] > 0:
-            lider_saque = {
-                'dorsal': top['dorsal'],
-                'nombre': top['nombre'],
-                'aces': top['saque_aces'],
-            }
-
-    mejor_ataque = None
-    candidatas = [p for p in players if p['ataque_swings'] >= min_ataques]
-    if candidatas:
-        for p in candidatas:
-            p['_efi'] = (p['ataque_kills'] - p['ataque_err']) / p['ataque_swings']
-        top = max(candidatas, key=lambda p: (p['_efi'], p['ataque_swings']))
-        mejor_ataque = {
-            'dorsal': top['dorsal'],
-            'nombre': top['nombre'],
-            'pct': round(top['_efi'] * 100),
-            'intentos': top['ataque_swings'],
-        }
-
+    players = _aggregate_players_stats(detalle_sets)
+    lideres = _leaders_from_players(players)
+    destacados = _destacados_from_players(players, min_ataques)
     return {
         'titulo': titulo,
-        'max_anotadora': max_anotadora,
-        'lider_saque': lider_saque,
-        'mejor_ataque': mejor_ataque,
+        'lideres': lideres,
+        'destacados_por_accion': destacados,
+        # Alias planos para plantillas que usan claves antiguas
+        'estrella': lideres['estrella'],
+        'max_anotadora': lideres['maxima_anotadora'],
+        'lider_saque': lideres['mejor_saque'],
     }
 
 

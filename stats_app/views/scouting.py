@@ -23,6 +23,10 @@ from ..security import log_intento_acceso_no_autorizado, ocultar_detalle_interno
 from ..services.reporting import (
     build_quick_set_report,
     build_full_report,
+    build_set_leaders,
+    build_destacados_por_accion,
+    calc_k1_complex_pct,
+    calc_k2_complex_pct,
     calc_set_score,
     calc_racha,
     rotation_matrix,
@@ -387,40 +391,11 @@ def ObtenerStatsSetAPI(request):
         lista_fund.sort(key=lambda x: x['eficiencia'], reverse=True)
         stats_por_jugadora[fund] = lista_fund[:5]
 
-    alerta = {'dorsal': '--', 'nombre': 'TODO OK', 'mensaje': 'Sin alertas'}
-    peor_efi = 100
-    
-    for fund in fundamentos:
-        for j_stat in stats_por_jugadora[fund]:
-            if j_stat['eficiencia'] < peor_efi:
-                peor_efi = j_stat['eficiencia']
-                if peor_efi < 0:
-                    alerta = {
-                        'dorsal': f"#{j_stat['dorsal']}",
-                        'nombre': j_stat['nombre'],
-                        'mensaje': f"{j_stat['mm']} Errores en {fund}"
-                    }
+    lideres = build_set_leaders(partido, set_num)
+    destacados_por_accion = build_destacados_por_accion(partido, set_num)
 
-    mvp = None
-    if stats_por_jugadora['ATAQUE']: mvp = stats_por_jugadora['ATAQUE'][0]
-
-    # Líderes por acción (best server, best attacker)
-    mejor_saque = stats_por_jugadora['SAQUE'][0] if stats_por_jugadora.get('SAQUE') else None
-    mejor_ataque = stats_por_jugadora['ATAQUE'][0] if stats_por_jugadora.get('ATAQUE') else None
-
-    # K1: Recepción-Ataque complex (reception + attack combined efficiency)
-    k1_acciones = ['RECEPCION', 'ATAQUE']
-    k1_pp = sum(stats_base.filter(accion=a, calidad='++').count() for a in k1_acciones)
-    k1_mm = sum(stats_base.filter(accion=a, calidad='--').count() for a in k1_acciones)
-    k1_total = sum(stats_base.filter(accion=a).count() for a in k1_acciones)
-    k1_efi = round(max(0, ((k1_pp - k1_mm) / k1_total) * 100)) if k1_total > 0 else 0
-
-    # K2: Saque-Bloqueo-Defensa complex (service + block + defense combined efficiency)
-    k2_acciones = ['SAQUE', 'BLOQUEO', 'DEFENSA']
-    k2_pp = sum(stats_base.filter(accion=a, calidad='++').count() for a in k2_acciones)
-    k2_mm = sum(stats_base.filter(accion=a, calidad='--').count() for a in k2_acciones)
-    k2_total = sum(stats_base.filter(accion=a).count() for a in k2_acciones)
-    k2_efi = round(max(0, ((k2_pp - k2_mm) / k2_total) * 100)) if k2_total > 0 else 0
+    k1_efi = calc_k1_complex_pct(partido, set_num)
+    k2_efi = calc_k2_complex_pct(partido, set_num)
 
     # Calculate score for the current set
     puntos_local = (
@@ -447,21 +422,25 @@ def ObtenerStatsSetAPI(request):
             else:
                 sets_rival += 1
 
+    sets_con_datos = sorted(
+        RegistroEstadistica.objects.filter(partido=partido)
+        .values_list('set_numero', flat=True)
+        .distinct()
+    )
+
     return JsonResponse({
         'status': 'ok',
         'partido_finalizado': partido.finalizado,
         'equipo': equipo_stats,
         'desglose_jugadoras': stats_por_jugadora,
-        'mvp': mvp,
-        'alerta': alerta,
+        'lideres': lideres,
+        'destacados_por_accion': destacados_por_accion,
         'puntos_local': puntos_local,
         'puntos_rival': puntos_rival,
         'sets_local': sets_local,
         'sets_rival': sets_rival,
         'k1_efi': k1_efi,
         'k2_efi': k2_efi,
-        'mejor_saque': mejor_saque,
-        'mejor_ataque': mejor_ataque,
         'puntos_por_set': partido.puntos_por_set,
         'puntos_set_decisivo': partido.puntos_set_decisivo,
         'sets_para_ganar': partido.sets_para_ganar,
@@ -470,6 +449,7 @@ def ObtenerStatsSetAPI(request):
         'rotaciones': rotation_matrix(partido, set_num),
         'zonas': zone_performance(partido, set_num),
         'racha': calc_racha(partido, set_num),
+        'sets_con_datos': sets_con_datos,
     })
 
 
@@ -627,6 +607,7 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
             'puntos_rival': json.dumps(p_rival),
             'origen_labels': json.dumps(list(origen_puntos.keys())),
             'origen_data': json.dumps(list(origen_puntos.values())),
+            'destacadas': reporte['destacadas'],
         }
         return render(request, self.template_name, context)
 

@@ -1,0 +1,69 @@
+{% comment %}
+Leyenda «¿Qué mide cada métrica?»
+Uso: {% include 'stats_app/includes/leyenda_metricas.html' with compact=True %}
+{% endcomment %}
+{% if compact %}
+<details class="bg-[#090d16]/80 rounded-2xl border border-slate-800/80 group">
+    <summary class="px-3 py-2 cursor-pointer list-none flex items-center justify-between gap-2 select-none">
+        <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-500"></i>
+            ¿Qué mide cada métrica?
+        </span>
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-600 transition-transform group-open:rotate-180"></i>
+    </summary>
+    <dl class="px-3 pb-3 space-y-1.5 text-[8px] leading-relaxed border-t border-slate-800/60 pt-2">
+        <div><dt class="text-slate-300 font-bold inline">Side-out % ·</dt> <dd class="inline text-slate-500">¿Cuántos rallies ganamos cuando recibimos?</dd></div>
+        <div><dt class="text-slate-300 font-bold inline">Breakpoint % ·</dt> <dd class="inline text-slate-500">¿Cuántos rallies ganamos cuando sacamos nosotros?</dd></div>
+        <div><dt class="text-emerald-400 font-bold inline">Complejo K1 ·</dt> <dd class="inline text-slate-500">¿Qué tan «limpias» son recepción + ataque? (calidad de toques, no marcador)</dd></div>
+        <div><dt class="text-blue-400 font-bold inline">Complejo K2 ·</dt> <dd class="inline text-slate-500">¿Qué tan «limpios» son saque + bloqueo + defensa?</dd></div>
+        <div><dt class="text-slate-300 font-bold inline">Zona % ·</dt> <dd class="inline text-slate-500">¿Desde qué zona atacamos o bloqueamos mejor?</dd></div>
+        <div><dt class="text-emerald-400/90 font-bold inline">Rotación verde ·</dt> <dd class="inline text-slate-500">¿En qué rotación ganamos más rallies al recibir?</dd></div>
+        <div><dt class="text-blue-400/90 font-bold inline">Rotación azul ·</dt> <dd class="inline text-slate-500">¿En qué rotación ganamos más rallies al sacar?</dd></div>
+        <div><dt class="text-slate-300 font-bold inline">Saldo ·</dt> <dd class="inline text-slate-500">¿Cuánto aporta o resta cada jugadora al set? ( ++ − −− )</dd></div>
+    </dl>
+</details>
+{% elif pdf %}
+<div class="section-title">¿Qué mide cada métrica?</div>
+<table class="zona-table" style="width:100%;margin-bottom:8px;">
+    <thead>
+        <tr>
+            <th class="left" style="width:22%;">Métrica</th>
+            <th class="left">Pregunta que responde</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td class="left">Side-out %</td><td class="left">¿Cuántos rallies ganamos cuando recibimos?</td></tr>
+        <tr><td class="left">Breakpoint %</td><td class="left">¿Cuántos rallies ganamos cuando sacamos nosotros?</td></tr>
+        <tr><td class="left">Complejo K1</td><td class="left">¿Qué tan «limpias» son recepción + ataque? (calidad de toques)</td></tr>
+        <tr><td class="left">Complejo K2</td><td class="left">¿Qué tan «limpios» son saque + bloqueo + defensa?</td></tr>
+        <tr><td class="left">Zona %</td><td class="left">¿Desde qué zona atacamos o bloqueamos mejor?</td></tr>
+        <tr><td class="left">Rotación K1 (verde)</td><td class="left">¿En qué rotación ganamos más rallies al recibir?</td></tr>
+        <tr><td class="left">Rotación K2 (azul)</td><td class="left">¿En qué rotación ganamos más rallies al sacar?</td></tr>
+        <tr><td class="left">Saldo</td><td class="left">¿Cuánto aporta o resta cada jugadora? (puntos ++ − errores −−)</td></tr>
+    </tbody>
+</table>
+{% else %}
+<div class="bg-[#121824] border border-slate-800 rounded-2xl p-4 space-y-3 print:hidden">
+    <p class="font-black text-slate-300 uppercase tracking-wider text-[10px]">¿Qué mide cada métrica?</p>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-[10px] sm:text-xs border-collapse min-w-[320px]">
+            <thead>
+                <tr class="text-[9px] font-black text-slate-500 uppercase border-b border-slate-800">
+                    <th class="pb-2 pr-4 font-black">Métrica</th>
+                    <th class="pb-2 font-black">Pregunta que responde</th>
+                </tr>
+            </thead>
+            <tbody class="text-slate-400 divide-y divide-slate-800/50">
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Side-out %</td><td class="py-1.5">¿Cuántos rallies ganamos cuando recibimos?</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Breakpoint %</td><td class="py-1.5">¿Cuántos rallies ganamos cuando sacamos nosotros?</td></tr>
+                <tr><td class="py-1.5 pr-4 text-emerald-400 font-bold whitespace-nowrap">Complejo K1</td><td class="py-1.5">¿Qué tan «limpias» son recepción + ataque? <span class="text-slate-600">(calidad de toques, no marcador)</span></td></tr>
+                <tr><td class="py-1.5 pr-4 text-blue-400 font-bold whitespace-nowrap">Complejo K2</td><td class="py-1.5">¿Qué tan «limpios» son saque + bloqueo + defensa?</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Zona %</td><td class="py-1.5">¿Desde qué zona atacamos o bloqueamos mejor?</td></tr>
+                <tr><td class="py-1.5 pr-4 text-emerald-400/90 font-bold whitespace-nowrap">Rotación · verde</td><td class="py-1.5">¿En qué rotación ganamos más rallies al recibir?</td></tr>
+                <tr><td class="py-1.5 pr-4 text-blue-400/90 font-bold whitespace-nowrap">Rotación · azul</td><td class="py-1.5">¿En qué rotación ganamos más rallies al sacar?</td></tr>
+                <tr><td class="py-1.5 pr-4 text-slate-200 font-bold whitespace-nowrap">Saldo</td><td class="py-1.5">¿Cuánto aporta o resta cada jugadora al set? <span class="text-slate-600">( ++ − −− )</span></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}

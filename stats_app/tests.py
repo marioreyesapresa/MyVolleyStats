@@ -22,7 +22,14 @@ from .db_utils import reintentar_en_error_transitorio
 from .forms import RegistrarAccionForm, RegistrarCambioForm, EliminarAccionForm
 from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet
 from .security import RateLimitMiddleware
-from .services.reporting import build_full_report, build_run_chart, calc_racha, calc_racha_maxima
+from .services.reporting import (
+    build_full_report,
+    build_run_chart,
+    build_set_leaders,
+    build_destacados_por_accion,
+    calc_racha,
+    calc_racha_maxima,
+)
 
 User = get_user_model()
 
@@ -872,7 +879,7 @@ class FlujoCompletoPartidoTests(TestCase):
         )
 
         # Varias acciones con distintos fundamentos/calidades para ejercitar
-        # los cálculos de eficacia, MVP, alertas y K1/K2 de reporting.py.
+        # los cálculos de eficacia, líderes, destacados y K1/K2 de reporting.py.
         acciones = [
             ('SAQUE', '++', self.jugadoras[0]), ('SAQUE', '--', self.jugadoras[0]),
             ('RECEPCION', '++', self.jugadoras[1]), ('RECEPCION', '-', self.jugadoras[1]),
@@ -899,7 +906,9 @@ class FlujoCompletoPartidoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data['status'], 'ok')
-        self.assertIn('mvp', data)
+        self.assertIn('lideres', data)
+        self.assertIn('destacados_por_accion', data)
+        self.assertIn('sets_con_datos', data)
         self.assertIn('rotaciones', data)
         self.assertGreaterEqual(data['puntos_local'], 1)
         self.assertGreaterEqual(data['puntos_rival'], 1)
@@ -1159,10 +1168,43 @@ class ReportingHelpersTests(TestCase):
         reporte = build_full_report(self.partido, 'global')
         self.assertEqual(len(reporte['detalle_sets']), 1)
         set_data = reporte['detalle_sets'][0]
-        for clave in ('zonas', 'rotacion', 'racha_maxima', 'run_chart'):
+        for clave in ('zonas', 'rotacion', 'racha_maxima', 'run_chart', 'k1_efi', 'k2_efi', 'lideres', 'destacados_por_accion'):
             self.assertIn(clave, set_data)
         self.assertEqual(len(set_data['zonas']), 6)
         self.assertEqual(len(set_data['rotacion']), 6)
+
+    def test_build_set_leaders_prioriza_saldo_y_puntos_sobre_eficiencia_puntual(self):
+        """Victoria 14/2 debe ganar a Lucía 1/1 en estrella y máxima anotadora."""
+        v, l, b = Jugadora.objects.bulk_create([
+            Jugadora(equipo=self.equipo, nombre='Victoria', dorsal=12),
+            Jugadora(equipo=self.equipo, nombre='Lucía', dorsal=18),
+            Jugadora(equipo=self.equipo, nombre='Belén', dorsal=25),
+        ])
+        acciones = [
+            (v, 'ATAQUE', '++'), (v, 'ATAQUE', '++'), (v, 'ATAQUE', '++'),
+            (v, 'ATAQUE', '++'), (v, 'ATAQUE', '--'), (v, 'ATAQUE', '--'),
+            (l, 'ATAQUE', '++'), (l, 'SAQUE', '++'),
+            (b, 'RECEPCION', '+'), (b, 'RECEPCION', '+'), (b, 'RECEPCION', '+'),
+            (b, 'RECEPCION', '+'), (b, 'RECEPCION', '+'), (b, 'RECEPCION', '+'),
+            (b, 'RECEPCION', '+'), (b, 'RECEPCION', '+'), (b, 'RECEPCION', '-'),
+            (b, 'SAQUE', '--'),
+        ]
+        for jug, accion, cal in acciones:
+            RegistroEstadistica.objects.create(
+                partido=self.partido, jugadora=jug, tipo_fase='K1',
+                accion=accion, calidad=cal, set_numero=1,
+            )
+
+        lideres = build_set_leaders(self.partido, 1)
+        self.assertEqual(lideres['estrella']['dorsal'], 12)
+        self.assertEqual(lideres['maxima_anotadora']['dorsal'], 12)
+        self.assertEqual(lideres['mejor_saque']['dorsal'], 18)
+
+        dest = build_destacados_por_accion(self.partido, 1)
+        self.assertEqual(dest['ataque']['mejor']['dorsal'], 12)
+        self.assertEqual(dest['saque']['mejor']['dorsal'], 18)
+        self.assertIsNone(dest['saque']['a_mejorar'])  # solo 1 error de saque
+        self.assertEqual(dest['control_balon']['mejor']['dorsal'], 25)
 
 
 class CrudAdministracionTests(TestCase):
