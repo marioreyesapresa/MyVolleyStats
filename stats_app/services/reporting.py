@@ -25,6 +25,62 @@ def calc_set_score(partido, set_num):
     return local, rival
 
 
+def count_sets_won(partido):
+    """Sets ganados por cada equipo según marcadores cerrados en BD."""
+    all_sets = (
+        RegistroEstadistica.objects.filter(partido=partido)
+        .values_list('set_numero', flat=True)
+        .distinct()
+    )
+    sets_local = sets_rival = 0
+    for s in all_sets:
+        p_l, p_r = calc_set_score(partido, s)
+        limit = partido.limite_puntos_set(s)
+        if (p_l >= limit or p_r >= limit) and abs(p_l - p_r) >= 2:
+            if p_l > p_r:
+                sets_local += 1
+            else:
+                sets_rival += 1
+    return sets_local, sets_rival
+
+
+def detect_set_activo(partido):
+    """Primer set sin cerrar; si todos están cerrados, el último con datos."""
+    sets_nums = sorted(
+        RegistroEstadistica.objects.filter(partido=partido)
+        .values_list('set_numero', flat=True)
+        .distinct()
+    )
+    if not sets_nums:
+        return 1
+    for s in sets_nums:
+        p_l, p_r = calc_set_score(partido, s)
+        limit = partido.limite_puntos_set(s)
+        if not ((p_l >= limit or p_r >= limit) and abs(p_l - p_r) >= 2):
+            return s
+    return max(sets_nums)
+
+
+def build_partido_snapshot(partido):
+    """Marcador y set activo desde BD para pintar la UI sin esperar al fetch."""
+    set_activo = detect_set_activo(partido)
+    p_local, p_rival = calc_set_score(partido, set_activo)
+    sets_local, sets_rival = count_sets_won(partido)
+    sets_con_datos = sorted(
+        RegistroEstadistica.objects.filter(partido=partido)
+        .values_list('set_numero', flat=True)
+        .distinct()
+    )
+    return {
+        'set_activo': set_activo,
+        'puntos_local': p_local,
+        'puntos_rival': p_rival,
+        'sets_local': sets_local,
+        'sets_rival': sets_rival,
+        'sets_con_datos': sets_con_datos,
+    }
+
+
 def _phase_efficiency(qs, fases, acciones=None):
     phase_qs = qs.filter(tipo_fase__in=fases)
     if acciones:
@@ -238,10 +294,26 @@ def build_quick_set_report(partido, set_num):
     return report
 
 
+def _alto_volumen_buen_ratio(positivos, errores, min_toques=10, min_ratio=0.80):
+    """True si hay volumen suficiente y la tasa de acierto supera el umbral."""
+    positivos = positivos or 0
+    errores = errores or 0
+    total = positivos + errores
+    if total < min_toques:
+        return False
+    return positivos / total >= min_ratio
+
+
 def _candidata_cambio(p):
-    """Fila roja en banquillo: sustitución sugerida, sin castigar a colocadoras eficaces."""
+    """Fila roja en banquillo: sustitución sugerida, sin castigar roles defensivos eficaces."""
     if p.get('asistencias', 0) >= 5 and p.get('colocacion_err', 0) == 0:
         return p['balance'] < -3
+
+    if _alto_volumen_buen_ratio(p.get('defensas'), p.get('defensa_err')):
+        return p['balance'] <= -3
+    if _alto_volumen_buen_ratio(p.get('recepcion_pos'), p.get('recepcion_err')):
+        return p['balance'] <= -3
+
     if p['puntos'] == 0 and p['errores'] >= 2:
         return True
     return p['balance'] <= -3

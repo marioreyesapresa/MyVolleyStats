@@ -318,7 +318,7 @@
                     <div class="flex flex-col items-center space-y-0.5 flex-shrink-0">
                         <span class="text-[9px] font-black text-slate-500 uppercase tracking-[0.15em]">SETS GLOBAL</span>
                         <span id="scoreboard-sets" class="text-xs font-black text-slate-300 tracking-widest font-mono">
-                            (0) - (0)
+                            ({{ marcador_inicial.sets_local }}) - ({{ marcador_inicial.sets_rival }})
                         </span>
                     </div>
                     
@@ -326,7 +326,7 @@
                     <div class="flex items-center space-x-4 select-none flex-shrink-0">
                         <!-- Local team points (Massive emerald digital) -->
                         <div class="flex flex-col items-center min-w-0 max-w-[120px] lg:max-w-[160px]">
-                            <span id="score-local" class="text-4xl lg:text-5xl font-black font-mono text-emerald-400 tracking-tight leading-none min-w-[48px] text-center">00</span>
+                            <span id="score-local" class="text-4xl lg:text-5xl font-black font-mono text-emerald-400 tracking-tight leading-none min-w-[48px] text-center">{{ marcador_inicial.puntos_local|stringformat:"02d" }}</span>
                             <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5 truncate w-full text-center" title="{{ partido.equipo.nombre }}">{{ partido.equipo.nombre }}</span>
                         </div>
                         
@@ -335,7 +335,7 @@
                         
                         <!-- Rival team points (Massive rose digital) -->
                         <div class="flex flex-col items-center min-w-0 max-w-[120px] lg:max-w-[160px]">
-                            <span id="score-rival" class="text-4xl lg:text-5xl font-black font-mono text-rose-500 tracking-tight leading-none min-w-[48px] text-center">00</span>
+                            <span id="score-rival" class="text-4xl lg:text-5xl font-black font-mono text-rose-500 tracking-tight leading-none min-w-[48px] text-center">{{ marcador_inicial.puntos_rival|stringformat:"02d" }}</span>
                             <span class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1.5 truncate w-full text-center" title="{{ partido.rival }}">{{ partido.rival }}</span>
                         </div>
                     </div>
@@ -553,11 +553,11 @@
                 <div class="flex items-center space-x-3 md:space-x-6 min-w-0 flex-1 justify-center px-1">
                     <div class="flex items-baseline gap-2 min-w-0 max-w-[42%]">
                         <span class="text-emerald-400 text-xl md:text-3xl font-black font-mono truncate" title="{{ partido.equipo.nombre }}">{{ partido.equipo.nombre }}</span>
-                        <span id="gameplay-score-local" class="text-3xl md:text-4xl font-black font-mono text-emerald-400 flex-shrink-0">0</span>
+                        <span id="gameplay-score-local" class="text-3xl md:text-4xl font-black font-mono text-emerald-400 flex-shrink-0">{{ marcador_inicial.puntos_local }}</span>
                     </div>
                     <span class="text-slate-600 text-2xl font-black font-mono flex-shrink-0">|</span>
                     <div class="flex items-baseline gap-2 min-w-0 max-w-[42%] justify-end">
-                        <span id="gameplay-score-rival" class="text-3xl md:text-4xl font-black font-mono text-rose-500 flex-shrink-0">0</span>
+                        <span id="gameplay-score-rival" class="text-3xl md:text-4xl font-black font-mono text-rose-500 flex-shrink-0">{{ marcador_inicial.puntos_rival }}</span>
                         <span class="text-rose-500 text-xl md:text-3xl font-black font-mono truncate text-right" title="{{ partido.rival }}">{{ partido.rival }}</span>
                     </div>
                 </div>
@@ -647,7 +647,7 @@
                             −
                         </button>
                     </div>
-                    <span id="giant-score-local" class="text-[72px] sm:text-[120px] md:text-[180px] font-black leading-none my-4 sm:my-6 select-none font-mono">0</span>
+                    <span id="giant-score-local" class="text-[72px] sm:text-[120px] md:text-[180px] font-black leading-none my-4 sm:my-6 select-none font-mono">{{ marcador_inicial.puntos_local }}</span>
                     <span class="text-xs sm:text-sm font-black uppercase tracking-widest opacity-80 text-center truncate w-full px-1">{{ partido.equipo.nombre }} (Local)</span>
                 </div>
 
@@ -661,7 +661,7 @@
                             −
                         </button>
                     </div>
-                    <span id="giant-score-rival" class="text-[72px] sm:text-[120px] md:text-[180px] font-black leading-none my-4 sm:my-6 select-none font-mono">0</span>
+                    <span id="giant-score-rival" class="text-[72px] sm:text-[120px] md:text-[180px] font-black leading-none my-4 sm:my-6 select-none font-mono">{{ marcador_inicial.puntos_rival }}</span>
                     <span class="text-xs sm:text-sm font-black uppercase tracking-widest opacity-80 text-center truncate w-full px-1">{{ partido.rival }}</span>
                 </div>
             </div>
@@ -896,6 +896,18 @@
         #destacados-list::-webkit-scrollbar { width: 6px; }
         #destacados-list::-webkit-scrollbar-track { background: #1e293b; border-radius: 3px; }
         #destacados-list::-webkit-scrollbar-thumb { background: #64748b; border-radius: 3px; }
+        .destacado-celda {
+            min-width: 0;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #475569 transparent;
+        }
+        .destacado-celda::-webkit-scrollbar { height: 4px; }
+        .destacado-celda::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+        .destacado-celda p { white-space: nowrap; }
     </style>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
@@ -915,7 +927,7 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div class="bg-[#121824] rounded-2xl p-3 border border-slate-800 text-center">
                     <span class="text-[8px] font-black text-slate-500 uppercase tracking-wider block">Marcador Set</span>
-                    <span id="quick-score" class="text-lg font-black text-white">0 – 0</span>
+                    <span id="quick-score" class="text-lg font-black text-white">{{ marcador_inicial.puntos_local }} – {{ marcador_inicial.puntos_rival }}</span>
                 </div>
                 <div class="bg-[#121824] rounded-2xl p-3 border border-emerald-900/40 text-center">
                     <span class="text-[8px] font-black text-emerald-600 uppercase tracking-wider block" title="% de rallies ganados cuando recibimos saque rival (fases K1/K2)">Side-out %</span>
@@ -1019,28 +1031,28 @@
                 <div id="destacados-list" class="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-2 text-[10px] pr-1 -mr-1">
                     <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start">
                         <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Ataque</span>
-                        <div class="min-w-0"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-ataque-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p></div>
-                        <div class="min-w-0"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-ataque-peor" class="font-bold text-rose-300 truncate leading-tight">—</p></div>
+                        <div class="destacado-celda"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-ataque-mejor" class="font-bold text-emerald-300 leading-tight">—</p></div>
+                        <div class="destacado-celda"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-ataque-peor" class="font-bold text-rose-300 leading-tight">—</p></div>
                     </div>
                     <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start border-t border-slate-800/60 pt-2">
                         <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Recep.</span>
-                        <div class="min-w-0"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-recep-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p></div>
-                        <div class="min-w-0"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-recep-peor" class="font-bold text-rose-300 truncate leading-tight">—</p></div>
+                        <div class="destacado-celda"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-recep-mejor" class="font-bold text-emerald-300 leading-tight">—</p></div>
+                        <div class="destacado-celda"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-recep-peor" class="font-bold text-rose-300 leading-tight">—</p></div>
                     </div>
                     <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start border-t border-slate-800/60 pt-2">
                         <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Saque</span>
-                        <div class="min-w-0"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-saque-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p></div>
-                        <div class="min-w-0"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-saque-peor" class="font-bold text-rose-300 truncate leading-tight">—</p></div>
+                        <div class="destacado-celda"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-saque-mejor" class="font-bold text-emerald-300 leading-tight">—</p></div>
+                        <div class="destacado-celda"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-saque-peor" class="font-bold text-rose-300 leading-tight">—</p></div>
                     </div>
                     <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start border-t border-slate-800/60 pt-2">
                         <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Bloqueo</span>
-                        <div class="min-w-0"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-bloqueo-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p></div>
-                        <div class="min-w-0"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-bloqueo-peor" class="font-bold text-rose-300 truncate leading-tight">—</p></div>
+                        <div class="destacado-celda"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-bloqueo-mejor" class="font-bold text-emerald-300 leading-tight">—</p></div>
+                        <div class="destacado-celda"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-bloqueo-peor" class="font-bold text-rose-300 leading-tight">—</p></div>
                     </div>
                     <div class="grid grid-cols-[3.5rem_1fr_1fr] gap-x-1 gap-y-0.5 items-start border-t border-slate-800/60 pt-2">
                         <span class="text-[8px] font-black text-slate-500 uppercase pt-1">Defensa</span>
-                        <div class="min-w-0"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-defensa-mejor" class="font-bold text-emerald-300 truncate leading-tight">—</p></div>
-                        <div class="min-w-0"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-defensa-peor" class="font-bold text-rose-300 truncate leading-tight">—</p></div>
+                        <div class="destacado-celda"><span class="text-[7px] font-black text-emerald-500/80 uppercase block">Mejor</span><p id="dest-defensa-mejor" class="font-bold text-emerald-300 leading-tight">—</p></div>
+                        <div class="destacado-celda"><span class="text-[7px] font-black text-rose-500/80 uppercase block">A mejorar</span><p id="dest-defensa-peor" class="font-bold text-rose-300 leading-tight">—</p></div>
                     </div>
                 </div>
             </div>
@@ -1209,7 +1221,7 @@
     <div class="bg-[#121824] border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
         <div class="p-6 border-b border-slate-800 bg-[#090d16] flex justify-between items-center">
             <h2 id="modal-fin-set-title" class="text-lg font-black uppercase text-white tracking-tight">¡Set Finalizado!</h2>
-            <button onclick="toggleModal('modal-fin-set')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <button onclick="dismissFinSetModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
         <div class="p-8 space-y-6 text-center">
             <div class="space-y-1">
@@ -1224,7 +1236,7 @@
             </div>
         </div>
         <div class="p-6 bg-[#090d16] border-t border-slate-800 flex space-x-3">
-            <button onclick="toggleModal('modal-fin-set')" class="flex-1 bg-slate-850 hover:bg-slate-750 text-white font-black py-4 rounded-xl text-sm shadow-md active:scale-95 transition-all uppercase tracking-wider">
+            <button onclick="dismissFinSetModal()" class="flex-1 bg-slate-850 hover:bg-slate-750 text-white font-black py-4 rounded-xl text-sm shadow-md active:scale-95 transition-all uppercase tracking-wider">
                 Modificar
             </button>
             <button onclick="guardarFinSet()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-sm shadow-xl active:scale-95 transition-all uppercase tracking-wider">
@@ -1242,6 +1254,7 @@
 
 <script>
     const MODALIDAD = "{{ partido.modalidad }}";
+    const MARCADOR_INICIAL = {{ marcador_inicial_json|safe }};
     const PERMITE_LIBERO = {{ permite_libero|yesno:"true,false" }};
 
     let allJugadoras = [
@@ -1255,7 +1268,7 @@
         jugadora_id: null, 
         set_numero: 1,
         indicadores_set: 1,
-        sets_con_datos: [1],
+        sets_con_datos: MARCADOR_INICIAL.sets_con_datos || [1],
         activeRoster: [],
         rotation: null,
         set_finished: false,
@@ -1265,7 +1278,7 @@
         rotacion_num: 1,       // current rotation (R1-R6 for VOLEY, R1-R4 for MINIVOLEY)
         partido_finalizado: {% if partido.finalizado %}true{% else %}false{% endif %},
         modo_scout: 'rapido',   // default scouting mode: rapido
-        marcador: { local: 0, rival: 0 }, // optimistic score state
+        marcador: { local: MARCADOR_INICIAL.puntos_local, rival: MARCADOR_INICIAL.puntos_rival },
         quickHistory: [], // últimas acciones registradas en esta sesión (para panel "Últimas Acciones")
         // ── Preferencias de usuario (pestaña Ajustes), persistidas en localStorage ──
         prefs: {
@@ -1283,8 +1296,10 @@
     };
 
     let selectedBenchPlayerId = null;
-    let setsLocal = 0;
-    let setsRival = 0;
+    let setsLocal = MARCADOR_INICIAL.sets_local || 0;
+    let setsRival = MARCADOR_INICIAL.sets_rival || 0;
+    let _indicadoresCache = { at: 0, set: null, res: null };
+    const INDICADORES_CACHE_MS = 12000;
     let tempLineup = { pos1: null, pos2: null, pos3: null, pos4: null, pos5: null, pos6: null, libero1: null, libero2: null };
     let selectedRotInit    = 1;    // Rotación inicial del set activo (R1-R6 / R1-R4)
     let selectedEstadoInicial = 'K1'; // Estado inicial del set: 'K0' (saque) o 'K1' (recepción)
@@ -1344,6 +1359,33 @@
         }
     }
 
+    function marcadorCacheKey() {
+        return `partido_${state.partido_id}_marcador_cache`;
+    }
+
+    function persistMarcadorCache() {
+        try {
+            localStorage.setItem(marcadorCacheKey(), JSON.stringify({
+                local: state.marcador.local,
+                rival: state.marcador.rival,
+                sets_local: setsLocal,
+                sets_rival: setsRival,
+                set_numero: state.set_numero,
+                ts: Date.now(),
+            }));
+        } catch (e) { /* quota / modo privado */ }
+    }
+
+    function invalidateIndicadoresCache() {
+        _indicadoresCache = { at: 0, set: null, res: null };
+    }
+
+    function setMarcadorSyncing(on) {
+        document.querySelectorAll(
+            '#score-local, #score-rival, #gameplay-score-local, #gameplay-score-rival, #quick-score'
+        ).forEach(el => el.classList.toggle('opacity-70', on));
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         loadPrefs();
 
@@ -1357,7 +1399,17 @@
         
         historialInicial.forEach(data => renderAction(data, data.calidad));
         hydrateQuickHistoryFromInicial();
-        setSet(1); // Set 1 initial load
+        const savedSetActivo = parseInt(
+            localStorage.getItem(`partido_${state.partido_id}_set_activo`) || String(MARCADOR_INICIAL.set_activo),
+            10
+        );
+        const savedIndicadoresSet = parseInt(
+            localStorage.getItem(`partido_${state.partido_id}_indicadores_set`) || String(savedSetActivo),
+            10
+        );
+        setSet(savedSetActivo);
+        state.indicadores_set = savedIndicadoresSet;
+        renderIndicadoresSetPicker();
         updateFaseIndicator(); // Show K1 badge on startup
         updateRotBadge();      // Show R1 badge on startup
         lucide.createIcons();
@@ -1442,6 +1494,10 @@
                 headerTitle.innerText = 'Indicadores del Set';
             }
         }
+
+        if (tabId === 'metricas') {
+            updateIndicadoresPanel(false);
+        }
     }
 
     // Handle back/forward navigation
@@ -1489,6 +1545,11 @@
     function setSet(num) {
         state.set_numero = parseInt(num);
         state.indicadores_set = parseInt(num);
+        localStorage.setItem(`partido_${state.partido_id}_set_activo`, String(num));
+
+        for (let s = 1; s < state.set_numero; s++) {
+            markSetModalAcknowledged(s);
+        }
 
         // Reset phase state for the new set
         // ── Restore estado inicial from localStorage ─────────────────────
@@ -1631,7 +1692,8 @@
                         await renderActivePlayers();
                         await loadRotation();
                         toggleModal('modal-config');
-                        updateFlashboard();
+                        invalidateIndicadoresCache();
+                updateFlashboard({ ligero: true });
                     } else {
                         showToast("❌ Error al registrar el cambio");
                     }
@@ -2442,9 +2504,11 @@
         if (esPuntoNuestro) {
             state.marcador.local++;
             updateUIMarcador();
+            persistMarcadorCache();
         } else if (esPuntoRival) {
             state.marcador.rival++;
             updateUIMarcador();
+            persistMarcadorCache();
         }
 
         // ── Determine the fase to tag this action with ───────────────────
@@ -2530,7 +2594,8 @@
                 }
 
                 updateFaseIndicator();
-                updateFlashboard();
+                invalidateIndicadoresCache();
+                updateFlashboard({ ligero: true });
                 resetVisual();
                 // Refresca las tarjetas de zona: la fila de Volumen Rápido
                 // (Recepción/Defensa) y el bloque de Saque dependen de la
@@ -2682,7 +2747,8 @@
                 state.quickHistory = state.quickHistory.filter(item => String(item.id) !== String(id));
                 renderQuickHistory();
                 showToast("🗑️ Acción eliminada");
-                updateFlashboard();
+                invalidateIndicadoresCache();
+                updateFlashboard({ ligero: true });
             }
         } catch(e) {
             showToast("❌ Error al eliminar");
@@ -2809,7 +2875,45 @@
         renderBotonerasAcciones();
     }
 
+    function getSetsModalAcknowledged() {
+        const key = `partido_${state.partido_id}_sets_modal_ok`;
+        try {
+            return JSON.parse(localStorage.getItem(key) || '[]').map(Number);
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function markSetModalAcknowledged(setNum) {
+        const key = `partido_${state.partido_id}_sets_modal_ok`;
+        const acked = getSetsModalAcknowledged();
+        if (!acked.includes(setNum)) {
+            acked.push(setNum);
+            localStorage.setItem(key, JSON.stringify(acked));
+        }
+    }
+
+    function isScoutTabActive() {
+        const el = document.getElementById('tab-scout-content');
+        return el && !el.classList.contains('hidden');
+    }
+
+    function dismissFinSetModal() {
+        markSetModalAcknowledged(state.set_numero);
+        state.set_finished = true;
+        const modal = document.getElementById('modal-fin-set');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
     function checkSetEnd(pLocal, pRival) {
+        // Solo interrumpir en Scout en vivo; Indicadores/Pizarra son consulta
+        if (!isScoutTabActive()) return;
+
+        if (getSetsModalAcknowledged().includes(state.set_numero)) return;
+
         // ── Si el set ya fue guardado (guardarFinSet lo pone a false y resetea), no hacer nada
         // Esto evita que el modal se reactive cuando updateFlashboard lee el marcador anterior
         // antes de que la BD devuelva los datos del nuevo set.
@@ -2851,6 +2955,10 @@
     function guardarFinSet() {
         const duracion = parseInt(document.getElementById('input-set-duracion').value) || 20;
         const setGuardado = state.set_numero;
+
+        markSetModalAcknowledged(setGuardado);
+
+        invalidateIndicadoresCache();
 
         // Save duration
         localStorage.setItem(`partido_${state.partido_id}_set_${setGuardado}_duration`, duracion);
@@ -2944,6 +3052,11 @@
         if (gameplayScoreRival) gameplayScoreRival.innerText = pRival;
         if (giantScoreLocal) giantScoreLocal.innerText = pLocal;
         if (giantScoreRival) giantScoreRival.innerText = pRival;
+
+        const quickScore = document.getElementById('quick-score');
+        if (quickScore) quickScore.innerText = `${pLocal} – ${pRival}`;
+
+        persistMarcadorCache();
     }
 
     function getIndicadoresSetNums() {
@@ -3001,7 +3114,7 @@
         state.indicadores_set = n;
         localStorage.setItem(`partido_${state.partido_id}_indicadores_set`, String(n));
         renderIndicadoresSetPicker();
-        updateIndicadoresPanel();
+        updateIndicadoresPanel(true);
     }
 
     function paintIndicadoresFromResponse(res) {
@@ -3171,7 +3284,7 @@
         if (isFinalizado) {
             state.partido_finalizado = true;
             lockScoutInterface();
-        } else if (!state.partido_finalizado) {
+        } else if (!state.partido_finalizado && isScoutTabActive()) {
             unlockScoutInterface();
             checkSetEnd(pLocal, pRival);
         }
@@ -3182,7 +3295,17 @@
         renderIndicadoresSetPicker();
     }
 
-    async function updateIndicadoresPanel() {
+    async function updateIndicadoresPanel(force = false) {
+        const now = Date.now();
+        if (
+            !force
+            && _indicadoresCache.res
+            && _indicadoresCache.set === state.indicadores_set
+            && now - _indicadoresCache.at < INDICADORES_CACHE_MS
+        ) {
+            paintIndicadoresFromResponse(_indicadoresCache.res);
+            return;
+        }
         try {
             const body = { partido_id: state.partido_id, set_numero: state.indicadores_set };
             const r = await fetchConReintentos('{% url "stats_app:api_obtener_stats_set" %}', {
@@ -3192,6 +3315,7 @@
             });
             const res = await r.json();
             if (res.status === 'ok') {
+                _indicadoresCache = { at: now, set: state.indicadores_set, res };
                 paintIndicadoresFromResponse(res);
             }
         } catch (e) {
@@ -3199,21 +3323,23 @@
         }
     }
 
-    async function fetchStatsSet(setNum) {
+    async function fetchStatsSet(setNum, ligero = false) {
         const r = await fetchConReintentos('{% url "stats_app:api_obtener_stats_set" %}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-            body: JSON.stringify({ partido_id: state.partido_id, set_numero: setNum })
+            body: JSON.stringify({ partido_id: state.partido_id, set_numero: setNum, ligero })
         });
         return r.json();
     }
 
     // Refresh live stats (marcador del set en juego + panel de indicadores del set seleccionado)
-    async function updateFlashboard() {
+    async function updateFlashboard(opts = {}) {
+        const ligero = opts.ligero ?? false;
+        setMarcadorSyncing(true);
         try {
             const verOtroSet = state.indicadores_set !== state.set_numero;
-            const promesas = [fetchStatsSet(state.set_numero)];
-            if (verOtroSet) promesas.push(fetchStatsSet(state.indicadores_set));
+            const promesas = [fetchStatsSet(state.set_numero, ligero && !verOtroSet)];
+            if (verOtroSet) promesas.push(fetchStatsSet(state.indicadores_set, false));
 
             const [resMarcador, resIndicadores] = await Promise.all(promesas);
 
@@ -3222,10 +3348,17 @@
             }
             const resPanel = verOtroSet ? resIndicadores : resMarcador;
             if (resPanel && resPanel.status === 'ok') {
+                _indicadoresCache = {
+                    at: Date.now(),
+                    set: state.indicadores_set,
+                    res: resPanel,
+                };
                 paintIndicadoresFromResponse(resPanel);
             }
         } catch(e) {
             console.error("Error al actualizar flashboard: ", e);
+        } finally {
+            setMarcadorSyncing(false);
         }
     }
 

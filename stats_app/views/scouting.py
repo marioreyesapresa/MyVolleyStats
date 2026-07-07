@@ -23,10 +23,12 @@ from ..security import log_intento_acceso_no_autorizado, ocultar_detalle_interno
 from ..services.reporting import (
     build_quick_set_report,
     build_full_report,
+    build_partido_snapshot,
     calc_k1_complex_pct,
     calc_k2_complex_pct,
     calc_set_score,
     calc_racha,
+    count_sets_won,
     rotation_matrix,
     zone_performance,
     _leaders_from_players,
@@ -143,11 +145,14 @@ class ModoPartidoView(LoginRequiredMixin, View):
 
         permite_libero = partido.equipo.categoria in ['CADETE', 'JUVENIL', 'JUNIOR', 'SENIOR']
         partidos_guardados = Partido.objects.filter(equipo=partido.equipo).exclude(pk=partido.pk).order_by('-fecha')
+        marcador_inicial = build_partido_snapshot(partido)
         return render(request, self.template_name, {
             'partido': partido,
             'jugadoras': jugadoras,
             'matrix_actions': acciones,
             'historial_inicial': json.dumps(historial_data),
+            'marcador_inicial': marcador_inicial,
+            'marcador_inicial_json': json.dumps(marcador_inicial),
             'permite_libero': permite_libero,
             'partidos_guardados': partidos_guardados
         })
@@ -340,56 +345,62 @@ def ObtenerStatsSetAPI(request):
     partido = _partido_del_entrenador(request, cd['partido_id'])
     partido_id = partido.id
     set_num = cd.get('set_numero') or 1
+    ligero = cd.get('ligero') or False
 
-    stats_base = RegistroEstadistica.objects.filter(partido_id=partido_id, set_numero=set_num)
-    fundamentos = ['SAQUE', 'RECEPCION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
     equipo_stats = {}
-    
-    for fund in fundamentos:
-        qs = stats_base.filter(accion=fund)
-        total = qs.count()
-        if total > 0:
-            pp = qs.filter(calidad='++').count()
-            p = qs.filter(calidad='+').count()
-            n = qs.filter(calidad='=').count()
-            m = qs.filter(calidad='-').count()
-            mm = qs.filter(calidad='--').count()
-            
-            perfeccion = ((pp + p) / total) * 100
-            eficacia = ((pp - mm) / total) * 100
-            
-            equipo_stats[fund] = {
-                'total': total,
-                'pp_perc': (pp / total) * 100,
-                'p_perc': (p / total) * 100,
-                'n_perc': (n / total) * 100,
-                'm_perc': (m / total) * 100,
-                'mm_perc': (mm / total) * 100,
-                'perfeccion': round(perfeccion, 1),
-                'eficacia': round(eficacia, 1),
-                'errores': mm
-            }
-        else:
-            equipo_stats[fund] = {'total': 0, 'pp_perc':0, 'p_perc':0, 'n_perc':0, 'm_perc':0, 'mm_perc':0, 'perfeccion': 0, 'eficacia': 0, 'errores': 0}
-
     stats_por_jugadora = {}
-    jugadoras_en_partido = Jugadora.objects.filter(id__in=stats_base.values_list('jugadora_id', flat=True))
-    
-    for fund in fundamentos:
-        lista_fund = []
-        for j in jugadoras_en_partido:
-            j_qs = stats_base.filter(jugadora=j, accion=fund)
-            t = j_qs.count()
-            if t > 0:
-                pp = j_qs.filter(calidad='++').count()
-                mm = j_qs.filter(calidad='--').count()
-                efi = ((pp - mm) / t) * 100
-                lista_fund.append({
-                    'id': j.id, 'dorsal': j.dorsal, 'nombre': j.nombre, 
-                    'total': t, 'eficiencia': round(efi, 1), 'pp': pp, 'mm': mm
-                })
-        lista_fund.sort(key=lambda x: x['eficiencia'], reverse=True)
-        stats_por_jugadora[fund] = lista_fund[:5]
+    if not ligero:
+        stats_base = RegistroEstadistica.objects.filter(partido_id=partido_id, set_numero=set_num)
+        fundamentos = ['SAQUE', 'RECEPCION', 'ATAQUE', 'BLOQUEO', 'DEFENSA']
+
+        for fund in fundamentos:
+            qs = stats_base.filter(accion=fund)
+            total = qs.count()
+            if total > 0:
+                pp = qs.filter(calidad='++').count()
+                p = qs.filter(calidad='+').count()
+                n = qs.filter(calidad='=').count()
+                m = qs.filter(calidad='-').count()
+                mm = qs.filter(calidad='--').count()
+
+                perfeccion = ((pp + p) / total) * 100
+                eficacia = ((pp - mm) / total) * 100
+
+                equipo_stats[fund] = {
+                    'total': total,
+                    'pp_perc': (pp / total) * 100,
+                    'p_perc': (p / total) * 100,
+                    'n_perc': (n / total) * 100,
+                    'm_perc': (m / total) * 100,
+                    'mm_perc': (mm / total) * 100,
+                    'perfeccion': round(perfeccion, 1),
+                    'eficacia': round(eficacia, 1),
+                    'errores': mm
+                }
+            else:
+                equipo_stats[fund] = {
+                    'total': 0, 'pp_perc': 0, 'p_perc': 0, 'n_perc': 0, 'm_perc': 0,
+                    'mm_perc': 0, 'perfeccion': 0, 'eficacia': 0, 'errores': 0,
+                }
+
+        jugadoras_en_partido = Jugadora.objects.filter(
+            id__in=stats_base.values_list('jugadora_id', flat=True)
+        )
+        for fund in fundamentos:
+            lista_fund = []
+            for j in jugadoras_en_partido:
+                j_qs = stats_base.filter(jugadora=j, accion=fund)
+                t = j_qs.count()
+                if t > 0:
+                    pp = j_qs.filter(calidad='++').count()
+                    mm = j_qs.filter(calidad='--').count()
+                    efi = ((pp - mm) / t) * 100
+                    lista_fund.append({
+                        'id': j.id, 'dorsal': j.dorsal, 'nombre': j.nombre,
+                        'total': t, 'eficiencia': round(efi, 1), 'pp': pp, 'mm': mm
+                    })
+            lista_fund.sort(key=lambda x: x['eficiencia'], reverse=True)
+            stats_por_jugadora[fund] = lista_fund[:5]
 
     informe_rapido = build_quick_set_report(partido, set_num)
     lideres = _leaders_from_players(informe_rapido['jugadoras'])
@@ -401,25 +412,14 @@ def ObtenerStatsSetAPI(request):
     puntos_local = informe_rapido['score_local']
     puntos_rival = informe_rapido['score_rival']
 
-    all_sets = RegistroEstadistica.objects.filter(partido=partido).values_list('set_numero', flat=True).distinct()
-    sets_local = 0
-    sets_rival = 0
-    for s in all_sets:
-        p_l, p_r = calc_set_score(partido, s)
-        limit = partido.limite_puntos_set(s)
-        if (p_l >= limit or p_r >= limit) and abs(p_l - p_r) >= 2:
-            if p_l > p_r:
-                sets_local += 1
-            else:
-                sets_rival += 1
-
+    sets_local, sets_rival = count_sets_won(partido)
     sets_con_datos = sorted(
         RegistroEstadistica.objects.filter(partido=partido)
         .values_list('set_numero', flat=True)
         .distinct()
     )
 
-    return JsonResponse({
+    payload = {
         'status': 'ok',
         'partido_finalizado': partido.finalizado,
         'equipo': equipo_stats,
@@ -437,11 +437,17 @@ def ObtenerStatsSetAPI(request):
         'sets_para_ganar': partido.sets_para_ganar,
         'set_decisivo_numero': partido.set_decisivo_numero,
         'informe_rapido': informe_rapido,
-        'rotaciones': rotation_matrix(partido, set_num),
-        'zonas': zone_performance(partido, set_num),
         'racha': calc_racha(partido, set_num),
         'sets_con_datos': sets_con_datos,
-    })
+        'ligero': ligero,
+    }
+    if not ligero:
+        payload['rotaciones'] = rotation_matrix(partido, set_num)
+        payload['zonas'] = zone_performance(partido, set_num)
+    else:
+        payload['rotaciones'] = []
+        payload['zonas'] = []
+    return JsonResponse(payload)
 
 
 @login_required

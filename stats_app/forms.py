@@ -213,6 +213,7 @@ class ObtenerStatsSetForm(forms.Form):
 
     partido_id = IdField()
     set_numero = IdField(required=False, max_value=MAX_SET_NUMERO, initial=1)
+    ligero = forms.BooleanField(required=False, initial=False)
 
 
 class ConfigSetForm(forms.Form):

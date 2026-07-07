@@ -27,8 +27,11 @@ from .services.reporting import (
     build_run_chart,
     build_set_leaders,
     build_destacados_por_accion,
+    build_quick_set_report,
+    build_partido_snapshot,
     calc_racha,
     calc_racha_maxima,
+    _candidata_cambio,
 )
 
 User = get_user_model()
@@ -1207,6 +1210,43 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(dest['recepcion']['mejor']['dorsal'], 25)
         self.assertIn('defensa', dest)
         self.assertIn('bloqueo', dest)
+
+    def test_candidata_cambio_no_penaliza_libero_con_alta_eficacia_defensiva(self):
+        """26 defensas buenas y 2 errores (saldo -2) no debe marcar fila roja."""
+        ana = Jugadora.objects.create(equipo=self.equipo, nombre='Ana', dorsal=29, posicion='LIBERO')
+        for _ in range(26):
+            RegistroEstadistica.objects.create(
+                partido=self.partido, jugadora=ana, tipo_fase='K2',
+                accion='DEFENSA', calidad='+', set_numero=1,
+            )
+        for _ in range(2):
+            RegistroEstadistica.objects.create(
+                partido=self.partido, jugadora=ana, tipo_fase='K2',
+                accion='DEFENSA', calidad='--', set_numero=1,
+            )
+
+        fila = build_quick_set_report(self.partido, 1)['tabla_rapida']
+        ana_row = next(r for r in fila if r['dorsal'] == 29)
+        self.assertEqual(ana_row['balance'], -2)
+        self.assertEqual(ana_row['defensas'], 26)
+        self.assertFalse(ana_row['alerta'])
+
+    def test_candidata_cambio_si_penaliza_jugadora_sin_volumen_defensivo(self):
+        p = {'balance': -2, 'puntos': 0, 'errores': 2, 'defensas': 1, 'defensa_err': 1,
+             'recepcion_pos': 0, 'recepcion_err': 0, 'asistencias': 0, 'colocacion_err': 0}
+        self.assertTrue(_candidata_cambio(p))
+
+    def test_build_partido_snapshot_detecta_set_activo_y_marcador(self):
+        for _ in range(25):
+            self._punto('ATAQUE', '++')
+        for _ in range(17):
+            self._punto('ATAQUE', '--')
+
+        snap = build_partido_snapshot(self.partido)
+        self.assertEqual(snap['set_activo'], 1)
+        self.assertEqual(snap['puntos_local'], 25)
+        self.assertEqual(snap['puntos_rival'], 17)
+        self.assertEqual(snap['sets_local'], 1)
 
 
 class CrudAdministracionTests(TestCase):
