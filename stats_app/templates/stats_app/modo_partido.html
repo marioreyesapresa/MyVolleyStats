@@ -467,19 +467,11 @@
     <style>
         /* Modo Rápido — tarjetas de zona: evitar solapamiento en iPad.
            Las filas con flex-1 se comprimían por debajo del min-height de
-           los botones y acababan montándose unas sobre otras. */
-        #gameplay-grid-container {
-            /* Tamaño natural, NUNCA se recorta: las zonas (sobre todo las
-               zagueras 5/6/1, que son las que más se usan) deben verse
-               siempre completas. Si falta espacio, el scroll ocurre en
-               #gameplay-bottom-scroll (colocación + puntos), no aquí. */
-            overflow: visible;
-        }
-        #gameplay-bottom-scroll {
-            overflow-y: auto;
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch;
-        }
+           los botones y acababan montándose unas sobre otras.
+           Todo el panel (zonas + colocación + puntos) se renderiza a tamaño
+           NATURAL, sin recortes ni "cajas" de scroll internas diminutas: si
+           no cabe entero en pantalla, el scroll lo hace el <main> exterior
+           (scroll de página normal), nunca un contenedor interno pequeño. */
         #gameplay-grid-container .gameplay-field-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -640,9 +632,10 @@
                 <!-- Poblado dinámicamente por renderGameplayGrid() -->
             </div>
 
-            <!-- Si falta espacio en pantalla, el scroll ocurre AQUÍ (colocación +
-                 puntos), nunca en el grid de zonas de arriba. -->
-            <div id="gameplay-bottom-scroll" class="flex-1 min-h-0 flex flex-col gap-2">
+            <!-- Tamaño natural (no flex-1/min-h-0): si falta espacio en pantalla,
+                 el scroll de página normal revela esto, sin comprimirlo en una
+                 caja diminuta. -->
+            <div id="gameplay-bottom-scroll" class="flex-shrink-0 flex flex-col gap-2">
                 <!-- Colocación: barra fija compartida (no depende de la zona), asignada
                      automáticamente a la colocadora en pista. Poblada por renderColocacionBar() -->
                 <div id="colocacion-bar-container" class="flex-shrink-0"></div>
@@ -4196,10 +4189,12 @@
         resizeGameplayLayout();
     }
 
-    // ── Ajusta la altura del panel de juego al viewport. Las tarjetas de zona
-    // (incluida la fila zaguera 5/6/1, la más usada) se muestran siempre
-    // completas; si no cabe todo, el scroll ocurre en #gameplay-bottom-scroll
-    // (colocación + botones de punto), nunca en el grid de zonas.
+    // ── Da al panel de juego una altura MÍNIMA igual al viewport disponible
+    // (para que en pantallas grandes no quede un hueco vacío), pero SIN forzar
+    // una altura exacta: todo (zonas, colocación, puntos) se renderiza a
+    // tamaño natural y, si no cabe entero, es el <main> exterior el que hace
+    // scroll de página normal — nunca se comprime ningún bloque a una caja
+    // diminuta.
     function resizeGameplayLayout() {
         const gameplayContent = document.getElementById('rapido-gameplay-content');
         if (!gameplayContent || gameplayContent.classList.contains('hidden')) return;
@@ -4207,7 +4202,7 @@
         const top = gameplayContent.getBoundingClientRect().top;
         const bottomSafety = 16;
         const available = window.innerHeight - top - bottomSafety;
-        gameplayContent.style.height = `${Math.max(available, 480)}px`;
+        gameplayContent.style.minHeight = `${Math.max(available, 480)}px`;
     }
 
     window.addEventListener('resize', () => {
