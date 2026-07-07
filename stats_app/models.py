@@ -86,6 +86,11 @@ class Partido(models.Model):
     informe_pdf_cache_num_registros = models.PositiveIntegerField(null=True, blank=True, editable=False)
     informe_pdf_cache_generado_en = models.DateTimeField(null=True, blank=True, editable=False)
 
+    # Caché del PDF del informe avanzado (misma lógica que informe_pdf_cache).
+    informe_avanzado_pdf_cache = models.BinaryField(null=True, blank=True, editable=False)
+    informe_avanzado_pdf_cache_num_registros = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    informe_avanzado_pdf_cache_generado_en = models.DateTimeField(null=True, blank=True, editable=False)
+
     def __str__(self):
         return f"{self.equipo.nombre} vs {self.rival} ({self.fecha} {self.hora})"
 

@@ -26,6 +26,9 @@ from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet
 from .security import RateLimitMiddleware
 from .services.reporting import (
     build_full_report,
+    build_quick_report,
+    build_advanced_report,
+    advanced_player_row,
     build_run_chart,
     build_set_leaders,
     build_destacados_por_accion,
@@ -1018,6 +1021,18 @@ class FlujoCompletoPartidoTests(TestCase):
         self.partido.refresh_from_db()
         self.assertIsNone(self.partido.informe_pdf_cache)
 
+    def test_partido_stats_avanzado_view_renderiza(self):
+        response = self.client.get(reverse('stats_app:partido_stats_avanzado', args=[self.partido.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Estadísticas Avanzadas')
+        self.assertContains(response, 'Escala completa')
+
+    def test_descargar_informe_avanzado_pdf_genera_documento(self):
+        response = self.client.get(reverse('stats_app:descargar_informe_avanzado', args=[self.partido.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn(b'PDF', response.content[:10])
+
     def test_registrar_cambio_happy_path(self):
         response = self.client.post(
             reverse('stats_app:api_registrar_cambio'),
@@ -1199,11 +1214,11 @@ class ReportingHelpersTests(TestCase):
 
     def setUp(self):
         cache.clear()
-        self.coach, self.equipo, _, self.partido = _crear_entrenador_con_partido('coach_reporting')
+        self.coach, self.equipo, self.jugadora, self.partido = _crear_entrenador_con_partido('coach_reporting')
 
     def _punto(self, accion, calidad):
         RegistroEstadistica.objects.create(
-            partido=self.partido, tipo_fase='K1', accion=accion,
+            partido=self.partido, jugadora=self.jugadora, tipo_fase='K1', accion=accion,
             calidad=calidad, set_numero=1,
         )
 
@@ -1466,6 +1481,28 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(set_resumen['puntos_err_rival'], 1)
         self.assertEqual(reporte['resumen_totales']['puntos_merito'], 1)
         self.assertEqual(reporte['resumen_totales']['puntos_err_rival'], 1)
+
+    def test_build_quick_report_es_alias_de_build_full_report(self):
+        self.assertIs(build_quick_report, build_full_report)
+
+    def test_build_advanced_report_incluye_desglose_calidad_y_red(self):
+        self._punto('RECEPCION', '+')
+        self._punto('RECEPCION', '=')
+        self._punto('ATAQUE', '++')
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadora, set_numero=1,
+            tipo_fase='K1', accion='RED', calidad='--', rotacion_num=1,
+        )
+        reporte = build_advanced_report(self.partido, 'global')
+        set_data = reporte['detalle_sets'][0]
+        self.assertEqual(set_data['red_equipo'], 1)
+        jug = set_data['jugadoras'][0]
+        self.assertEqual(jug['red'], 1)
+        self.assertIn('RECEPCION', jug['fundamentos'])
+        self.assertEqual(jug['fundamentos']['RECEPCION']['p'], 1)
+        self.assertEqual(jug['fundamentos']['RECEPCION']['eq'], 1)
+        self.assertIn('fundamentos_meta', reporte)
+        self.assertEqual(len(reporte['fundamentos_meta']), 6)
 
 
 class CrudAdministracionTests(TestCase):

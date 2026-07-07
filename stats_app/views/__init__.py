@@ -1,11 +1,11 @@
 from .scouting import (
-    ModoPartidoView, RegistrarAccionAPI, EliminarAccionAPI, RegistrarCambioAPI, ObtenerStatsSetAPI, get_stats_json, PartidoStatsFinalView, FinalizarPartidoAPI, ActualizarConfigSetAPI
+    ModoPartidoView, RegistrarAccionAPI, EliminarAccionAPI, RegistrarCambioAPI, ObtenerStatsSetAPI, get_stats_json, PartidoStatsFinalView, PartidoStatsAvanzadoView, FinalizarPartidoAPI, ActualizarConfigSetAPI
 )
 from .rotaciones import (
     GetRotacionActualAPI, GuardarAlineacionInicialAPI, RotarManualAPI, ActualizarPosicionJugadoraAPI
 )
 from .informes import (
-    DescargarResumenPDF, DescargarInformeCompletoPDF
+    DescargarResumenPDF, DescargarInformeCompletoPDF, DescargarInformeAvanzadoPDF
 )
 from .administracion import (
     ConfiguracionView, DashboardView,

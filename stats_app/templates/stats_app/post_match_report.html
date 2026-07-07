@@ -1,8 +1,8 @@
 {% extends 'stats_app/base_voley.html' %}
 
-{% block title %}Estadísticas Finales | {{ partido.rival }} | MyVolleyStats{% endblock %}
+{% block title %}Estadísticas Rápidas | {{ partido.rival }} | MyVolleyStats{% endblock %}
 
-{% block header_title %}Estadísticas Finales{% endblock %}
+{% block header_title %}Estadísticas Rápidas{% endblock %}
 
 {% block content %}
 <style>
@@ -26,10 +26,14 @@
 
     <div class="bg-[#121824] p-5 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
         <div>
-            <h2 class="text-xl font-black text-white uppercase tracking-tight">Resumen del Equipo</h2>
+            <h2 class="text-xl font-black text-white uppercase tracking-tight">Estadísticas Rápidas</h2>
             <p class="text-slate-400 text-xs mt-1 font-bold uppercase tracking-wider">{{ partido.equipo.nombre }} vs {{ partido.rival }}</p>
+            <p class="text-emerald-400/70 text-[10px] mt-1 font-bold">Zonas · saldo ++/−− · destacados · rotaciones</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+            <a href="{% url 'stats_app:partido_stats_avanzado' partido.id %}?set={{ set_actual }}" class="px-4 py-2 rounded-xl text-xs font-black uppercase border border-indigo-500/40 text-indigo-300 hover:text-white hover:bg-indigo-600/20">
+                Informe Avanzado →
+            </a>
             <a href="?set=global" class="px-4 py-2 rounded-xl text-xs font-black uppercase border {% if set_actual == 'global' %}bg-blue-600 border-blue-500 text-white{% else %}bg-[#1a202c] border-slate-700 text-slate-400{% endif %}">Partido completo</a>
             {% for s in sets_disponibles %}
             <a href="?set={{ s }}" class="px-4 py-2 rounded-xl text-xs font-black uppercase border {% if set_actual == s|stringformat:'s' %}bg-blue-600 border-blue-500 text-white{% else %}bg-[#1a202c] border-slate-700 text-slate-400{% endif %}">Set {{ s }}</a>
@@ -41,10 +45,10 @@
                 <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i> Resumen PDF
             </a>
             <a href="{% url 'stats_app:descargar_informe_completo' partido.id %}?set={{ set_actual }}" class="px-4 py-2 bg-emerald-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
-                <i data-lucide="download" class="w-4 h-4"></i> Informe completo PDF
+                <i data-lucide="download" class="w-4 h-4"></i> PDF Rápido
             </a>
             <button type="button"
-                    onclick="compartirInformePDF(this, '{% url 'stats_app:descargar_informe_completo' partido.id %}?set={{ set_actual }}', 'Informe_Completo_{{ partido.rival }}.pdf')"
+                    onclick="compartirInformePDF(this, '{% url 'stats_app:descargar_informe_completo' partido.id %}?set={{ set_actual }}', 'Estadisticas_Rapidas_{{ partido.rival }}.pdf')"
                     class="px-4 py-2 bg-blue-600 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 <i data-lucide="share-2" class="w-4 h-4"></i> Compartir por WhatsApp
             </button>

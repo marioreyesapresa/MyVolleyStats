@@ -23,6 +23,8 @@ from ..security import log_intento_acceso_no_autorizado, ocultar_detalle_interno
 from ..services.reporting import (
     build_quick_set_report,
     build_full_report,
+    build_quick_report,
+    build_advanced_report,
     build_partido_snapshot,
     calc_k1_complex_pct,
     calc_k2_complex_pct,
@@ -576,12 +578,13 @@ def get_stats_json(request, partido_id, set_n):
     return JsonResponse({'status': 'ok', 'stats': stats, 'alertas_cambio': alertas_cambio})
 
 class PartidoStatsFinalView(LoginRequiredMixin, View):
+    """Informe web de estadísticas rápidas (zonas, saldo binario, destacados)."""
     template_name = 'stats_app/post_match_report.html'
 
     def get(self, request, pk):
         partido = _partido_del_entrenador(request, pk)
         set_filtro = request.GET.get('set', 'global')
-        reporte = build_full_report(partido, set_filtro)
+        reporte = build_quick_report(partido, set_filtro)
 
         sets_disponibles = get_sets_con_datos(partido)
         set_num_grafico = None if set_filtro == 'global' else set_filtro
@@ -612,6 +615,35 @@ class PartidoStatsFinalView(LoginRequiredMixin, View):
             'origen_labels': json.dumps(list(origen_puntos.keys())),
             'origen_data': json.dumps(list(origen_puntos.values())),
             'destacadas': reporte['destacadas'],
+            'tipo_informe': 'rapido',
+        }
+        return render(request, self.template_name, context)
+
+
+class PartidoStatsAvanzadoView(LoginRequiredMixin, View):
+    """Informe web técnico con escala completa de calidad (++/+ /=/ -/--)."""
+    template_name = 'stats_app/post_match_report_avanzado.html'
+
+    def get(self, request, pk):
+        partido = _partido_del_entrenador(request, pk)
+        set_filtro = request.GET.get('set', 'global')
+        reporte = build_advanced_report(partido, set_filtro)
+        sets_disponibles = get_sets_con_datos(partido)
+
+        context = {
+            'partido': partido,
+            'set_actual': set_filtro,
+            'sets_disponibles': sets_disponibles,
+            'reporte': reporte,
+            'resumen_sets': reporte['resumen_sets'],
+            'detalle_sets': reporte['detalle_sets'],
+            'detalle_total': reporte.get('detalle_total'),
+            'resumen_totales': reporte.get('resumen_totales'),
+            'fundamentos_orden': reporte['fundamentos_orden'],
+            'fundamento_labels': reporte['fundamento_labels'],
+            'fundamentos_meta': reporte['fundamentos_meta'],
+            'calidad_labels': reporte['calidad_labels'],
+            'tipo_informe': 'avanzado',
         }
         return render(request, self.template_name, context)
 

@@ -1,0 +1,132 @@
+{% extends 'stats_app/base_voley.html' %}
+
+{% block title %}Estadísticas Avanzadas | {{ partido.rival }} | MyVolleyStats{% endblock %}
+{% block header_title %}Estadísticas Avanzadas{% endblock %}
+
+{% block content %}
+<style>
+    .report-sheet { background: #fff; color: #111; }
+    .report-sheet th, .report-sheet td { border: 1px solid #bbb; padding: 3px 5px; font-size: 10px; white-space: nowrap; text-align: center; }
+    .report-sheet th { background: #e8e8e8; font-weight: 700; }
+    .report-sheet .player-name { text-align: left; font-weight: 600; min-width: 110px; position: sticky; left: 0; background: #fff; z-index: 2; }
+    .report-sheet .fund-head { background: #dbeafe; color: #1e3a8a; font-size: 9px; }
+    .report-sheet .q-pp { color: #15803d; }
+    .report-sheet .q-p { color: #16a34a; }
+    .report-sheet .q-eq { color: #64748b; }
+    .report-sheet .q-m { color: #ea580c; }
+    .report-sheet .q-mm { color: #b91c1c; }
+    .report-sheet .cell-kill { background: #d4edda; }
+    .report-sheet .cell-err { background: #f8d7da; }
+    .report-sheet .cell-empty { color: #cbd5e1; }
+    .report-sheet .totals td { background: #f3f3f3; font-weight: 800; }
+    .report-sheet .set-title { background: #1e3a8a; color: #fff; font-weight: 800; font-size: 13px; padding: 8px 12px; }
+    .report-sheet .complex-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; }
+    @media print { .print\:hidden { display: none !important; } }
+</style>
+
+<div class="space-y-6 text-[#f1f5f9]">
+
+    <div class="bg-[#121824] p-5 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
+        <div>
+            <h2 class="text-xl font-black text-white uppercase tracking-tight">Informe Técnico Avanzado</h2>
+            <p class="text-slate-400 text-xs mt-1 font-bold uppercase tracking-wider">{{ partido.equipo.nombre }} vs {{ partido.rival }}</p>
+            <p class="text-blue-400/80 text-[10px] mt-1 font-bold">Escala completa: ++ · + · = · − · −− · Red</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <a href="{% url 'stats_app:partido_stats_final' partido.id %}?set={{ set_actual }}" class="px-4 py-2 rounded-xl text-xs font-black uppercase border border-slate-600 text-slate-300 hover:text-white hover:border-slate-500">
+                ← Estadísticas Rápidas
+            </a>
+            <a href="?set=global" class="px-4 py-2 rounded-xl text-xs font-black uppercase border {% if set_actual == 'global' %}bg-blue-600 border-blue-500 text-white{% else %}bg-[#1a202c] border-slate-700 text-slate-400{% endif %}">Partido completo</a>
+            {% for s in sets_disponibles %}
+            <a href="?set={{ s }}" class="px-4 py-2 rounded-xl text-xs font-black uppercase border {% if set_actual == s|stringformat:'s' %}bg-blue-600 border-blue-500 text-white{% else %}bg-[#1a202c] border-slate-700 text-slate-400{% endif %}">Set {{ s }}</a>
+            {% endfor %}
+            <button onclick="window.print()" class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
+                <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
+            </button>
+            <a href="{% url 'stats_app:descargar_informe_avanzado' partido.id %}?set={{ set_actual }}" class="px-4 py-2 bg-indigo-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i> PDF Avanzado
+            </a>
+            <button type="button"
+                    onclick="compartirInformePDF(this, '{% url 'stats_app:descargar_informe_avanzado' partido.id %}?set={{ set_actual }}', 'Estadisticas_Avanzadas_{{ partido.rival }}.pdf')"
+                    class="px-4 py-2 bg-blue-600 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2 disabled:opacity-50">
+                <i data-lucide="share-2" class="w-4 h-4"></i> Compartir
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-[#121824] rounded-2xl border border-slate-800 p-4 print:hidden text-xs text-slate-400 space-y-1">
+        <p><span class="text-white font-bold">++</span> Excelente/punto · <span class="text-white font-bold">+</span> Bueno · <span class="text-white font-bold">=</span> En juego · <span class="text-white font-bold">−</span> Mejorable · <span class="text-white font-bold">−−</span> Error directo · <span class="text-rose-400 font-bold">Red</span> Toque de red (punto rival)</p>
+        <p><span class="text-indigo-300 font-bold">Efic. Pond.</span> = ponderación (++×2, +×1, =×0, −×−1, −−×−2) ÷ máximo posible · <span class="text-indigo-300 font-bold">Saldo Pond.</span> incluye penalización por Red (−2 cada una)</p>
+    </div>
+
+    <div class="report-sheet rounded-3xl shadow-2xl overflow-hidden p-4 md:p-6 space-y-8">
+
+        <div>
+            <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Resumen por sets</h3>
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr>
+                        <th class="text-left">Set</th><th>Marcador</th><th>Side-out %</th><th>Breakpoint %</th>
+                        <th>Pts. Mérito</th><th>Pts. Err. Rival</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in resumen_sets %}
+                    <tr>
+                        <td class="text-left font-bold">Set {{ s.set_num }}</td>
+                        <td>{{ s.score }}</td>
+                        <td>{% if s.sideout_pct != None %}{{ s.sideout_pct }}%{% else %}—{% endif %}</td>
+                        <td>{% if s.breakpoint_pct != None %}{{ s.breakpoint_pct }}%{% else %}—{% endif %}</td>
+                        <td class="cell-kill">{{ s.puntos_merito }}</td>
+                        <td class="cell-err">{{ s.puntos_err_rival }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if detalle_total %}
+        <div>
+            <div class="set-title">TOTAL PARTIDO — {{ detalle_total.score }} · Red equipo: {{ detalle_total.red_equipo }}</div>
+            {% include 'stats_app/includes/bloque_avanzado_set.html' with set_data=detalle_total es_total=True %}
+        </div>
+        {% endif %}
+
+        {% for set_data in detalle_sets %}
+        <div>
+            <div class="set-title">SET {{ set_data.set_num }} — {{ set_data.score }} · Side-out {% if set_data.sideout_pct != None %}{{ set_data.sideout_pct }}%{% else %}—{% endif %} · Red: {{ set_data.red_equipo }}</div>
+            {% include 'stats_app/includes/bloque_avanzado_set.html' with set_data=set_data es_total=False %}
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+
+<script>
+async function compartirInformePDF(btn, url, filename) {
+    btn.disabled = true;
+    try {
+        const resp = await fetch(url, { credentials: 'same-origin' });
+        if (!resp.ok) throw new Error('Error al descargar');
+        const blob = await resp.blob();
+        const file = new File([blob], filename, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: filename });
+        } else {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            alert('PDF descargado. Compártelo desde tus archivos.');
+        }
+    } catch (e) {
+        alert('No se pudo compartir el PDF.');
+    } finally {
+        btn.disabled = false;
+    }
+}
+if (window.lucide) lucide.createIcons();
+</script>
+{% endblock %}

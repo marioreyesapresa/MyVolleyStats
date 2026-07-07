@@ -1,0 +1,100 @@
+<div class="section">Distribución del equipo</div>
+<table>
+    <thead>
+        <tr>
+            <th class="left">Fund.</th><th>Nº</th><th>++</th><th>+</th><th>=</th><th>−</th><th>−−</th><th>Ef.Pond.</th><th>Saldo</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for f in set_data.distribucion_equipo %}
+        <tr>
+            <td class="left">{{ f.label }}</td>
+            <td>{{ f.total }}</td>
+            <td class="good">{% if f.pp %}{{ f.pp }}{% else %}<span class="empty">—</span>{% endif %}</td>
+            <td>{% if f.p %}{{ f.p }}{% else %}<span class="empty">—</span>{% endif %}</td>
+            <td>{% if f.eq %}{{ f.eq }}{% else %}<span class="empty">—</span>{% endif %}</td>
+            <td>{% if f.m %}{{ f.m }}{% else %}<span class="empty">—</span>{% endif %}</td>
+            <td class="bad">{% if f.mm %}{{ f.mm }}{% else %}<span class="empty">—</span>{% endif %}</td>
+            <td>{% if f.eficacia_ponderada != None %}{{ f.eficacia_ponderada }}%{% else %}—{% endif %}</td>
+            <td>{{ f.saldo_binario }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="section">Complejos K1 / K2</div>
+<table style="width: 100%;">
+    <tr>
+        <td style="width: 50%; vertical-align: top; border: none; padding: 0 4px 0 0;">
+            <strong>{{ set_data.complejos.k1.label }}</strong>
+            {% if set_data.complejos.k1.totales %}
+            <br/>Total: {{ set_data.complejos.k1.totales.total }} · Ef.Pond: {{ set_data.complejos.k1.totales.eficacia_ponderada }}%
+            <table>
+                <tr><th class="left">Fund.</th><th>Nº</th><th>++</th><th>+</th><th>=</th><th>−</th><th>−−</th></tr>
+                {% for f in set_data.complejos.k1.por_fundamento %}
+                <tr><td class="left">{{ f.label }}</td><td>{{ f.total }}</td><td>{{ f.pp }}</td><td>{{ f.p }}</td><td>{{ f.eq }}</td><td>{{ f.m }}</td><td>{{ f.mm }}</td></tr>
+                {% endfor %}
+            </table>
+            {% else %}<span class="empty">Sin datos</span>{% endif %}
+        </td>
+        <td style="width: 50%; vertical-align: top; border: none; padding: 0 0 0 4px;">
+            <strong>{{ set_data.complejos.k2.label }}</strong>
+            {% if set_data.complejos.k2.totales %}
+            <br/>Total: {{ set_data.complejos.k2.totales.total }} · Ef.Pond: {{ set_data.complejos.k2.totales.eficacia_ponderada }}%
+            <table>
+                <tr><th class="left">Fund.</th><th>Nº</th><th>++</th><th>+</th><th>=</th><th>−</th><th>−−</th></tr>
+                {% for f in set_data.complejos.k2.por_fundamento %}
+                <tr><td class="left">{{ f.label }}</td><td>{{ f.total }}</td><td>{{ f.pp }}</td><td>{{ f.p }}</td><td>{{ f.eq }}</td><td>{{ f.m }}</td><td>{{ f.mm }}</td></tr>
+                {% endfor %}
+            </table>
+            {% else %}<span class="empty">Sin datos</span>{% endif %}
+        </td>
+    </tr>
+</table>
+
+<div class="section">Jugadoras — escala completa</div>
+<table>
+    <thead>
+        <tr>
+            <th class="left" rowspan="2">Jugadora</th>
+            {% for fm in fundamentos_meta %}
+            <th colspan="5" class="fund">{{ fm.label }}</th>
+            {% endfor %}
+            <th rowspan="2">Red</th><th rowspan="2">Ef.P.</th><th rowspan="2">S.Pond</th>
+        </tr>
+        <tr>
+            {% for fm in fundamentos_meta %}
+            <th>++</th><th>+</th><th>=</th><th>−</th><th>−−</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for j in set_data.jugadoras %}
+        <tr>
+            <td class="left">#{{ j.dorsal }} {{ j.nombre }}</td>
+            {% for col in j.fundamentos_cols %}
+            <td class="good">{% if col.pp %}{{ col.pp }}{% else %}<span class="empty">—</span>{% endif %}</td>
+            <td>{% if col.p %}{{ col.p }}{% else %}<span class="empty">—</span>{% endif %}</td>
+            <td>{% if col.eq %}{{ col.eq }}{% else %}<span class="empty">—</span>{% endif %}</td>
+            <td>{% if col.m %}{{ col.m }}{% else %}<span class="empty">—</span>{% endif %}</td>
+            <td class="bad">{% if col.mm %}{{ col.mm }}{% else %}<span class="empty">—</span>{% endif %}</td>
+            {% endfor %}
+            <td class="bad">{% if j.red %}{{ j.red }}{% else %}—{% endif %}</td>
+            <td>{% if j.efi_ponderada != None %}{{ j.efi_ponderada }}%{% else %}—{% endif %}</td>
+            <td>{{ j.saldo_ponderado }}</td>
+        </tr>
+        {% endfor %}
+        {% if set_data.totales_equipo %}
+        <tr class="totals">
+            <td class="left">{{ set_data.totales_equipo.nombre }}</td>
+            {% for col in set_data.totales_equipo.fundamentos_cols %}
+            <td>{{ col.pp|default:"—" }}</td><td>{{ col.p|default:"—" }}</td><td>{{ col.eq|default:"—" }}</td>
+            <td>{{ col.m|default:"—" }}</td><td>{{ col.mm|default:"—" }}</td>
+            {% endfor %}
+            <td>{{ set_data.totales_equipo.red }}</td>
+            <td>{% if set_data.totales_equipo.efi_ponderada != None %}{{ set_data.totales_equipo.efi_ponderada }}%{% else %}—{% endif %}</td>
+            <td>{{ set_data.totales_equipo.saldo_ponderado }}</td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>

@@ -1,0 +1,76 @@
+{% load pdf_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Estadísticas Avanzadas - {{ partido.rival }}</title>
+    <style>
+        @page { size: A4 landscape; margin: 0.5cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 7px; color: #1e293b; }
+        .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 6px; margin-bottom: 8px; }
+        .title { font-size: 13px; font-weight: bold; text-transform: uppercase; color: #1e3a8a; }
+        .subtitle { font-size: 8px; color: #64748b; margin-top: 3px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 6px; }
+        th, td { border: 1px solid #cbd5e1; padding: 2px 3px; text-align: center; vertical-align: middle; }
+        th { background: #e2e8f0; font-weight: bold; font-size: 6px; }
+        th.left, td.left { text-align: left; }
+        th.fund { background: #dbeafe; color: #1e3a8a; }
+        .good { color: #15803d; font-weight: bold; }
+        .bad { color: #b91c1c; font-weight: bold; }
+        .empty { color: #cbd5e1; }
+        tr.totals td { background: #1e293b; color: #f8fafc; font-weight: bold; }
+        .set-title { background: #1e3a8a; color: #fff; padding: 4px 8px; font-weight: bold; font-size: 8px; margin-top: 8px; }
+        .section { font-size: 7px; font-weight: bold; text-transform: uppercase; color: #475569; margin: 6px 0 3px; }
+        .legend { font-size: 6px; color: #64748b; margin-top: 8px; border-top: 1px solid #e2e8f0; padding-top: 4px; line-height: 1.4; }
+        .set-block + .set-block { page-break-before: always; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Estadísticas Avanzadas — {{ partido.equipo.nombre }} vs {{ partido.rival }}</div>
+        <div class="subtitle">{% if set_n == 'global' %}Partido completo{% else %}Set {{ set_n }}{% endif %} · {{ fecha }} · Escala ++ / + / = / − / −− / Red</div>
+    </div>
+
+    <div class="section">Resumen por sets</div>
+    <table>
+        <thead>
+            <tr>
+                <th class="left">Set</th><th>Marcador</th><th>Side-out %</th><th>Bkpt %</th>
+                <th>Pts. Mérito</th><th>Pts. Err. Rival</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in resumen_sets %}
+            <tr>
+                <td class="left">SET {{ s.set_num }}</td>
+                <td><strong>{{ s.score }}</strong></td>
+                <td>{% if s.sideout_pct != None %}{{ s.sideout_pct }}%{% else %}—{% endif %}</td>
+                <td>{% if s.breakpoint_pct != None %}{{ s.breakpoint_pct }}%{% else %}—{% endif %}</td>
+                <td>{{ s.puntos_merito }}</td>
+                <td>{{ s.puntos_err_rival }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if detalle_total %}
+    <div class="set-block">
+        <div class="set-title">TOTAL PARTIDO — {{ detalle_total.score }} · Red: {{ detalle_total.red_equipo }}</div>
+        {% include 'stats_app/includes/bloque_avanzado_pdf_set.html' with set_data=detalle_total %}
+    </div>
+    {% endif %}
+
+    {% for set_data in detalle_sets %}
+    <div class="set-block">
+        <div class="set-title">SET {{ set_data.set_num }} — {{ set_data.score }} · Red: {{ set_data.red_equipo }}</div>
+        {% include 'stats_app/includes/bloque_avanzado_pdf_set.html' with set_data=set_data %}
+    </div>
+    {% endfor %}
+
+    <div class="legend">
+        <strong>Eficacia ponderada:</strong> ++×2, +×1, =×0, −×−1, −−×−2 sobre el total de acciones del fundamento.
+        <strong>Red:</strong> toque de red = punto rival y error individual (−2 en saldo ponderado).
+        Informe técnico para datos registrados en Modo Avanzado (escala completa).
+    </div>
+</body>
+</html>

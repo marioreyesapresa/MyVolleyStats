@@ -930,3 +930,369 @@ def rotation_matrix(partido, set_num):
             'acciones': len(r_rows),
         })
     return matrix
+
+
+# ── Informe avanzado (scouting técnico con escala completa ++/+ /=/ -/--) ──
+
+FUNDAMENTO_LABELS = {
+    'SAQUE': 'Saque',
+    'RECEPCION': 'Recepción',
+    'COLOCACION': 'Colocación',
+    'ATAQUE': 'Ataque',
+    'BLOQUEO': 'Bloqueo',
+    'DEFENSA': 'Defensa',
+}
+
+CALIDAD_LABELS = {
+    '++': 'Excelente',
+    '+': 'Bueno',
+    '=': 'En juego',
+    '-': 'Mejorable',
+    '--': 'Error',
+}
+
+_CALIDAD_PESO = {'++': 2, '+': 1, '=': 0, '-': -1, '--': -2}
+
+
+def _advanced_fundamento_from_counts(c):
+    """Métricas técnicas a partir de recuentos pp/p/eq/m/mm."""
+    total = c.get('total', 0)
+    if total == 0:
+        return None
+    pp, p, eq, m, mm = c['pp'], c['p'], c['eq'], c['m'], c['mm']
+    peso = pp * 2 + p * 1 + eq * 0 + m * (-1) + mm * (-2)
+    max_peso = total * 2
+    return {
+        'pp': pp, 'p': p, 'eq': eq, 'm': m, 'mm': mm, 'total': total,
+        'positivos': pp + p,
+        'neutros': eq,
+        'negativos': m + mm,
+        'saldo_binario': pp - mm,
+        'saldo_ponderado': peso,
+        'eficacia_binaria': round((pp - mm) / total * 100, 1),
+        'eficacia_ponderada': round(peso / max_peso * 100, 1) if max_peso else None,
+    }
+
+
+def _advanced_fundamento_stats(rows, accion):
+    c = _fund_counts(rows, accion)
+    if c['total'] == 0:
+        return None
+    block = _advanced_fundamento_from_counts(c)
+    block['accion'] = accion
+    block['label'] = FUNDAMENTO_LABELS[accion]
+    return block
+
+
+def advanced_player_row(jugadora, rows_jugadora):
+    """Fila de jugadora con desglose completo por fundamento y calidad."""
+    fund_rows = [r for r in rows_jugadora if r['accion'] in FUNDAMENTOS_SCOUT]
+    red = sum(1 for r in rows_jugadora if r['accion'] == 'RED')
+    if not fund_rows and red == 0:
+        return None
+
+    fundamentos = {}
+    for accion in FUNDAMENTOS_SCOUT:
+        block = _advanced_fundamento_stats(fund_rows, accion)
+        if block:
+            fundamentos[accion] = block
+
+    tot = {'pp': 0, 'p': 0, 'eq': 0, 'm': 0, 'mm': 0, 'total': 0}
+    for block in fundamentos.values():
+        for k in tot:
+            tot[k] += block[k]
+    totales_calidad = _advanced_fundamento_from_counts(tot) if tot['total'] else None
+
+    puntos = tot['pp']
+    errores = tot['mm'] + red
+    saldo_pond = (totales_calidad['saldo_ponderado'] if totales_calidad else 0) - red * 2
+
+    fundamentos_cols = [
+        fundamentos.get(accion) or {
+            'accion': accion, 'label': FUNDAMENTO_LABELS[accion],
+            'pp': 0, 'p': 0, 'eq': 0, 'm': 0, 'mm': 0, 'total': 0, 'vacio': True,
+        }
+        for accion in FUNDAMENTOS_SCOUT
+    ]
+
+    return {
+        'id': jugadora.id,
+        'dorsal': jugadora.dorsal,
+        'nombre': jugadora.nombre,
+        'red': red,
+        'fundamentos': fundamentos,
+        'fundamentos_cols': fundamentos_cols,
+        'totales_calidad': totales_calidad,
+        'acciones': tot['total'] + red,
+        'puntos': puntos,
+        'errores': errores,
+        'saldo_binario': puntos - errores,
+        'saldo_ponderado': saldo_pond,
+        'efi_ponderada': totales_calidad['eficacia_ponderada'] if totales_calidad else None,
+        'efi_binaria': totales_calidad['eficacia_binaria'] if totales_calidad else None,
+    }
+
+
+def _advanced_team_fundamentos(rows_set):
+    return [
+        block for accion in FUNDAMENTOS_SCOUT
+        if (block := _advanced_fundamento_stats(rows_set, accion))
+    ]
+
+
+def _advanced_complex_from_rows(rows, acciones, label):
+    filtered = [r for r in rows if r['accion'] in acciones]
+    combined = {'pp': 0, 'p': 0, 'eq': 0, 'm': 0, 'mm': 0, 'total': 0}
+    for r in filtered:
+        cal = r['calidad']
+        if cal == '++':
+            combined['pp'] += 1
+        elif cal == '+':
+            combined['p'] += 1
+        elif cal == '=':
+            combined['eq'] += 1
+        elif cal == '-':
+            combined['m'] += 1
+        elif cal == '--':
+            combined['mm'] += 1
+        combined['total'] += 1
+    por_fundamento = [
+        block for a in acciones
+        if (block := _advanced_fundamento_stats(filtered, a))
+    ]
+    totals = _advanced_fundamento_from_counts(combined) if combined['total'] else None
+    return {
+        'label': label,
+        'acciones': acciones,
+        'totales': totals,
+        'por_fundamento': por_fundamento,
+    }
+
+
+def _advanced_totals_row(players):
+    if not players:
+        return None
+    agg_funds = {a: {'pp': 0, 'p': 0, 'eq': 0, 'm': 0, 'mm': 0, 'total': 0} for a in FUNDAMENTOS_SCOUT}
+    red = sum(p.get('red', 0) for p in players)
+    for p in players:
+        for accion, block in p['fundamentos'].items():
+            for k in agg_funds[accion]:
+                agg_funds[accion][k] += block[k]
+
+    fundamentos = {}
+    for accion in FUNDAMENTOS_SCOUT:
+        c = agg_funds[accion]
+        if c['total'] > 0:
+            block = _advanced_fundamento_from_counts(c)
+            block['accion'] = accion
+            block['label'] = FUNDAMENTO_LABELS[accion]
+            fundamentos[accion] = block
+
+    tot = {'pp': 0, 'p': 0, 'eq': 0, 'm': 0, 'mm': 0, 'total': 0}
+    for block in fundamentos.values():
+        for k in tot:
+            tot[k] += block[k]
+    totales_calidad = _advanced_fundamento_from_counts(tot) if tot['total'] else None
+
+    fundamentos_cols = [
+        fundamentos.get(accion) or {
+            'accion': accion, 'label': FUNDAMENTO_LABELS[accion],
+            'pp': 0, 'p': 0, 'eq': 0, 'm': 0, 'mm': 0, 'total': 0, 'vacio': True,
+        }
+        for accion in FUNDAMENTOS_SCOUT
+    ]
+
+    return {
+        'nombre': 'TOTAL EQUIPO',
+        'dorsal': '',
+        'red': red,
+        'fundamentos': fundamentos,
+        'fundamentos_cols': fundamentos_cols,
+        'totales_calidad': totales_calidad,
+        'acciones': tot['total'] + red,
+        'puntos': tot['pp'],
+        'errores': tot['mm'] + red,
+        'saldo_binario': tot['pp'] - tot['mm'] - red,
+        'saldo_ponderado': (totales_calidad['saldo_ponderado'] if totales_calidad else 0) - red * 2,
+        'efi_ponderada': totales_calidad['eficacia_ponderada'] if totales_calidad else None,
+        'efi_binaria': totales_calidad['eficacia_binaria'] if totales_calidad else None,
+    }
+
+
+def _aggregate_advanced_players(detalle_sets):
+    agg = {}
+    for sd in detalle_sets:
+        for j in sd['jugadoras']:
+            jid = j['id']
+            if jid not in agg:
+                agg[jid] = {
+                    'id': jid,
+                    'dorsal': j['dorsal'],
+                    'nombre': j['nombre'],
+                    'red': 0,
+                    'fundamentos': {a: {'pp': 0, 'p': 0, 'eq': 0, 'm': 0, 'mm': 0, 'total': 0} for a in FUNDAMENTOS_SCOUT},
+                }
+            agg[jid]['red'] += j.get('red', 0)
+            for accion, block in j['fundamentos'].items():
+                for k in agg[jid]['fundamentos'][accion]:
+                    agg[jid]['fundamentos'][accion][k] += block[k]
+
+    players = []
+    for row in agg.values():
+        fundamentos = {}
+        for accion in FUNDAMENTOS_SCOUT:
+            c = row['fundamentos'][accion]
+            if c['total'] > 0:
+                block = _advanced_fundamento_from_counts(c)
+                block['accion'] = accion
+                block['label'] = FUNDAMENTO_LABELS[accion]
+                fundamentos[accion] = block
+        tot = {'pp': 0, 'p': 0, 'eq': 0, 'm': 0, 'mm': 0, 'total': 0}
+        for block in fundamentos.values():
+            for k in tot:
+                tot[k] += block[k]
+        totales_calidad = _advanced_fundamento_from_counts(tot) if tot['total'] else None
+        red = row['red']
+        puntos = tot['pp']
+        errores = tot['mm'] + red
+        players.append({
+            'id': row['id'],
+            'dorsal': row['dorsal'],
+            'nombre': row['nombre'],
+            'red': red,
+            'fundamentos': fundamentos,
+            'totales_calidad': totales_calidad,
+            'acciones': tot['total'] + red,
+            'puntos': puntos,
+            'errores': errores,
+            'saldo_binario': puntos - errores,
+            'saldo_ponderado': (totales_calidad['saldo_ponderado'] if totales_calidad else 0) - red * 2,
+            'efi_ponderada': totales_calidad['eficacia_ponderada'] if totales_calidad else None,
+            'efi_binaria': totales_calidad['eficacia_binaria'] if totales_calidad else None,
+            'fundamentos_cols': [
+                fundamentos.get(accion) or {
+                    'accion': accion, 'label': FUNDAMENTO_LABELS[accion],
+                    'pp': 0, 'p': 0, 'eq': 0, 'm': 0, 'mm': 0, 'total': 0, 'vacio': True,
+                }
+                for accion in FUNDAMENTOS_SCOUT
+            ],
+        })
+    players.sort(key=lambda x: (-(x.get('saldo_ponderado') or 0), -(x.get('puntos') or 0)))
+    return players
+
+
+def build_advanced_set_report(partido, set_num):
+    rows_set = _rows_for(partido, set_num)
+    local, rival = calc_set_score(partido, set_num)
+
+    rows_by_jugadora = defaultdict(list)
+    for r in rows_set:
+        if r['jugadora_id'] is not None:
+            rows_by_jugadora[r['jugadora_id']].append(r)
+
+    players = []
+    for j in _jugadoras_en_set(partido, set_num):
+        row = advanced_player_row(j, rows_by_jugadora.get(j.id, []))
+        if row:
+            players.append(row)
+    players.sort(key=lambda x: (-(x.get('saldo_ponderado') or 0), -(x.get('puntos') or 0)))
+
+    red_equipo = sum(1 for r in rows_set if r['accion'] == 'RED')
+
+    return {
+        'set_num': set_num,
+        'score_local': local,
+        'score_rival': rival,
+        'score': f'{local}–{rival}',
+        'sideout_pct': calc_sideout_pct(partido, set_num),
+        'breakpoint_pct': calc_breakpoint_pct(partido, set_num),
+        'jugadoras': players,
+        'totales_equipo': _advanced_totals_row(players),
+        'distribucion_equipo': _advanced_team_fundamentos(rows_set),
+        'complejos': {
+            'k1': _advanced_complex_from_rows(
+                rows_set,
+                ['RECEPCION', 'COLOCACION', 'ATAQUE'],
+                'K1 — Recepción / Colocación / Ataque',
+            ),
+            'k2': _advanced_complex_from_rows(
+                rows_set,
+                ['SAQUE', 'BLOQUEO', 'DEFENSA'],
+                'K2 — Saque / Bloqueo / Defensa',
+            ),
+        },
+        'red_equipo': red_equipo,
+    }
+
+
+def build_advanced_match_totals(partido, detalle_sets):
+    if len(detalle_sets) <= 1:
+        return None
+    players = _aggregate_advanced_players(detalle_sets)
+    sets_local, sets_rival = count_sets_won(partido)
+    red_equipo = sum(sd.get('red_equipo', 0) for sd in detalle_sets)
+    rows_all = _get_match_rows(partido)
+    return {
+        'label': 'TOTAL PARTIDO',
+        'score': f'{sets_local}–{sets_rival}',
+        'score_local': sets_local,
+        'score_rival': sets_rival,
+        'jugadoras': players,
+        'totales_equipo': _advanced_totals_row(players),
+        'red_equipo': red_equipo,
+        'sideout_pct': calc_sideout_pct(partido, None),
+        'distribucion_equipo': _advanced_team_fundamentos(rows_all),
+        'complejos': {
+            'k1': _advanced_complex_from_rows(
+                rows_all,
+                ['RECEPCION', 'COLOCACION', 'ATAQUE'],
+                'K1 — Recepción / Colocación / Ataque',
+            ),
+            'k2': _advanced_complex_from_rows(
+                rows_all,
+                ['SAQUE', 'BLOQUEO', 'DEFENSA'],
+                'K2 — Saque / Bloqueo / Defensa',
+            ),
+        },
+    }
+
+
+def build_advanced_report(partido, set_filter='global'):
+    """Informe técnico con escala completa de calidad por fundamento."""
+    summary = build_match_summary(partido)
+    if set_filter == 'global':
+        sets_nums = [r['set_num'] for r in summary]
+    else:
+        try:
+            sets_nums = [int(set_filter)]
+        except (TypeError, ValueError):
+            sets_nums = [r['set_num'] for r in summary]
+
+    detalle_sets = [build_advanced_set_report(partido, s) for s in sets_nums]
+    detalle_total = build_advanced_match_totals(partido, detalle_sets) if set_filter == 'global' else None
+
+    resumen_relevante = summary if set_filter == 'global' else [
+        r for r in summary if r['set_num'] in sets_nums
+    ]
+
+    return {
+        'resumen_sets': summary,
+        'detalle_sets': detalle_sets,
+        'detalle_total': detalle_total,
+        'set_filter': set_filter,
+        'resumen_totales': {
+            'puntos_merito': sum(r['puntos_merito'] for r in resumen_relevante),
+            'puntos_err_rival': sum(r['puntos_err_rival'] for r in resumen_relevante),
+            'puntos_rival': sum(r['score_rival'] for r in resumen_relevante),
+        },
+        'fundamentos_orden': list(FUNDAMENTOS_SCOUT),
+        'fundamento_labels': FUNDAMENTO_LABELS,
+        'fundamentos_meta': [
+            {'code': c, 'label': FUNDAMENTO_LABELS[c]} for c in FUNDAMENTOS_SCOUT
+        ],
+        'calidad_labels': CALIDAD_LABELS,
+    }
+
+
+# Alias explícito: el informe «completo» histórico es el de estadísticas rápidas.
+build_quick_report = build_full_report

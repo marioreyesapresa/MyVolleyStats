@@ -1,0 +1,133 @@
+{# Bloque reutilizable: distribución equipo, complejos K1/K2 y tabla jugadoras #}
+<div class="mt-4 space-y-6">
+
+    <div>
+        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Distribución del equipo por fundamento</h4>
+        <table class="w-full border-collapse max-w-4xl">
+            <thead>
+                <tr>
+                    <th class="text-left">Fundamento</th><th>Nº</th>
+                    <th class="q-pp">++</th><th class="q-p">+</th><th class="q-eq">=</th><th class="q-m">−</th><th class="q-mm">−−</th>
+                    <th>Efic. Pond.</th><th>Saldo ++/−−</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in set_data.distribucion_equipo %}
+                <tr>
+                    <td class="text-left font-semibold">{{ f.label }}</td>
+                    <td>{{ f.total }}</td>
+                    <td class="cell-kill">{% if f.pp %}{{ f.pp }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    <td>{% if f.p %}{{ f.p }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    <td>{% if f.eq %}{{ f.eq }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    <td>{% if f.m %}{{ f.m }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    <td class="cell-err">{% if f.mm %}{{ f.mm }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    <td>{% if f.eficacia_ponderada != None %}{{ f.eficacia_ponderada }}%{% else %}—{% endif %}</td>
+                    <td>{{ f.saldo_binario }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9" class="text-center text-slate-400">Sin datos</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {% with compl=set_data.complejos.k1 %}
+        <div class="complex-box">
+            <h4 class="text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-2">{{ compl.label }}</h4>
+            {% if compl.totales %}
+            <p class="text-xs mb-2">Total acciones: <strong>{{ compl.totales.total }}</strong> · Efic. pond.: <strong>{{ compl.totales.eficacia_ponderada }}%</strong> · Saldo ++/−−: <strong>{{ compl.totales.saldo_binario }}</strong></p>
+            <table class="w-full border-collapse text-[10px]">
+                <thead><tr><th class="text-left">Fund.</th><th>Nº</th><th>++</th><th>+</th><th>=</th><th>−</th><th>−−</th></tr></thead>
+                <tbody>
+                    {% for f in compl.por_fundamento %}
+                    <tr>
+                        <td class="text-left">{{ f.label }}</td><td>{{ f.total }}</td>
+                        <td>{{ f.pp|default:"—" }}</td><td>{{ f.p|default:"—" }}</td><td>{{ f.eq|default:"—" }}</td>
+                        <td>{{ f.m|default:"—" }}</td><td>{{ f.mm|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}<p class="text-slate-400 text-xs">Sin datos</p>{% endif %}
+        </div>
+        {% endwith %}
+        {% with compl=set_data.complejos.k2 %}
+        <div class="complex-box">
+            <h4 class="text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-2">{{ compl.label }}</h4>
+            {% if compl.totales %}
+            <p class="text-xs mb-2">Total acciones: <strong>{{ compl.totales.total }}</strong> · Efic. pond.: <strong>{{ compl.totales.eficacia_ponderada }}%</strong> · Saldo ++/−−: <strong>{{ compl.totales.saldo_binario }}</strong></p>
+            <table class="w-full border-collapse text-[10px]">
+                <thead><tr><th class="text-left">Fund.</th><th>Nº</th><th>++</th><th>+</th><th>=</th><th>−</th><th>−−</th></tr></thead>
+                <tbody>
+                    {% for f in compl.por_fundamento %}
+                    <tr>
+                        <td class="text-left">{{ f.label }}</td><td>{{ f.total }}</td>
+                        <td>{{ f.pp|default:"—" }}</td><td>{{ f.p|default:"—" }}</td><td>{{ f.eq|default:"—" }}</td>
+                        <td>{{ f.m|default:"—" }}</td><td>{{ f.mm|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}<p class="text-slate-400 text-xs">Sin datos</p>{% endif %}
+        </div>
+        {% endwith %}
+    </div>
+
+    <div class="overflow-x-auto">
+        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Desglose por jugadora (escala completa)</h4>
+        <table class="w-full border-collapse min-w-[1200px]">
+            <thead>
+                <tr>
+                    <th class="player-name" rowspan="2">Jugadora</th>
+                    {% for fm in fundamentos_meta %}
+                    <th colspan="5" class="fund-head">{{ fm.label }}</th>
+                    {% endfor %}
+                    <th rowspan="2" class="cell-err">Red</th>
+                    <th rowspan="2">Efic.Pond.</th>
+                    <th rowspan="2">Saldo Pond.</th>
+                    <th rowspan="2">++/−−</th>
+                </tr>
+                <tr>
+                    {% for fm in fundamentos_meta %}
+                    <th class="q-pp">++</th><th class="q-p">+</th><th class="q-eq">=</th><th class="q-m">−</th><th class="q-mm">−−</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for j in set_data.jugadoras %}
+                <tr>
+                    <td class="player-name">#{{ j.dorsal }} {{ j.nombre }}</td>
+                    {% for col in j.fundamentos_cols %}
+                    <td class="{% if col.pp %}cell-kill{% endif %}">{% if col.pp %}{{ col.pp }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    <td>{% if col.p %}{{ col.p }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    <td>{% if col.eq %}{{ col.eq }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    <td>{% if col.m %}{{ col.m }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    <td class="{% if col.mm %}cell-err{% endif %}">{% if col.mm %}{{ col.mm }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    {% endfor %}
+                    <td class="cell-err">{% if j.red %}{{ j.red }}{% else %}<span class="cell-empty">—</span>{% endif %}</td>
+                    <td>{% if j.efi_ponderada != None %}{{ j.efi_ponderada }}%{% else %}—{% endif %}</td>
+                    <td class="{% if j.saldo_ponderado < 0 %}text-red-600 font-bold{% endif %}">{{ j.saldo_ponderado }}</td>
+                    <td>{{ j.saldo_binario }}</td>
+                </tr>
+                {% endfor %}
+                {% if set_data.totales_equipo %}
+                <tr class="totals">
+                    <td class="player-name">{{ set_data.totales_equipo.nombre }}</td>
+                    {% for col in set_data.totales_equipo.fundamentos_cols %}
+                    <td>{% if col.pp %}{{ col.pp }}{% else %}—{% endif %}</td>
+                    <td>{% if col.p %}{{ col.p }}{% else %}—{% endif %}</td>
+                    <td>{% if col.eq %}{{ col.eq }}{% else %}—{% endif %}</td>
+                    <td>{% if col.m %}{{ col.m }}{% else %}—{% endif %}</td>
+                    <td>{% if col.mm %}{{ col.mm }}{% else %}—{% endif %}</td>
+                    {% endfor %}
+                    <td>{{ set_data.totales_equipo.red }}</td>
+                    <td>{% if set_data.totales_equipo.efi_ponderada != None %}{{ set_data.totales_equipo.efi_ponderada }}%{% else %}—{% endif %}</td>
+                    <td>{{ set_data.totales_equipo.saldo_ponderado }}</td>
+                    <td>{{ set_data.totales_equipo.saldo_binario }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>

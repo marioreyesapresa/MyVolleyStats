@@ -10,7 +10,7 @@ from django.utils import timezone
 from xhtml2pdf import pisa
 from datetime import datetime
 from ..models import Partido, Jugadora, RegistroEstadistica, RotacionSet
-from ..services.reporting import build_full_report, _rows_for, _fund_counts
+from ..services.reporting import build_full_report, build_quick_report, build_advanced_report, _rows_for, _fund_counts
 from ..security import log_intento_acceso_no_autorizado
 
 
@@ -140,11 +140,11 @@ class DescargarInformeCompletoPDF(BaseInformePDFView):
             return HttpResponse('Error al generar el PDF', status=500)
         response = HttpResponse(pdf, content_type='application/pdf')
         sufijo = f'_Set{set_n}' if set_n != 'global' else ''
-        response['Content-Disposition'] = f'attachment; filename="Informe_Completo_{partido.rival}{sufijo}.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="Estadisticas_Rapidas_{partido.rival}{sufijo}.pdf"'
         return response
 
     def _generar_pdf_completo(self, partido, set_n):
-        reporte = build_full_report(partido, set_n)
+        reporte = build_quick_report(partido, set_n)
         context = {
             'partido': partido,
             'fecha': datetime.now().strftime("%d/%m/%Y"),
@@ -180,5 +180,61 @@ class DescargarInformeCompletoPDF(BaseInformePDFView):
                 informe_pdf_cache=pdf,
                 informe_pdf_cache_num_registros=num_registros,
                 informe_pdf_cache_generado_en=timezone.now(),
+            )
+        return pdf
+
+
+class DescargarInformeAvanzadoPDF(BaseInformePDFView):
+    def get(self, request, pk):
+        partido = _partido_del_entrenador(request, pk)
+        set_n = request.GET.get('set', 'global')
+
+        if set_n == 'global' and partido.finalizado:
+            pdf = self._pdf_avanzado_cacheado(partido)
+        else:
+            pdf = self._generar_pdf_avanzado(partido, set_n)
+
+        if pdf is None:
+            return HttpResponse('Error al generar el PDF', status=500)
+        response = HttpResponse(pdf, content_type='application/pdf')
+        sufijo = f'_Set{set_n}' if set_n != 'global' else ''
+        response['Content-Disposition'] = (
+            f'attachment; filename="Estadisticas_Avanzadas_{partido.rival}{sufijo}.pdf"'
+        )
+        return response
+
+    def _generar_pdf_avanzado(self, partido, set_n):
+        reporte = build_advanced_report(partido, set_n)
+        context = {
+            'partido': partido,
+            'fecha': datetime.now().strftime("%d/%m/%Y"),
+            'set_n': set_n,
+            'reporte': reporte,
+            'resumen_sets': reporte['resumen_sets'],
+            'detalle_sets': reporte['detalle_sets'],
+            'detalle_total': reporte.get('detalle_total'),
+            'resumen_totales': reporte.get('resumen_totales'),
+            'fundamentos_orden': reporte['fundamentos_orden'],
+            'fundamento_labels': reporte['fundamento_labels'],
+            'fundamentos_meta': reporte['fundamentos_meta'],
+            'calidad_labels': reporte['calidad_labels'],
+        }
+        return render_to_pdf('stats_app/informe_avanzado_pdf.html', context)
+
+    def _pdf_avanzado_cacheado(self, partido):
+        num_registros = RegistroEstadistica.objects.filter(partido=partido).count()
+        cache_valida = (
+            partido.informe_avanzado_pdf_cache is not None
+            and partido.informe_avanzado_pdf_cache_num_registros == num_registros
+        )
+        if cache_valida:
+            return bytes(partido.informe_avanzado_pdf_cache)
+
+        pdf = self._generar_pdf_avanzado(partido, 'global')
+        if pdf is not None:
+            Partido.objects.filter(pk=partido.pk).update(
+                informe_avanzado_pdf_cache=pdf,
+                informe_avanzado_pdf_cache_num_registros=num_registros,
+                informe_avanzado_pdf_cache_generado_en=timezone.now(),
             )
         return pdf

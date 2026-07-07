@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Informe Completo - {{ partido.rival }}</title>
+    <title>Estadísticas Rápidas - {{ partido.rival }}</title>
     <style>
         @page { size: A4 landscape; margin: 0.7cm; }
         body { font-family: Helvetica, Arial, sans-serif; font-size: 8px; color: #1e293b; }
@@ -145,7 +145,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="title">Informe completo — {{ partido.equipo.nombre }} vs {{ partido.rival }}</div>
+        <div class="title">Estadísticas Rápidas — {{ partido.equipo.nombre }} vs {{ partido.rival }}</div>
         <div class="subtitle">
             {% if set_n == 'global' %}Partido completo{% else %}Set {{ set_n }}{% endif %}
             · {{ fecha }}
