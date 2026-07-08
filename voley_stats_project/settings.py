@@ -19,7 +19,7 @@ DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
 
 # Orígenes de confianza para peticiones POST/CSRF (necesario detrás de un
-# dominio HTTPS de Cloud Run, p.ej. https://voley-stats-xxxxx-ew.a.run.app).
+# dominio HTTPS de Cloud Run, p.ej. https://my-volley-stats-xxxxx-ew.a.run.app).
 # Deben incluir el esquema (https://) y pueden llevar comodines de subdominio.
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
 

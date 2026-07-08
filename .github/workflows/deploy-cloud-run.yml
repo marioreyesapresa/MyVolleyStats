@@ -14,7 +14,7 @@ on:
 env:
   PROJECT_ID: voley-stats-prod
   REGION: europe-west1
-  SERVICE: voley-stats
+  SERVICE: my-volley-stats
 
 jobs:
   deploy:
@@ -44,5 +44,5 @@ jobs:
             --allow-unauthenticated
             --memory=512Mi
             --timeout=60
-            --set-env-vars=DJANGO_DEBUG=False,ALLOWED_HOSTS=voley-stats-127334410815.europe-west1.run.app,CSRF_TRUSTED_ORIGINS=https://voley-stats-127334410815.europe-west1.run.app,EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend,EMAIL_HOST=smtp.gmail.com,EMAIL_PORT=587,EMAIL_HOST_USER=myvolleystats@gmail.com,EMAIL_USE_TLS=True,DEFAULT_FROM_EMAIL=myvolleystats@gmail.com,ADMIN_NOTIFY_EMAIL=myvolleystats@gmail.com
+            --set-env-vars=DJANGO_DEBUG=False,ALLOWED_HOSTS=my-volley-stats-127334410815.europe-west1.run.app,CSRF_TRUSTED_ORIGINS=https://my-volley-stats-127334410815.europe-west1.run.app,EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend,EMAIL_HOST=smtp.gmail.com,EMAIL_PORT=587,EMAIL_HOST_USER=myvolleystats@gmail.com,EMAIL_USE_TLS=True,DEFAULT_FROM_EMAIL=myvolleystats@gmail.com,ADMIN_NOTIFY_EMAIL=myvolleystats@gmail.com
             --set-secrets=SECRET_KEY=voley-secret-key:latest,DATABASE_URL=voley-database-url:latest,EMAIL_HOST_PASSWORD=voley-email-password:latest
