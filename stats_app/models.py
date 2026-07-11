@@ -180,3 +180,32 @@ class RotacionSet(models.Model):
     class Meta:
         verbose_name = "Rotación de Set"
         verbose_name_plural = "Rotaciones de Sets"
+
+
+class NotaPartido(models.Model):
+    """Observación libre del entrenador durante o tras un partido."""
+
+    partido = models.ForeignKey(
+        Partido, on_delete=models.CASCADE, related_name='notas', verbose_name="Partido",
+    )
+    jugadora = models.ForeignKey(
+        Jugadora, on_delete=models.CASCADE, null=True, blank=True,
+        related_name='notas_partido', verbose_name="Jugadora",
+        help_text="Vacío = nota general del partido.",
+    )
+    set_numero = models.PositiveIntegerField(default=1, verbose_name="Set")
+    texto = models.TextField(max_length=2000, verbose_name="Texto")
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        destino = f"#{self.jugadora.dorsal}" if self.jugadora_id else "General"
+        return f"{self.partido} · Set {self.set_numero} · {destino}"
+
+    class Meta:
+        verbose_name = "Nota de partido"
+        verbose_name_plural = "Notas de partido"
+        ordering = ['-creado_en']
+        indexes = [
+            models.Index(fields=['partido', 'set_numero'], name='statsapp_nota_partido_set_idx'),
+        ]

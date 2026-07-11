@@ -9,7 +9,7 @@ from django.template.loader import get_template
 from django.utils import timezone
 from xhtml2pdf import pisa
 from datetime import datetime
-from ..models import Partido, Jugadora, RegistroEstadistica, RotacionSet
+from ..models import Partido, Jugadora, RegistroEstadistica, RotacionSet, NotaPartido
 from ..services.reporting import build_full_report, build_quick_report, build_advanced_report, _rows_for, _fund_counts
 from ..security import log_intento_acceso_no_autorizado
 from ..context_processors import APP_NAME, APP_TAGLINE
@@ -147,6 +147,9 @@ class DescargarInformeCompletoPDF(BaseInformePDFView):
 
     def _generar_pdf_completo(self, partido, set_n):
         reporte = build_quick_report(partido, set_n)
+        notas_qs = NotaPartido.objects.filter(partido=partido).select_related('jugadora')
+        if set_n != 'global':
+            notas_qs = notas_qs.filter(set_numero=int(set_n))
         context = {
             'partido': partido,
             'fecha': datetime.now().strftime("%d/%m/%Y"),
@@ -156,6 +159,7 @@ class DescargarInformeCompletoPDF(BaseInformePDFView):
             'detalle_total': reporte.get('detalle_total'),
             'resumen_totales': reporte.get('resumen_totales'),
             'destacadas': reporte['destacadas'],
+            'notas_partido': list(notas_qs),
         }
         return render_to_pdf('stats_app/informe_completo_pdf.html', context)
 

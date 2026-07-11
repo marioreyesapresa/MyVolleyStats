@@ -264,3 +264,11 @@ class ActualizarPosicionForm(forms.Form):
 
     jugadora_id = IdField()
     posicion = forms.ChoiceField(choices=Jugadora.POSICIONES, required=False)
+
+
+class NotaPartidoForm(forms.Form):
+    """Payload de crear/actualizar nota de partido."""
+
+    texto = forms.CharField(min_length=1, max_length=2000)
+    set_numero = IdField(required=False, initial=1, max_value=MAX_SET_NUMERO)
+    jugadora_id = IdField(required=False)

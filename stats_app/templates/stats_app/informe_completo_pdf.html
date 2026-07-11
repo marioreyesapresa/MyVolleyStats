@@ -554,6 +554,30 @@
     </div>
     {% endfor %}
 
+    {% if notas_partido %}
+    <div class="section-title" style="margin-top:12px;">Observaciones del entrenador</div>
+    <table class="detail" style="margin-bottom:8px;">
+        <thead>
+            <tr>
+                <th class="left" style="width:14%;">Hora</th>
+                <th style="width:8%;">Set</th>
+                <th style="width:16%;">Jugadora</th>
+                <th class="left">Nota</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for nota in notas_partido %}
+            <tr class="{% if forloop.counter|divisibleby:2 %}row-even{% else %}row-odd{% endif %}">
+                <td class="left">{{ nota.creado_en|date:"H:i" }}</td>
+                <td>{{ nota.set_numero }}</td>
+                <td>{% if nota.jugadora %}#{{ nota.jugadora.dorsal }} {{ nota.jugadora.nombre }}{% else %}General{% endif %}</td>
+                <td class="left">{{ nota.texto }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
     <div class="legend" style="margin-top:8px;">
         Generado por MyVolleyStats — {{ fecha }}
     </div>

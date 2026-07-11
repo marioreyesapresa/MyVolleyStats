@@ -7,8 +7,44 @@
 {% block topbar %}{% endblock %}
 
 {% block content %}
+<!-- Aviso global en móvil/tablet vertical: scout y pizarra están pensados para apaisado -->
+<div id="mobile-portrait-overlay"
+     class="hidden fixed inset-0 z-[200] bg-[#050810]/95 backdrop-blur-md items-center justify-center p-6 text-center"
+     role="dialog" aria-modal="true" aria-labelledby="mobile-portrait-title">
+    <div class="max-w-sm space-y-5 animate-fade-in">
+        <div class="mx-auto w-20 h-20 rounded-3xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center mobile-rotate-hint">
+            <i data-lucide="smartphone" class="w-10 h-10 text-blue-300"></i>
+        </div>
+        <div class="space-y-2">
+            <h2 id="mobile-portrait-title" class="text-lg font-black uppercase tracking-wide text-white leading-snug">
+                Pon el móvil en horizontal
+            </h2>
+            <p id="mobile-portrait-message" class="text-sm text-slate-400 leading-relaxed">
+                MyVolleyStats está pensado para usarse en horizontal durante el partido. Gira el dispositivo para ver el scout y la pizarra con comodidad.
+            </p>
+        </div>
+        <p class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+            El aviso desaparece al girar el móvil
+        </p>
+    </div>
+</div>
+
+<style>
+    @keyframes mobile-hint-wiggle {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-12deg); }
+        75% { transform: rotate(12deg); }
+    }
+    .mobile-rotate-hint {
+        animation: mobile-hint-wiggle 2.2s ease-in-out infinite;
+    }
+    body.mobile-portrait-lock {
+        overflow: hidden;
+    }
+</style>
+
 <!-- Tab: Pizarra de Rotación -->
-<div id="tab-rotacion-content" class="tab-content hidden w-full max-w-6xl mx-auto space-y-8 -mt-6 md:-mt-8">
+<div id="tab-rotacion-content" class="tab-content hidden w-full max-w-6xl mx-auto space-y-8 -mt-6 md:-mt-8 relative">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Interactive Rotation Court Card (Col 8) -->
         <div class="lg:col-span-8 bg-[#121824] rounded-3xl p-6 md:p-8 border border-slate-800 shadow-xl space-y-6 flex flex-col justify-between">
@@ -280,8 +316,16 @@
             </div>
             
             <div class="pt-4 border-t border-slate-800 space-y-3">
-                <button onclick="guardarAlineacionLocal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest shadow-lg flex items-center justify-center">
-                    <i data-lucide="save" class="w-4 h-4 mr-2"></i> Guardar Alineación
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button onclick="guardarAlineacionLocal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest shadow-lg flex items-center justify-center">
+                        <i data-lucide="save" class="w-4 h-4 mr-2"></i> Guardar Alineación
+                    </button>
+                    <button id="btn-guardar-volver-scout" onclick="guardarAlineacionYVolverAlScout()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest shadow-lg flex items-center justify-center">
+                        <i data-lucide="zap" class="w-4 h-4 mr-2"></i> Guardar y volver al scout
+                    </button>
+                </div>
+                <button id="btn-volver-scout-solo" onclick="volverAlScoutActivo()" class="hidden w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-black py-3.5 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center">
+                    <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Volver al scout
                 </button>
                 <button onclick="clearTempLineup()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white font-black py-3.5 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center">
                     <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Limpiar Todo
@@ -310,6 +354,9 @@
                 </button>
                 <button onclick="switchRapidoTab('avacciones')" data-tab="avacciones" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
                     Acciones
+                </button>
+                <button onclick="switchRapidoTab('notas')" data-tab="notas" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Notas
                 </button>
                 <button onclick="switchRapidoTab('adjust')" data-tab="adjust" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
                     Ajustes
@@ -556,6 +603,9 @@
                 <button onclick="switchRapidoTab('acciones')" data-tab="acciones" id="tab-btn-acciones" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
                     Acciones
                 </button>
+                <button onclick="switchRapidoTab('notas')" data-tab="notas" id="tab-btn-notas" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
+                    Notas
+                </button>
                 <button onclick="switchRapidoTab('score')" data-tab="score" id="tab-btn-score" class="rapido-tab-btn text-[10px] md:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all px-3 py-1 rounded-full text-neutral-300 hover:text-white">
                     Marcador
                 </button>
@@ -612,7 +662,7 @@
                     <i data-lucide="rotate-cw" class="w-3 h-3 flex-shrink-0"></i>
                     <span>Rotar</span>
                 </button>
-                <button onclick="switchTab('rotacion')" class="flex-1 min-w-[76px] flex items-center justify-center gap-1 px-2 py-1.5 bg-[#121824] hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 whitespace-nowrap">
+                <button onclick="irASustituirDesdeScout()" class="flex-1 min-w-[76px] flex items-center justify-center gap-1 px-2 py-1.5 bg-[#121824] hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 whitespace-nowrap">
                     <i data-lucide="arrow-right-left" class="w-3 h-3 flex-shrink-0"></i>
                     <span>Sustituir</span>
                 </button>
@@ -716,7 +766,76 @@
          Configuración): viven fuera de scout-rapido-container y
          scout-avanzado-container para no duplicarse entre ambos modos;
          cualquiera de las dos barras flotantes puede mostrarlos vía
-         switchRapidoTab('adjust'|'file'|'settings'). -->
+         switchRapidoTab('adjust'|'file'|'settings'|'notas'). -->
+
+    <!-- PESTAÑA COMPARTIDA: [Notas] -->
+    <div id="rapido-notas-content" class="rapido-tab-content hidden space-y-4">
+        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800/60 pb-3">
+                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest">Nueva nota</h3>
+                <span id="notas-edit-indicator" class="hidden text-[10px] font-black text-amber-400 uppercase tracking-wider">Editando</span>
+            </div>
+
+            <div class="flex gap-2">
+                <button type="button" id="nota-tipo-general" onclick="setNotaTipo('general')"
+                        class="flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all bg-blue-600 text-white shadow-md">
+                    General
+                </button>
+                <button type="button" id="nota-tipo-jugadora" onclick="setNotaTipo('jugadora')"
+                        class="flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all bg-[#1e293b] border border-slate-700 text-slate-400 hover:text-white">
+                    Jugadora
+                </button>
+            </div>
+
+            <div id="nota-jugadora-select-wrap" class="hidden space-y-1.5">
+                <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Jugadora</label>
+                <select id="nota-jugadora-select"
+                        class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-blue-500">
+                    <option value="">Selecciona jugadora…</option>
+                    {% for j in jugadoras %}
+                    <option value="{{ j.id }}">#{{ j.dorsal }} {{ j.nombre }} {{ j.apellidos }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Set</label>
+                <select id="nota-set-select"
+                        class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-blue-500">
+                    {% for i in "12345" %}
+                    <option value="{{ forloop.counter }}">Set {{ forloop.counter }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Texto</label>
+                <textarea id="nota-texto-input" rows="3" maxlength="2000" placeholder="Observación del partido o de la jugadora…"
+                          class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-medium focus:outline-none focus:border-blue-500 resize-y min-h-[88px]"></textarea>
+            </div>
+
+            <div class="flex gap-2">
+                <button type="button" id="nota-guardar-btn" onclick="guardarNotaPartido()"
+                        class="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    <span id="nota-guardar-label">Guardar nota</span>
+                </button>
+                <button type="button" id="nota-cancelar-btn" onclick="cancelarEdicionNota()" class="hidden px-4 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800/60 pb-3">
+                <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest">Notas del partido</h3>
+                <span id="notas-count-label" class="text-[10px] font-black text-slate-500 uppercase tracking-wider">0 notas</span>
+            </div>
+            <div id="notas-list" class="space-y-2 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide">
+                <div id="notas-list-empty" class="text-[10px] font-bold text-slate-600 uppercase tracking-wider px-2 py-2.5">Aún no hay notas</div>
+            </div>
+        </div>
+    </div>
 
     <!-- PESTAÑA COMPARTIDA: [Ajustes] -->
     <div id="rapido-adjust-content" class="rapido-tab-content hidden space-y-6">
@@ -871,6 +990,22 @@
                     <span>Exportar JSON</span>
                 </button>
             </div>
+        </div>
+
+        <!-- Notas del partido (consulta; edición en pestaña Notas) -->
+        <div class="bg-[#121824] rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2 gap-2">
+                <h3 class="text-sm font-black text-amber-400 uppercase tracking-widest">Notas del Partido</h3>
+                <span id="archivo-notas-count" class="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">0 notas</span>
+            </div>
+            <p class="text-[10px] text-slate-500 leading-snug">Observaciones guardadas durante el scout. También se incluyen al final del PDF de estadísticas rápidas.</p>
+            <div id="archivo-notas-list" class="space-y-2 max-h-[280px] overflow-y-auto pr-1 scrollbar-hide">
+                <div id="archivo-notas-empty" class="text-[10px] font-bold text-slate-600 uppercase tracking-wider px-2 py-2">Aún no hay notas</div>
+            </div>
+            <button type="button" onclick="switchRapidoTab('notas')" class="w-full py-3 bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2">
+                <i data-lucide="pencil-line" class="w-4 h-4"></i>
+                <span>Ir a Notas (añadir o editar)</span>
+            </button>
         </div>
 
         <!-- Acciones -->
@@ -1272,9 +1407,13 @@
                 </div>
             </div>
         </div>
-        <div class="p-6 bg-[#090d16] border-t border-slate-800">
-            <button onclick="guardarConfiguracionSet()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-sm shadow-xl active:scale-95 transition-all uppercase tracking-wider">
+        <div class="p-6 bg-[#090d16] border-t border-slate-800 space-y-3">
+            <button onclick="guardarConfiguracionSet(false)" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-sm shadow-xl active:scale-95 transition-all uppercase tracking-wider">
                 Actualizar Cambios
+            </button>
+            <button onclick="guardarConfiguracionSet(true)" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-sm shadow-xl active:scale-95 transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+                <i data-lucide="zap" class="w-4 h-4"></i>
+                Guardar y volver al scout
             </button>
         </div>
     </div>
@@ -1488,6 +1627,7 @@
         // Active tab detection
         const initialTab = getQueryParam('tab') || 'scout';
         switchTab(initialTab);
+        initMobileLandscapeMode();
         
         // Listen to tab clicks from sidebar to intercept reload if on same match page
         document.querySelectorAll('.sidebar-nav-item').forEach(link => {
@@ -1526,6 +1666,105 @@
         newUrl.searchParams.set('tab', tabId);
         window.history.pushState({ tab: tabId }, '', newUrl.toString());
     }
+
+    let activeMainTab = 'scout';
+    let volverAlScoutTrasGuardar = false;
+
+    function scoutReturnStorageKey() {
+        return `partido_${state.partido_id}_return_scout`;
+    }
+
+    function irASustituirDesdeScout() {
+        try { sessionStorage.setItem(scoutReturnStorageKey(), '1'); } catch (e) { /* noop */ }
+        switchTab('rotacion');
+    }
+
+    function volverAlScoutActivo() {
+        try { sessionStorage.removeItem(scoutReturnStorageKey()); } catch (e) { /* noop */ }
+        switchTab('scout');
+        switchRapidoTab(state.modo_scout === 'rapido' ? 'gameplay' : 'avjuego');
+        if (state.modo_scout === 'rapido') {
+            renderGameplayGrid();
+        } else {
+            renderBotonerasAcciones();
+        }
+        showToast('↩️ Scout en vivo');
+    }
+
+    function updateRotacionScoutButtons() {
+        const fromScout = (() => {
+            try { return sessionStorage.getItem(scoutReturnStorageKey()) === '1'; } catch (e) { return false; }
+        })();
+        const show = !!state.rotation || fromScout;
+        const btnSaveReturn = document.getElementById('btn-guardar-volver-scout');
+        const btnReturn = document.getElementById('btn-volver-scout-solo');
+        if (btnSaveReturn) btnSaveReturn.classList.toggle('hidden', !show);
+        if (btnReturn) btnReturn.classList.toggle('hidden', !show);
+    }
+
+    async function guardarAlineacionYVolverAlScout() {
+        volverAlScoutTrasGuardar = true;
+        await guardarAlineacionLocal();
+    }
+
+    function isMobilePortraitLayout() {
+        return window.matchMedia('(orientation: portrait)').matches && window.innerWidth <= 1024;
+    }
+
+    function mobilePortraitMessageForTab(tabId) {
+        if (tabId === 'rotacion') {
+            return 'Para colocar la alineación, gira el móvil. La pizarra de rotación solo se usa cómodamente en horizontal.';
+        }
+        if (tabId === 'metricas') {
+            return 'Los indicadores del set se leen mejor en horizontal. Gira el dispositivo para una vista más clara.';
+        }
+        return 'MyVolleyStats está pensado para usarse en horizontal durante el partido. Gira el dispositivo para ver el scout con comodidad.';
+    }
+
+    function updateMobilePortraitOverlay() {
+        const overlay = document.getElementById('mobile-portrait-overlay');
+        const message = document.getElementById('mobile-portrait-message');
+        if (!overlay) return;
+
+        const show = isMobilePortraitLayout();
+        overlay.classList.toggle('hidden', !show);
+        overlay.classList.toggle('flex', show);
+        document.body.classList.toggle('mobile-portrait-lock', show);
+        if (message) message.textContent = mobilePortraitMessageForTab(activeMainTab);
+        if (show && window.lucide) lucide.createIcons();
+    }
+
+    async function tryLockLandscapeOnMobile() {
+        if (window.innerWidth > 1024) return;
+        try {
+            const o = screen.orientation;
+            if (o && typeof o.lock === 'function') {
+                await o.lock('landscape');
+            }
+        } catch (e) {
+            /* iOS/Safari y algunos navegadores no permiten forzar orientación */
+        }
+    }
+
+    function unlockMobileOrientation() {
+        try {
+            const o = screen.orientation;
+            if (o && typeof o.unlock === 'function') {
+                o.unlock();
+            }
+        } catch (e) { /* noop */ }
+    }
+
+    function initMobileLandscapeMode() {
+        updateMobilePortraitOverlay();
+        tryLockLandscapeOnMobile();
+    }
+
+    window.addEventListener('orientationchange', () => {
+        setTimeout(updateMobilePortraitOverlay, 150);
+    });
+    window.addEventListener('resize', updateMobilePortraitOverlay);
+    window.addEventListener('pagehide', unlockMobileOrientation);
 
     // Tab switcher without pushing state (for popstate or initial load)
     function switchTabNoPush(tabId) {
@@ -1571,6 +1810,13 @@
         if (tabId === 'scout') {
             checkSetEnd(state.marcador.local, state.marcador.rival);
         }
+
+        if (tabId === 'rotacion') {
+            updateRotacionScoutButtons();
+        }
+
+        activeMainTab = tabId;
+        updateMobilePortraitOverlay();
     }
 
     // Handle back/forward navigation
@@ -1679,7 +1925,7 @@
         }
     }
 
-    async function guardarConfiguracionSet() {
+    async function guardarConfiguracionSet(returnToScout = false) {
         if (state.partido_finalizado) {
             showToast("⚠️ El partido está finalizado. No se puede guardar la configuración.");
             return;
@@ -1707,20 +1953,14 @@
                 const entraId = entraPlayers[0];
 
                 try {
-                    // 1. Register substitution statistic
-                    const rCambio = await fetchConReintentos('{% url "stats_app:api_registrar_cambio" %}', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                        body: JSON.stringify({
-                            partido_id: state.partido_id,
-                            sale_id: saleId,
-                            entra_id: entraId,
-                            set_numero: state.set_numero,
-                            rotacion_num: state.rotacion_num
-                        })
+                    const cambioPayload = JSON.stringify({
+                        partido_id: state.partido_id,
+                        sale_id: saleId,
+                        entra_id: entraId,
+                        set_numero: state.set_numero,
+                        rotacion_num: state.rotacion_num
                     });
 
-                    // 2. Update rotation position
                     const newPositions = {
                         set_numero: state.set_numero,
                         solo_actual: true,
@@ -1740,18 +1980,23 @@
                         }
                     }
 
-                    const rRot = await fetchConReintentos(`{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                        body: JSON.stringify(newPositions)
-                    });
+                    const [rCambio, rRot] = await Promise.all([
+                        fetchConReintentos('{% url "stats_app:api_registrar_cambio" %}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                            body: cambioPayload,
+                        }),
+                        fetchConReintentos(`{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                            body: JSON.stringify(newPositions),
+                        }),
+                    ]);
 
                     if (rCambio.ok && rRot.ok) {
                         const cambioRes = await rCambio.json();
-                        // Render substitution action log in UI
                         renderAction(cambioRes, '=');
 
-                        // Log in Registro de Parones
                         const saleJ = allJugadoras.find(x => String(x.id) === saleId);
                         const entraJ = allJugadoras.find(x => String(x.id) === entraId);
                         const pL = document.getElementById('score-local')?.innerText || '?';
@@ -1761,12 +2006,14 @@
                             `${pL} - ${pR}`, 'cambio'
                         );
 
-                        showToast("✅ Cambio registrado");
-                        await renderActivePlayers();
+                        showToast(returnToScout ? '✅ Cambio guardado — volviendo al scout' : '✅ Cambio registrado');
                         await loadRotation();
                         toggleModal('modal-config');
                         invalidateIndicadoresCache();
-                updateFlashboard({ ligero: true });
+                        updateFlashboard({ ligero: true });
+                        if (returnToScout) {
+                            volverAlScoutActivo();
+                        }
                     } else {
                         showToast("❌ Error al registrar el cambio");
                     }
@@ -1778,6 +2025,9 @@
             }
         } else {
             toggleModal('modal-config');
+            if (returnToScout) {
+                volverAlScoutActivo();
+            }
         }
     }
 
@@ -1956,6 +2206,7 @@
                 state.rotation = null;
             }
             updateUIHeader();
+            updateRotacionScoutButtons();
         } catch(e) {
             console.error("Error al renderizar jugadoras activas: ", e);
         }
@@ -2293,7 +2544,9 @@
     // un indicador estadístico y NUNCA mueve jugadoras en la BD.
 
     async function guardarAlineacionLocal() {
+        const irAlScout = volverAlScoutTrasGuardar;
         if (state.partido_finalizado) {
+            volverAlScoutTrasGuardar = false;
             showToast("⚠️ El partido está finalizado. No se puede modificar la alineación.");
             return;
         }
@@ -2323,6 +2576,7 @@
         }
 
         if (hasEmpty) {
+            volverAlScoutTrasGuardar = false;
             showToast(MODALIDAD.toUpperCase() === 'MINIVOLEY' ? "⚠️ Asigna jugadoras a las 4 zonas antes de guardar" : "⚠️ Asigna jugadoras a las 6 zonas antes de guardar");
             return;
         }
@@ -2340,21 +2594,25 @@
                     selectedEstadoInicial
                 );
                 if (esPrimerSexteto) {
-                    // Primer sexteto: la R seleccionada abajo es la de inicio Y la actual
                     saveRotacionInicial(selectedRotInit);
                     saveRotacionActual(selectedRotInit);
                 } else {
-                    // Sustitución / edición en pista: no tocar la R en juego
                     saveRotacionActual(state.rotacion_num);
                 }
                 const estadoLabel = selectedEstadoInicial === 'K0' ? 'Saque (K0)' : 'Recepción (K1)';
                 const rotLabel = esPrimerSexteto ? `R${selectedRotInit}` : `R${state.rotacion_num} (sin cambiar)`;
-                showToast(`✅ Alineación guardada — ${rotLabel} — ${estadoLabel}`);
-                loadRotation();   // refresca pizarra mostrando exactamente lo guardado
+                volverAlScoutTrasGuardar = false;
+                showToast(irAlScout ? '✅ Alineación guardada — volviendo al scout' : `✅ Alineación guardada — ${rotLabel} — ${estadoLabel}`);
+                await loadRotation();
+                if (irAlScout) {
+                    volverAlScoutActivo();
+                }
             } else {
+                volverAlScoutTrasGuardar = false;
                 showToast("❌ Error al guardar alineación");
             }
         } catch(e) {
+            volverAlScoutTrasGuardar = false;
             showToast("❌ Error de conexión");
         }
     }
@@ -3906,6 +4164,12 @@
         if (tabName === 'acciones') {
             renderQuickHistory();
         }
+        if (tabName === 'notas') {
+            renderNotasPanel();
+        }
+        if (tabName === 'file') {
+            renderNotasArchivoPanel();
+        }
         if (tabName === 'avjuego') {
             renderBotonerasAcciones();
         }
@@ -3941,6 +4205,240 @@
         state.prefs[prefKey] = checked;
         setPref(storageKey, checked);
         showToast(checked ? '✅ Preferencia activada' : '⛔ Preferencia desactivada');
+    }
+
+    // ── Notas de partido (pestaña Notas) ───────────────────────────────────
+    let notasPartido = [];
+    let notaEditId = null;
+    let notaTipo = 'general';
+
+    function setNotaTipo(tipo) {
+        notaTipo = tipo;
+        const btnGeneral = document.getElementById('nota-tipo-general');
+        const btnJugadora = document.getElementById('nota-tipo-jugadora');
+        const wrapJugadora = document.getElementById('nota-jugadora-select-wrap');
+        const active = 'flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all bg-blue-600 text-white shadow-md';
+        const inactive = 'flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all bg-[#1e293b] border border-slate-700 text-slate-400 hover:text-white';
+        if (btnGeneral) btnGeneral.className = tipo === 'general' ? active : inactive;
+        if (btnJugadora) btnJugadora.className = tipo === 'jugadora' ? active : inactive;
+        if (wrapJugadora) wrapJugadora.classList.toggle('hidden', tipo !== 'jugadora');
+    }
+
+    function syncNotaSetSelect() {
+        const sel = document.getElementById('nota-set-select');
+        if (sel) sel.value = String(state.set_numero);
+    }
+
+    function resetNotaForm() {
+        notaEditId = null;
+        notaTipo = 'general';
+        setNotaTipo('general');
+        syncNotaSetSelect();
+        const texto = document.getElementById('nota-texto-input');
+        const jugSel = document.getElementById('nota-jugadora-select');
+        if (texto) texto.value = '';
+        if (jugSel) jugSel.value = '';
+        const editInd = document.getElementById('notas-edit-indicator');
+        const cancelBtn = document.getElementById('nota-cancelar-btn');
+        const guardarLabel = document.getElementById('nota-guardar-label');
+        if (editInd) editInd.classList.add('hidden');
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        if (guardarLabel) guardarLabel.textContent = 'Guardar nota';
+    }
+
+    function cancelarEdicionNota() {
+        resetNotaForm();
+    }
+
+    function editarNotaPartido(id) {
+        const nota = notasPartido.find(n => n.id === id);
+        if (!nota) return;
+        notaEditId = id;
+        if (nota.jugadora_id) {
+            setNotaTipo('jugadora');
+            const jugSel = document.getElementById('nota-jugadora-select');
+            if (jugSel) jugSel.value = String(nota.jugadora_id);
+        } else {
+            setNotaTipo('general');
+        }
+        const selSet = document.getElementById('nota-set-select');
+        const texto = document.getElementById('nota-texto-input');
+        if (selSet) selSet.value = String(nota.set_numero);
+        if (texto) texto.value = nota.texto;
+        const editInd = document.getElementById('notas-edit-indicator');
+        const cancelBtn = document.getElementById('nota-cancelar-btn');
+        const guardarLabel = document.getElementById('nota-guardar-label');
+        if (editInd) editInd.classList.remove('hidden');
+        if (cancelBtn) cancelBtn.classList.remove('hidden');
+        if (guardarLabel) guardarLabel.textContent = 'Actualizar nota';
+        document.getElementById('nota-texto-input')?.focus();
+    }
+
+    async function cargarNotasPartido() {
+        try {
+            const r = await fetchConReintentos(`{% url "stats_app:api_list_notas" partido.id %}`);
+            const data = await r.json();
+            if (data.status === 'ok') {
+                notasPartido = data.notas || [];
+            }
+        } catch (e) {
+            console.error('Error cargando notas', e);
+        }
+    }
+
+    function buildNotaItemHtml(nota, readOnly) {
+        const destino = nota.jugadora_id
+            ? `#${nota.jugadora_dorsal} ${nota.jugadora_nombre}`
+            : 'General';
+        const actions = readOnly ? '' : `
+                    <div class="flex gap-1 flex-shrink-0">
+                        <button type="button" data-nota-edit="${nota.id}" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95" title="Editar">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button type="button" data-nota-del="${nota.id}" class="p-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/40 text-rose-400 transition-all active:scale-95" title="Eliminar">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>`;
+        return `
+                <div class="flex justify-between items-start gap-2">
+                    <div class="min-w-0">
+                        <span class="text-[9px] font-black text-slate-500 uppercase tracking-wider block">${nota.creado_en_fecha} · Set ${nota.set_numero}</span>
+                        <span class="text-[10px] font-black text-blue-400 uppercase tracking-wider">${destino}</span>
+                    </div>
+                    ${actions}
+                </div>
+                <p class="text-sm text-slate-200 leading-snug whitespace-pre-wrap break-words">${escapeHtml(nota.texto)}</p>
+            `;
+    }
+
+    function renderNotasIntoList(listId, emptyId, countId, readOnly) {
+        const list = document.getElementById(listId);
+        const empty = emptyId ? document.getElementById(emptyId) : null;
+        const countLabel = countId ? document.getElementById(countId) : null;
+        if (!list) return;
+
+        if (countLabel) {
+            countLabel.textContent = `${notasPartido.length} nota${notasPartido.length === 1 ? '' : 's'}`;
+        }
+
+        list.querySelectorAll('.nota-item').forEach(el => el.remove());
+
+        if (!notasPartido.length) {
+            if (empty) empty.classList.remove('hidden');
+            return;
+        }
+        if (empty) empty.classList.add('hidden');
+
+        notasPartido.forEach(nota => {
+            const item = document.createElement('div');
+            item.className = 'nota-item bg-[#0b0f19] border border-slate-800 rounded-xl p-3 space-y-2';
+            item.innerHTML = buildNotaItemHtml(nota, readOnly);
+            list.appendChild(item);
+        });
+
+        if (!readOnly) {
+            list.querySelectorAll('[data-nota-edit]').forEach(btn => {
+                btn.addEventListener('click', () => editarNotaPartido(parseInt(btn.dataset.notaEdit, 10)));
+            });
+            list.querySelectorAll('[data-nota-del]').forEach(btn => {
+                btn.addEventListener('click', () => eliminarNotaPartido(parseInt(btn.dataset.notaDel, 10)));
+            });
+        }
+    }
+
+    function renderNotasList() {
+        renderNotasIntoList('notas-list', 'notas-list-empty', 'notas-count-label', false);
+        renderNotasIntoList('archivo-notas-list', 'archivo-notas-empty', 'archivo-notas-count', true);
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    async function renderNotasPanel() {
+        syncNotaSetSelect();
+        await cargarNotasPartido();
+        renderNotasList();
+        if (window.lucide) lucide.createIcons();
+    }
+
+    async function renderNotasArchivoPanel() {
+        await cargarNotasPartido();
+        renderNotasList();
+        if (window.lucide) lucide.createIcons();
+    }
+
+    async function guardarNotaPartido() {
+        const textoEl = document.getElementById('nota-texto-input');
+        const texto = (textoEl?.value || '').trim();
+        if (!texto) {
+            showToast('⚠️ Escribe algo en la nota');
+            return;
+        }
+
+        const setNum = parseInt(document.getElementById('nota-set-select')?.value, 10) || state.set_numero;
+        const payload = { texto, set_numero: setNum };
+
+        if (notaTipo === 'jugadora') {
+            const jugId = document.getElementById('nota-jugadora-select')?.value;
+            if (!jugId) {
+                showToast('⚠️ Selecciona una jugadora');
+                return;
+            }
+            payload.jugadora_id = parseInt(jugId, 10);
+        }
+
+        const url = notaEditId
+            ? `{% url "stats_app:api_actualizar_nota" partido.id 0 %}`.replace('/0/', `/${notaEditId}/`)
+            : '{% url "stats_app:api_crear_nota" partido.id %}';
+
+        try {
+            const wasEdit = !!notaEditId;
+            const r = await fetchConReintentos(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify(payload),
+            });
+            const data = await r.json();
+            if (data.status !== 'ok') {
+                showToast('❌ ' + (data.mensaje || 'Error al guardar'));
+                return;
+            }
+            resetNotaForm();
+            await cargarNotasPartido();
+            renderNotasList();
+            showToast(wasEdit ? '✅ Nota actualizada' : '✅ Nota guardada');
+        } catch (e) {
+            showToast('❌ Error de conexión');
+        }
+    }
+
+    async function eliminarNotaPartido(id) {
+        if (!confirm('¿Eliminar esta nota?')) return;
+        try {
+            const url = `{% url "stats_app:api_eliminar_nota" partido.id 0 %}`.replace('/0/', `/${id}/`);
+            const r = await fetchConReintentos(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: '{}',
+            });
+            const data = await r.json();
+            if (data.status !== 'ok') {
+                showToast('❌ No se pudo eliminar');
+                return;
+            }
+            if (notaEditId === id) resetNotaForm();
+            await cargarNotasPartido();
+            renderNotasList();
+            showToast('🗑️ Nota eliminada');
+        } catch (e) {
+            showToast('❌ Error de conexión');
+        }
     }
 
     async function guardarReglasSet() {

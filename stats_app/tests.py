@@ -22,7 +22,7 @@ from django.urls import reverse
 
 from .db_utils import reintentar_en_error_transitorio
 from .forms import RegistrarAccionForm, RegistrarCambioForm, EliminarAccionForm
-from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet
+from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet, NotaPartido
 from .security import RateLimitMiddleware
 from .services.reporting import (
     build_full_report,
@@ -432,6 +432,9 @@ class IDORTests(TestCase):
             partido=self.partido_b, jugadora=self.jugadora_b1, tipo_fase='K1',
             accion='ATAQUE', calidad='++', set_numero=1,
         )
+        self.nota_b = NotaPartido.objects.create(
+            partido=self.partido_b, set_numero=1, texto='Nota ajena',
+        )
         RotacionSet.objects.create(
             partido=self.partido_b, set_numero=1, es_inicial=True, pos1=self.jugadora_b1
         )
@@ -503,6 +506,30 @@ class IDORTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.partido_b.refresh_from_db()
         self.assertFalse(self.partido_b.finalizado)
+
+    def test_listar_notas_de_partido_ajeno_da_404(self):
+        response = self.client.get(reverse('stats_app:api_list_notas', args=[self.partido_b.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_crear_nota_en_partido_ajeno_da_404(self):
+        response = self.client.post(
+            reverse('stats_app:api_crear_nota', args=[self.partido_b.id]),
+            data=json.dumps({'texto': 'Intento IDOR', 'set_numero': 1}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(
+            NotaPartido.objects.filter(partido=self.partido_b, texto='Intento IDOR').exists()
+        )
+
+    def test_eliminar_nota_ajena_da_404(self):
+        response = self.client.post(
+            reverse('stats_app:api_eliminar_nota', args=[self.partido_b.id, self.nota_b.id]),
+            data='{}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(NotaPartido.objects.filter(pk=self.nota_b.id).exists())
 
     def test_obtener_stats_set_de_partido_propio_si_funciona(self):
         """Control positivo: el mismo tipo de petición SÍ debe funcionar
