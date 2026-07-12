@@ -1,6 +1,6 @@
 {% load static %}
 <!-- PWA: manifest + metadatos de instalación para iOS/Android -->
-<link rel="manifest" href="{% static 'stats_app/manifest.json' %}">
+<link rel="manifest" href="{% static 'stats_app/manifest.json' %}?v={{ APP_ICON_VERSION }}">
 <meta name="theme-color" content="#0f172a">
 
 <!-- iOS Safari no lee bien el manifest.json para "Añadir a pantalla de
@@ -9,8 +9,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyVolleyStats">
-<link rel="apple-touch-icon" href="{% static 'stats_app/icons/apple-touch-icon.png' %}">
+<link rel="apple-touch-icon" href="{% static 'stats_app/icons/apple-touch-icon.png' %}?v={{ APP_ICON_VERSION }}">
 
-<!-- Android/Chrome usa los iconos del manifest, pero se declara también
-     como favicon de forma explícita para navegadores que no lo resuelven. -->
-<link rel="icon" type="image/png" sizes="192x192" href="{% static 'stats_app/icons/icon-192.png' %}">
+<!-- Favicon de pestaña: mismo logo que la UI (logo-ui), no el icono PWA
+     con fondo oscuro (icon-192), que Safari cachea durante meses. -->
+<link rel="icon" type="image/png" sizes="32x32" href="{% static 'stats_app/icons/favicon-32.png' %}?v={{ APP_ICON_VERSION }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{% static 'stats_app/icons/favicon-16.png' %}?v={{ APP_ICON_VERSION }}">
+<link rel="icon" type="image/png" href="{% static 'stats_app/icons/logo-ui.png' %}?v={{ APP_ICON_VERSION }}">
+
+<!-- PWA / Android (icono con fondo de app) -->
+<link rel="icon" type="image/png" sizes="192x192" href="{% static 'stats_app/icons/icon-192.png' %}?v={{ APP_ICON_VERSION }}">

@@ -4,6 +4,7 @@ El PNG fuente vive en `stats_app/static/stats_app/source/logo_balon_voley.png`.
 
 Elimina el margen blanco/gris exterior del icono y genera:
 
+    - favicon-16.png / favicon-32.png   (pestaña del navegador, transparente)
     - icon-192.png / icon-512.png   (PWA, fondo #0b0f19)
     - apple-touch-icon.png          (180×180, sin transparencia)
     - logo-ui.png                   (256×256, fondo transparente — login, menú)
@@ -88,5 +89,11 @@ class Command(BaseCommand):
         destino_ui = OUT_DIR / 'logo-ui.png'
         logo_ui.save(destino_ui, 'PNG')
         self.stdout.write(self.style.SUCCESS(f'  ✓ {destino_ui} (transparente)'))
+
+        for size in (16, 32):
+            favicon = _logo_ui_transparente(limpio, size)
+            destino_fav = OUT_DIR / f'favicon-{size}.png'
+            favicon.save(destino_fav, 'PNG')
+            self.stdout.write(self.style.SUCCESS(f'  ✓ {destino_fav} (favicon pestaña)'))
 
         self.stdout.write(self.style.SUCCESS('Iconos generados correctamente.'))
