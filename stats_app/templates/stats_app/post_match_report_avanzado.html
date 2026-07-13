@@ -33,6 +33,9 @@
             <p class="text-blue-400/80 text-[10px] mt-1 font-bold">Escala completa: ++ · + · = · − · −− · Red</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+            <a href="{% url 'stats_app:modo_partido' partido.id %}?tab=scout" class="px-4 py-2 rounded-xl text-xs font-black uppercase border border-slate-600 text-slate-300 hover:text-white hover:border-slate-500">
+                ← Volver al partido
+            </a>
             <a href="{% url 'stats_app:partido_stats_final' partido.id %}?set={{ set_actual }}" class="px-4 py-2 rounded-xl text-xs font-black uppercase border border-slate-600 text-slate-300 hover:text-white hover:border-slate-500">
                 ← Estadísticas Rápidas
             </a>
