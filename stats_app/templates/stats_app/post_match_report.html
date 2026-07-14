@@ -44,10 +44,10 @@
             <button onclick="window.print()" class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
                 <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
             </button>
-            <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set={{ set_actual }}" class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
+            <a href="{% url 'stats_app:descargar_resumen_pdf' partido.id %}?set={{ set_actual }}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
                 <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i> Resumen PDF
             </a>
-            <a href="{% url 'stats_app:descargar_informe_completo' partido.id %}?set={{ set_actual }}" class="px-4 py-2 bg-emerald-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
+            <a href="{% url 'stats_app:descargar_informe_completo' partido.id %}?set={{ set_actual }}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-emerald-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
                 <i data-lucide="download" class="w-4 h-4"></i> PDF Rápido
             </a>
             <button type="button"
@@ -56,6 +56,7 @@
                 <i data-lucide="share-2" class="w-4 h-4"></i> Compartir por WhatsApp
             </button>
         </div>
+        <p class="text-[10px] text-slate-500 print:hidden">Los PDF se abren en otra pestaña. Para volver, cierra el PDF o cambia de pestaña — la app sigue aquí.</p>
     </div>
 
     <!-- Leyenda y fórmulas (arriba, desplegadas por defecto) -->

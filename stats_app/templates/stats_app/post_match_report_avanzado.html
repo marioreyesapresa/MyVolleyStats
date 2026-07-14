@@ -46,7 +46,7 @@
             <button onclick="window.print()" class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
                 <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
             </button>
-            <a href="{% url 'stats_app:descargar_informe_avanzado' partido.id %}?set={{ set_actual }}" class="px-4 py-2 bg-indigo-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
+            <a href="{% url 'stats_app:descargar_informe_avanzado' partido.id %}?set={{ set_actual }}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-indigo-700 rounded-xl text-xs font-black uppercase text-white flex items-center gap-2">
                 <i data-lucide="download" class="w-4 h-4"></i> PDF Avanzado
             </a>
             <button type="button"
