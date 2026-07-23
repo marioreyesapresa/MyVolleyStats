@@ -507,6 +507,14 @@ class IDORTests(TestCase):
         self.partido_b.refresh_from_db()
         self.assertFalse(self.partido_b.finalizado)
 
+    def test_reabrir_partido_ajeno_da_404(self):
+        self.partido_b.finalizado = True
+        self.partido_b.save(update_fields=['finalizado'])
+        response = self.client.post(reverse('stats_app:api_reabrir_partido', args=[self.partido_b.id]))
+        self.assertEqual(response.status_code, 404)
+        self.partido_b.refresh_from_db()
+        self.assertTrue(self.partido_b.finalizado)
+
     def test_listar_notas_de_partido_ajeno_da_404(self):
         response = self.client.get(reverse('stats_app:api_list_notas', args=[self.partido_b.id]))
         self.assertEqual(response.status_code, 404)
@@ -1218,6 +1226,22 @@ class FlujoCompletoPartidoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.partido.refresh_from_db()
         self.assertTrue(self.partido.finalizado)
+
+    def test_reabrir_partido_happy_path_conserva_stats(self):
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadoras[0], tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=3,
+        )
+        self.partido.finalizado = True
+        self.partido.save(update_fields=['finalizado'])
+        response = self.client.post(reverse('stats_app:api_reabrir_partido', args=[self.partido.id]))
+        self.assertEqual(response.status_code, 200)
+        self.partido.refresh_from_db()
+        self.assertFalse(self.partido.finalizado)
+        self.assertEqual(
+            RegistroEstadistica.objects.filter(partido=self.partido, set_numero=3).count(),
+            1,
+        )
 
     def test_informe_final_incluye_zona_rotacion_y_racha(self):
         """El informe final (web y PDF) debe incluir los nuevos bloques de

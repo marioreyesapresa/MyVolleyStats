@@ -41,6 +41,7 @@ urlpatterns = [
     path('api/rotacion/rotar/<int:partido_id>/', views.RotarManualAPI.as_view(), name='api_rotar_manual'),
     path('api/jugadora/actualizar-posicion/', views.ActualizarPosicionJugadoraAPI.as_view(), name='api_actualizar_pos_jugadora'),
     path('api/partido/<int:partido_id>/finalizar/', views.FinalizarPartidoAPI.as_view(), name='api_finalizar_partido'),
+    path('api/partido/<int:partido_id>/reabrir/', views.ReabrirPartidoAPI.as_view(), name='api_reabrir_partido'),
     path('api/partido/<int:partido_id>/notas/', views.ListNotasPartidoAPI.as_view(), name='api_list_notas'),
     path('api/partido/<int:partido_id>/notas/crear/', views.CrearNotaPartidoAPI.as_view(), name='api_crear_nota'),
     path('api/partido/<int:partido_id>/notas/<int:nota_id>/actualizar/', views.ActualizarNotaPartidoAPI.as_view(), name='api_actualizar_nota'),

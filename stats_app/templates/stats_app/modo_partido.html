@@ -930,6 +930,30 @@
                 </button>
             </div>
         </div>
+
+        <!-- Corrección: set / partido cerrado por error -->
+        <div class="bg-[#121824] rounded-3xl p-6 border border-amber-500/20 shadow-xl space-y-4">
+            <h3 class="text-sm font-black text-amber-400 uppercase tracking-widest border-b border-slate-800 pb-2">Corregir cierre accidental</h3>
+            <p class="text-[10px] text-slate-500 leading-snug">Si cerraste un set o el partido demasiado pronto, las estadísticas <strong class="text-slate-400">no se borran</strong>. Puedes reabrir, deshacer el punto de más y seguir anotando.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button type="button" onclick="reabrirSetParaCorregir()" class="py-4 bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                    <i data-lucide="undo-2" class="w-4 h-4"></i>
+                    <span>Reabrir set y seguir</span>
+                </button>
+                <button type="button" id="btn-reabrir-partido" onclick="reabrirPartido()" class="py-4 bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 {% if not partido.finalizado %}hidden{% endif %}">
+                    <i data-lucide="lock-open" class="w-4 h-4"></i>
+                    <span>Reabrir partido</span>
+                </button>
+            </div>
+            <div class="space-y-2">
+                <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Set a reabrir</label>
+                <select id="reabrir-set-select" class="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-amber-500">
+                    {% for i in "12345" %}
+                    <option value="{{ forloop.counter }}">Set {{ forloop.counter }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
     </div>
 
     <!-- PESTAÑA COMPARTIDA: [Archivos] -->
@@ -1443,7 +1467,7 @@
         </div>
         <div class="p-6 bg-[#090d16] border-t border-slate-800 flex space-x-3">
             <button onclick="dismissFinSetModal()" class="flex-1 bg-slate-850 hover:bg-slate-750 text-white font-black py-4 rounded-xl text-sm shadow-md active:scale-95 transition-all uppercase tracking-wider">
-                Modificar
+                Corregir / Deshacer
             </button>
             <button onclick="guardarFinSet()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-sm shadow-xl active:scale-95 transition-all uppercase tracking-wider">
                 Guardar y Siguiente
@@ -3233,11 +3257,95 @@
     }
 
     function dismissFinSetModal() {
+        // Cierra el modal pero deja el scout usable para deshacer el punto
+        // de más (p.ej. 25-20 accidental cuando el set seguía vivo).
         state.set_modal_suppressed = true;
+        state.set_finished = false;
+        unlockGameplayUI();
         const modal = document.getElementById('modal-fin-set');
         if (modal) {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+        }
+        showToast('↩️ Puedes deshacer el último punto y seguir');
+    }
+
+    function clearSetModalAcknowledged(setNum) {
+        const key = `partido_${state.partido_id}_sets_modal_ok`;
+        try {
+            const acked = getSetsModalAcknowledged().filter(s => Number(s) !== Number(setNum));
+            localStorage.setItem(key, JSON.stringify(acked));
+        } catch (e) { /* noop */ }
+    }
+
+    async function reabrirSetParaCorregir() {
+        const sel = document.getElementById('reabrir-set-select');
+        const setNum = parseInt(sel?.value || state.set_numero, 10) || state.set_numero;
+
+        if (state.partido_finalizado) {
+            const ok = confirm('El partido está finalizado. ¿Reabrirlo para poder seguir anotando en el set ' + setNum + '?');
+            if (!ok) return;
+            const reabierto = await reabrirPartido({ silent: true, stayOnPage: true });
+            if (!reabierto) return;
+        } else if (!confirm('¿Reabrir el set ' + setNum + ' para corregir y seguir anotando? Las stats ya guardadas no se borran.')) {
+            return;
+        }
+
+        clearSetModalAcknowledged(setNum);
+        state.set_finished = false;
+        state.set_modal_suppressed = true;
+        unlockGameplayUI();
+        unlockScoutInterface();
+        setSet(setNum);
+        switchTab('scout');
+        switchRapidoTab(state.modo_scout === 'rapido' ? 'gameplay' : 'avjuego');
+        await updateFlashboard({ ligero: true });
+        showToast(`🔓 Set ${setNum} reabierto — deshaz el punto de más si hace falta y continúa`);
+    }
+
+    async function reabrirPartido(opts = {}) {
+        const silent = !!opts.silent;
+        const stayOnPage = !!opts.stayOnPage;
+        if (!silent && !confirm('¿Reabrir este partido? Podrás volver a anotar estadísticas. Las ya guardadas no se borran.')) {
+            return false;
+        }
+        try {
+            const response = await fetchConReintentos(`/api/partido/${state.partido_id}/reabrir/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: '{}',
+            });
+            const res = await response.json();
+            if (res.status !== 'success') {
+                showToast('❌ ' + (res.error || res.mensaje || 'No se pudo reabrir'));
+                return false;
+            }
+            state.partido_finalizado = false;
+            state.set_finished = false;
+            state.set_modal_suppressed = true;
+            unlockGameplayUI();
+            unlockScoutInterface();
+            const btnReabrir = document.getElementById('btn-reabrir-partido');
+            if (btnReabrir) btnReabrir.classList.add('hidden');
+            const finalizarBtn = document.getElementById('btn-finalizar-partido');
+            if (finalizarBtn) {
+                finalizarBtn.innerHTML = `<i data-lucide="flag" class="w-3.5 h-3.5 mr-1.5"></i> Finalizar partido`;
+                finalizarBtn.className = "flex items-center justify-center px-4 py-2.5 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-400 hover:text-white rounded-2xl font-black text-xs shadow-lg uppercase tracking-wider transition-all active:scale-95";
+                finalizarBtn.onclick = confirmarFinalizarPartido;
+                if (window.lucide) lucide.createIcons();
+            }
+            await renderActivePlayers();
+            if (!silent) showToast('🔓 Partido reabierto');
+            if (!stayOnPage && !silent) {
+                // ya estamos en modo partido
+            }
+            return true;
+        } catch (e) {
+            showToast('❌ Error de red al reabrir el partido');
+            return false;
         }
     }
 
@@ -4176,6 +4284,10 @@
         }
         if (tabName === 'adjust') {
             renderAjustesPrefs();
+            const reabrirSel = document.getElementById('reabrir-set-select');
+            if (reabrirSel) reabrirSel.value = String(state.set_numero);
+            const btnReabrir = document.getElementById('btn-reabrir-partido');
+            if (btnReabrir) btnReabrir.classList.toggle('hidden', !state.partido_finalizado);
         }
         if (tabName === 'settings') {
             syncModoScoutButtons(state.modo_scout);

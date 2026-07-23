@@ -665,3 +665,28 @@ class FinalizarPartidoAPI(LoginRequiredMixin, View):
         except Exception as e:
             logger.exception('Error inesperado en FinalizarPartidoAPI')
             return JsonResponse({'status': 'error', 'error': ocultar_detalle_interno(e)}, status=500)
+
+
+class ReabrirPartidoAPI(LoginRequiredMixin, View):
+    """Permite corregir un cierre accidental: vuelve a dejar el partido
+    editable en scout. Las estadísticas no se tocan; solo se quita el
+    flag `finalizado` y se invalida la caché de PDFs."""
+
+    @reintentar_en_error_transitorio()
+    def post(self, request, partido_id):
+        try:
+            partido = _partido_del_entrenador(request, partido_id)
+            if not partido.finalizado:
+                return JsonResponse({'status': 'success', 'mensaje': 'El partido ya estaba abierto'})
+            partido.finalizado = False
+            partido.save(update_fields=['finalizado'])
+            from ..services.informes_cache import invalidar_cache_informes_partido
+            invalidar_cache_informes_partido(partido.pk)
+            return JsonResponse({'status': 'success', 'mensaje': 'Partido reabierto correctamente'})
+        except Http404:
+            raise
+        except (OperationalError, InterfaceError):
+            raise
+        except Exception as e:
+            logger.exception('Error inesperado en ReabrirPartidoAPI')
+            return JsonResponse({'status': 'error', 'error': ocultar_detalle_interno(e)}, status=500)
