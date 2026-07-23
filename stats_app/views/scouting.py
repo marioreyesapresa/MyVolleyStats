@@ -133,6 +133,26 @@ def _validar_rango_zona_modalidad(partido, valor, campo='rotacion_num'):
     return None
 
 
+def _historial_set_data(partido, set_num):
+    """Lista de acciones de un set para el panel Acciones / historial avanzado."""
+    historial = (
+        RegistroEstadistica.objects.filter(partido=partido, set_numero=set_num)
+        .select_related('jugadora')
+        .order_by('-id')[:400]
+    )
+    historial_data = []
+    for reg in historial:
+        historial_data.append({
+            'id': reg.id,
+            'dorsal': reg.jugadora.dorsal if reg.jugadora else 'EQ',
+            'accion_texto': _accion_texto(reg.accion, reg.calidad, reg.get_accion_display()),
+            'calidad': reg.calidad or '',
+            'accion': reg.accion,
+            'set_numero': reg.set_numero,
+        })
+    return historial_data
+
+
 class ModoPartidoView(LoginRequiredMixin, View):
     template_name = 'stats_app/modo_partido.html'
 
@@ -149,21 +169,12 @@ class ModoPartidoView(LoginRequiredMixin, View):
             ('DEFENSA', 'Defensa'),
         ]
 
-        historial = RegistroEstadistica.objects.filter(
-            partido=partido, set_numero=1
-        ).select_related('jugadora').order_by('-id')
-        historial_data = []
-        for reg in historial:
-            historial_data.append({
-                'id': reg.id,
-                'dorsal': reg.jugadora.dorsal if reg.jugadora else 'EQ',
-                'accion_texto': _accion_texto(reg.accion, reg.calidad, reg.get_accion_display()),
-                'calidad': reg.calidad
-            })
+        marcador_inicial = build_partido_snapshot(partido)
+        set_activo = marcador_inicial.get('set_activo') or 1
+        historial_data = _historial_set_data(partido, set_activo)
 
         permite_libero = partido.equipo.categoria in ['CADETE', 'JUVENIL', 'JUNIOR', 'SENIOR']
         partidos_guardados = Partido.objects.filter(equipo=partido.equipo).exclude(pk=partido.pk).order_by('-fecha')
-        marcador_inicial = build_partido_snapshot(partido)
         return render(request, self.template_name, {
             'partido': partido,
             'jugadoras': jugadoras,
@@ -174,6 +185,25 @@ class ModoPartidoView(LoginRequiredMixin, View):
             'permite_libero': permite_libero,
             'partidos_guardados': partidos_guardados
         })
+
+
+class HistorialSetAPI(LoginRequiredMixin, View):
+    """Devuelve las acciones de un set para el panel Acciones / historial."""
+
+    def get(self, request, partido_id):
+        partido = _partido_del_entrenador(request, partido_id)
+        try:
+            set_num = int(request.GET.get('set', 1))
+        except (TypeError, ValueError):
+            return JsonResponse({'status': 'error', 'mensaje': 'Set inválido'}, status=400)
+        if set_num < 1 or set_num > 5:
+            return JsonResponse({'status': 'error', 'mensaje': 'Set fuera de rango'}, status=400)
+        return JsonResponse({
+            'status': 'ok',
+            'set_numero': set_num,
+            'historial': _historial_set_data(partido, set_num),
+        })
+
 
 class RegistrarAccionAPI(LoginRequiredMixin, View):
     @reintentar_en_error_transitorio()

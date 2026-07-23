@@ -515,6 +515,13 @@ class IDORTests(TestCase):
         self.partido_b.refresh_from_db()
         self.assertTrue(self.partido_b.finalizado)
 
+    def test_historial_set_de_partido_ajeno_da_404(self):
+        response = self.client.get(
+            reverse('stats_app:api_historial_set', args=[self.partido_b.id]),
+            {'set': 1},
+        )
+        self.assertEqual(response.status_code, 404)
+
     def test_listar_notas_de_partido_ajeno_da_404(self):
         response = self.client.get(reverse('stats_app:api_list_notas', args=[self.partido_b.id]))
         self.assertEqual(response.status_code, 404)
@@ -1242,6 +1249,26 @@ class FlujoCompletoPartidoTests(TestCase):
             RegistroEstadistica.objects.filter(partido=self.partido, set_numero=3).count(),
             1,
         )
+
+    def test_historial_set_devuelve_acciones_del_set_pedido(self):
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadoras[0], tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=1,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadoras[1], tipo_fase='K1',
+            accion='RECEPCION', calidad='+', set_numero=3,
+        )
+        response = self.client.get(
+            reverse('stats_app:api_historial_set', args=[self.partido.id]),
+            {'set': 3},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['set_numero'], 3)
+        self.assertEqual(len(data['historial']), 1)
+        self.assertIn('Recepción', data['historial'][0]['accion_texto'])
 
     def test_informe_final_incluye_zona_rotacion_y_racha(self):
         """El informe final (web y PDF) debe incluir los nuevos bloques de

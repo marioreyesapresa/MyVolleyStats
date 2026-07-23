@@ -709,7 +709,7 @@
             <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                     <h3 class="text-sm font-black text-blue-400 uppercase tracking-widest">Últimas Acciones</h3>
-                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Sesión Actual</span>
+                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Set en curso</span>
                 </div>
                 <div id="quick-history-list" class="flex flex-col gap-2 max-h-[65vh] overflow-y-auto pr-1 scrollbar-hide">
                     <div class="text-[10px] font-bold text-slate-600 uppercase tracking-wider px-2 py-2.5">Aún no hay acciones registradas</div>
@@ -1557,8 +1557,8 @@
         selectRotInit(r);
     }
 
-    // Pre-cargar historial inicial
-    const historialInicial = {{ historial_inicial|safe }};
+    // Pre-cargar historial inicial (set activo del snapshot; se refresca al cambiar de set)
+    let historialInicial = {{ historial_inicial|safe }};
 
     // ── Preferencias de usuario (pestaña Ajustes) ───────────────────────────
     // Se guardan en localStorage: las de comportamiento (auto-rotación, sonido,
@@ -1627,9 +1627,7 @@
         
         updateUIHeader();
         renderBotonerasAcciones();
-        
-        historialInicial.forEach(data => renderAction(data, data.calidad));
-        hydrateQuickHistoryFromInicial();
+
         const savedSetActivo = parseInt(
             localStorage.getItem(`partido_${state.partido_id}_set_activo`) || String(MARCADOR_INICIAL.set_activo),
             10
@@ -1638,6 +1636,7 @@
             localStorage.getItem(`partido_${state.partido_id}_indicadores_set`) || String(savedSetActivo),
             10
         );
+        // setSet carga el historial del set activo desde la BD (no solo set 1)
         setSet(savedSetActivo);
         state.indicadores_set = savedIndicadoresSet;
         renderIndicadoresSetPicker();
@@ -1931,9 +1930,40 @@
             }
         });
         
-        // Fetch rotation for new set
+        // Fetch rotation + historial for the selected set
         loadRotation();
         updateFlashboard();
+        cargarHistorialSet(state.set_numero);
+    }
+
+    async function cargarHistorialSet(setNum) {
+        const list = document.getElementById('historial-list');
+        if (list) list.innerHTML = '';
+        state.quickHistory = [];
+        renderQuickHistory();
+        updateCounter();
+
+        try {
+            const r = await fetchConReintentos(
+                `{% url "stats_app:api_historial_set" partido.id %}?set=${setNum}`
+            );
+            const data = await r.json();
+            if (data.status !== 'ok') {
+                showToast('⚠️ No se pudo cargar el historial del set');
+                return;
+            }
+            historialInicial = data.historial || [];
+            // Más antiguo primero en el DOM (renderAction hace afterbegin → queda reciente arriba)
+            const oldestFirst = [...historialInicial].reverse();
+            oldestFirst.forEach(item => renderAction(item, item.calidad));
+            hydrateQuickHistoryFromInicial(historialInicial);
+            renderQuickHistory();
+            updateCounter();
+            if (window.lucide) lucide.createIcons();
+        } catch (e) {
+            console.error('Error cargando historial del set', e);
+            showToast('❌ Error al cargar historial');
+        }
     }
 
     function toggleJugadoraActiva(id, btn) {
@@ -3011,12 +3041,16 @@
     // solo contendría acciones registradas en la sesión actual, provocando que
     // "Restar Punto" (pestaña Marcador) y el panel "Acciones" aparezcan vacíos
     // justo después de recargar aunque el partido ya tenga puntos anotados.
-    function hydrateQuickHistoryFromInicial() {
-        if (!Array.isArray(historialInicial) || historialInicial.length === 0) return;
+    function hydrateQuickHistoryFromInicial(source) {
+        const rows = Array.isArray(source) ? source : historialInicial;
+        if (!Array.isArray(rows) || rows.length === 0) {
+            state.quickHistory = [];
+            return;
+        }
 
-        // historialInicial viene ordenado del más reciente al más antiguo (-id);
+        // rows viene ordenado del más reciente al más antiguo (-id);
         // lo recorremos en orden cronológico para reconstruir el marcador parcial.
-        const cronologico = [...historialInicial].reverse();
+        const cronologico = [...rows].reverse();
         let runningLocal = 0;
         let runningRival = 0;
 
@@ -3024,7 +3058,7 @@
             const calidad = data.calidad || '';
             const displayActionText = data.accion_texto || '';
             const esPuntoLocal = (calidad === '++') || displayActionText.includes('Error del Rival');
-            const esPuntoRival = (calidad === '--') || displayActionText.includes('Punto del Rival');
+            const esPuntoRival = (calidad === '--') || displayActionText.includes('Punto del Rival') || displayActionText.includes('Red (punto rival)');
             if (esPuntoLocal) runningLocal++;
             if (esPuntoRival) runningRival++;
 

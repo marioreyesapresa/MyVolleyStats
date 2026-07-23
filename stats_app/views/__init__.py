@@ -1,5 +1,5 @@
 from .scouting import (
-    ModoPartidoView, RegistrarAccionAPI, EliminarAccionAPI, RegistrarCambioAPI, ObtenerStatsSetAPI, get_stats_json, PartidoStatsFinalView, PartidoStatsAvanzadoView, FinalizarPartidoAPI, ReabrirPartidoAPI, ActualizarConfigSetAPI
+    ModoPartidoView, RegistrarAccionAPI, EliminarAccionAPI, RegistrarCambioAPI, ObtenerStatsSetAPI, get_stats_json, PartidoStatsFinalView, PartidoStatsAvanzadoView, FinalizarPartidoAPI, ReabrirPartidoAPI, HistorialSetAPI, ActualizarConfigSetAPI
 )
 from .notas import (
     ListNotasPartidoAPI, CrearNotaPartidoAPI, ActualizarNotaPartidoAPI, EliminarNotaPartidoAPI,
