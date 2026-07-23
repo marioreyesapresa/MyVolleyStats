@@ -38,6 +38,7 @@ from .services.reporting import (
     calc_racha,
     calc_racha_maxima,
     calc_set_score,
+    merito_y_error_rival,
     _candidata_cambio,
 )
 
@@ -1525,6 +1526,26 @@ class ReportingHelpersTests(TestCase):
             f"build_full_report ejecutó {len(ctx.captured_queries)} queries; "
             "no debería escalar con el número de sets/jugadoras/acciones."
         )
+
+    def test_ajuste_marcador_suma_y_resta_sin_contar_como_merito(self):
+        """AJUSTE_MARCADOR mueve el marcador sin pasar por Acciones/mérito."""
+        self._punto('ATAQUE', '++')
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=None, tipo_fase='K1',
+            accion='AJUSTE_MARCADOR', calidad='++', set_numero=1,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=None, tipo_fase='K1',
+            accion='AJUSTE_MARCADOR', calidad='--', set_numero=1,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=None, tipo_fase='K1',
+            accion='AJUSTE_MARCADOR', calidad='+', set_numero=1,
+        )
+        local, rival = calc_set_score(self.partido, 1)
+        self.assertEqual((local, rival), (1, 1))
+        merito, err_rival = merito_y_error_rival(self.partido, 1)
+        self.assertEqual((merito, err_rival), (1, 0))
 
     def test_accion_red_cuenta_como_punto_para_el_rival(self):
         """RED = la jugadora seleccionada ha tocado la red: punto directo

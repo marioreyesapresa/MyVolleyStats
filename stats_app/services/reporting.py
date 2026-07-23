@@ -110,18 +110,47 @@ def invalidar_cache_reporting(partido):
 # ── Cálculos base sobre filas en memoria ─────────────────────────────────
 
 def _es_punto_local(r):
+    if r['accion'] == 'AJUSTE_MARCADOR':
+        return False
     return (r['accion'] in _ACCIONES_PUNTO_LOCAL and r['calidad'] == '++') or r['accion'] == 'ERROR_RIVAL'
 
 
 def _es_punto_rival(r):
+    if r['accion'] == 'AJUSTE_MARCADOR':
+        return False
     return r['accion'] in ('PUNTO_RIVAL', 'RED') or r['calidad'] == '--'
+
+
+def _delta_ajuste_marcador(r):
+    """(delta_local, delta_rival) para un registro de ajuste manual."""
+    if r['accion'] != 'AJUSTE_MARCADOR':
+        return 0, 0
+    c = r.get('calidad') or ''
+    if c == '++':
+        return 1, 0
+    if c == '+':
+        return -1, 0
+    if c == '--':
+        return 0, 1
+    if c == '-':
+        return 0, -1
+    return 0, 0
 
 
 def calc_set_score(partido, set_num):
     rows = _rows_for(partido, set_num)
-    local = sum(1 for r in rows if _es_punto_local(r))
-    rival = sum(1 for r in rows if _es_punto_rival(r))
-    return local, rival
+    local = rival = 0
+    for r in rows:
+        dl, dr = _delta_ajuste_marcador(r)
+        if dl or dr:
+            local += dl
+            rival += dr
+            continue
+        if _es_punto_local(r):
+            local += 1
+        elif _es_punto_rival(r):
+            rival += 1
+    return max(0, local), max(0, rival)
 
 
 def count_sets_won(partido):

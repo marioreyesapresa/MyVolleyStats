@@ -51,6 +51,16 @@ def _accion_texto(accion, calidad, display):
     el sufijo de calidad, con un icono que la distingue de un fundamento."""
     if accion == 'RED':
         return '🥅 Red (punto rival)'
+    if accion == 'AJUSTE_MARCADOR':
+        if calidad == '++':
+            return '✏️ Ajuste +1 (nosotros)'
+        if calidad == '+':
+            return '✏️ Ajuste −1 (nosotros)'
+        if calidad == '--':
+            return '✏️ Ajuste +1 (rival)'
+        if calidad == '-':
+            return '✏️ Ajuste −1 (rival)'
+        return '✏️ Ajuste marcador'
     return f"{display} {calidad if calidad else ''}".strip()
 
 
@@ -134,9 +144,14 @@ def _validar_rango_zona_modalidad(partido, valor, campo='rotacion_num'):
 
 
 def _historial_set_data(partido, set_num):
-    """Lista de acciones de un set para el panel Acciones / historial avanzado."""
+    """Lista de acciones de un set para el panel Acciones / historial avanzado.
+
+    Excluye AJUSTE_MARCADOR: correcciones del marcador que no deben mezclarse
+    con el historial técnico de scout.
+    """
     historial = (
         RegistroEstadistica.objects.filter(partido=partido, set_numero=set_num)
+        .exclude(accion='AJUSTE_MARCADOR')
         .select_related('jugadora')
         .order_by('-id')[:400]
     )

@@ -720,13 +720,13 @@
         <!-- 4. PESTAÑA: [Score] -->
         <div id="rapido-score-content" class="rapido-tab-content hidden space-y-6">
             <!-- Barra superior rápida -->
-            <div class="flex justify-between items-center bg-[#090d16] p-4 rounded-2xl border border-slate-800 shadow-lg">
+            <div class="flex justify-between items-center bg-[#090d16] p-4 rounded-2xl border border-slate-800 shadow-lg gap-2">
                 <button onclick="confirmarFinalSet()" class="px-6 py-3 bg-white text-black hover:bg-slate-200 font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-md">
                     Finalizar Set
                 </button>
-                <button onclick="eliminarUltimo()" class="px-6 py-3 bg-white text-black hover:bg-slate-200 font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-md">
-                    Deshacer
-                </button>
+                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider text-right leading-snug max-w-[14rem]">
+                    +/− aquí ajusta el marcador sin tocar el historial de Acciones
+                </p>
             </div>
 
             <!-- Marcador Gigante Simétrico -->
@@ -734,10 +734,10 @@
                 <!-- Lado Izquierdo (Verde brillante) -->
                 <div class="bg-emerald-600 rounded-3xl p-4 sm:p-6 flex flex-col justify-between items-center shadow-lg border border-emerald-500 text-white min-w-0">
                     <div class="w-full flex items-center gap-2 min-w-0">
-                        <button onclick="registrar('ERROR_RIVAL', '')" class="flex-1 min-w-0 py-3 sm:py-4 bg-emerald-700/50 hover:bg-emerald-700 border border-emerald-400/30 text-white font-black text-[10px] sm:text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md truncate">
-                            Sumar Punto
+                        <button onclick="ajustarMarcadorManual('local', 1)" class="flex-1 min-w-0 py-3 sm:py-4 bg-emerald-700/50 hover:bg-emerald-700 border border-emerald-400/30 text-white font-black text-[10px] sm:text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md truncate">
+                            + Punto
                         </button>
-                        <button onclick="restarPunto('local')" title="Restar punto (corrección)" class="flex-shrink-0 w-12 sm:w-14 py-3 sm:py-4 bg-black/10 hover:bg-black/25 border border-white/20 text-white/80 hover:text-white font-black text-lg rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center">
+                        <button onclick="ajustarMarcadorManual('local', -1)" title="Restar punto (ajuste manual)" class="flex-shrink-0 w-12 sm:w-14 py-3 sm:py-4 bg-black/10 hover:bg-black/25 border border-white/20 text-white/80 hover:text-white font-black text-lg rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center">
                             −
                         </button>
                     </div>
@@ -748,10 +748,10 @@
                 <!-- Lado Derecho (Rojo apagado) -->
                 <div class="bg-rose-800/80 rounded-3xl p-4 sm:p-6 flex flex-col justify-between items-center shadow-lg border border-rose-700 text-white min-w-0">
                     <div class="w-full flex items-center gap-2 min-w-0">
-                        <button onclick="registrar('PUNTO_RIVAL', '')" class="flex-1 min-w-0 py-3 sm:py-4 bg-rose-900/50 hover:bg-rose-900 border border-rose-500/30 text-white font-black text-[10px] sm:text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md truncate">
-                            Sumar Punto
+                        <button onclick="ajustarMarcadorManual('rival', 1)" class="flex-1 min-w-0 py-3 sm:py-4 bg-rose-900/50 hover:bg-rose-900 border border-rose-500/30 text-white font-black text-[10px] sm:text-sm uppercase tracking-widest rounded-2xl transition-all active:scale-95 shadow-md truncate">
+                            + Punto
                         </button>
-                        <button onclick="restarPunto('rival')" title="Restar punto (corrección)" class="flex-shrink-0 w-12 sm:w-14 py-3 sm:py-4 bg-black/10 hover:bg-black/25 border border-white/20 text-white/80 hover:text-white font-black text-lg rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center">
+                        <button onclick="ajustarMarcadorManual('rival', -1)" title="Restar punto (ajuste manual)" class="flex-shrink-0 w-12 sm:w-14 py-3 sm:py-4 bg-black/10 hover:bg-black/25 border border-white/20 text-white/80 hover:text-white font-black text-lg rounded-2xl transition-all active:scale-95 shadow-md flex items-center justify-center">
                             −
                         </button>
                     </div>
@@ -3147,13 +3147,91 @@
         }
     }
 
-    // ── Corrección manual del marcador (pestaña Marcador): resta el último
-    // punto anotado de un lado concreto, eliminando el registro real que lo
-    // generó para mantener el marcador siempre consistente con la BD.
+    // ── Ajuste manual del marcador (pestaña Marcador) ─────────────────────
+    // Suma/resta puntos SIN tocar el historial técnico de Acciones. Persiste
+    // como AJUSTE_MARCADOR en BD para que el marcador e informes cuadren.
+    async function ajustarMarcadorManual(side, delta) {
+        if (state.partido_finalizado) {
+            showToast('⚠️ El partido está finalizado');
+            return;
+        }
+        if (state.set_finished) {
+            showToast('⚠️ Set finalizado. Reabre el set o pasa al siguiente.');
+            return;
+        }
+        delta = parseInt(delta, 10);
+        if (delta !== 1 && delta !== -1) return;
+
+        if (side === 'local' && delta < 0 && state.marcador.local <= 0) {
+            showToast('⚠️ El marcador local ya está en 0');
+            return;
+        }
+        if (side === 'rival' && delta < 0 && state.marcador.rival <= 0) {
+            showToast('⚠️ El marcador rival ya está en 0');
+            return;
+        }
+
+        let calidad;
+        if (side === 'local') {
+            calidad = delta > 0 ? '++' : '+';
+        } else {
+            calidad = delta > 0 ? '--' : '-';
+        }
+
+        const prevLocal = state.marcador.local;
+        const prevRival = state.marcador.rival;
+        if (side === 'local') state.marcador.local = Math.max(0, state.marcador.local + delta);
+        else state.marcador.rival = Math.max(0, state.marcador.rival + delta);
+        updateUIMarcador();
+        persistMarcadorCache();
+        checkSetEnd(state.marcador.local, state.marcador.rival);
+
+        try {
+            const response = await fetchConReintentos('{% url "stats_app:api_registrar_estadistica" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    partido_id: state.partido_id,
+                    jugadora_id: null,
+                    accion: 'AJUSTE_MARCADOR',
+                    calidad: calidad,
+                    set_numero: state.set_numero,
+                    fase: 'K1',
+                    rotacion_num: state.rotacion_num,
+                    zona: null
+                })
+            });
+            const res = await response.json();
+            if (res.status !== 'ok') {
+                state.marcador.local = prevLocal;
+                state.marcador.rival = prevRival;
+                updateUIMarcador();
+                persistMarcadorCache();
+                showToast('❌ ' + (res.mensaje || 'No se pudo ajustar'));
+                return;
+            }
+            hapticFeedback();
+            showToast(delta > 0
+                ? (side === 'local' ? '➕ Punto local (ajuste)' : '➕ Punto rival (ajuste)')
+                : (side === 'local' ? '➖ Punto local (ajuste)' : '➖ Punto rival (ajuste)'));
+            invalidateIndicadoresCache();
+        } catch (e) {
+            state.marcador.local = prevLocal;
+            state.marcador.rival = prevRival;
+            updateUIMarcador();
+            persistMarcadorCache();
+            showToast('❌ Error de conexión al ajustar');
+        }
+    }
+
+    // ── Corrección borrando acción del historial (pestaña Acciones) ───────
     function restarPunto(side) {
         const item = state.quickHistory.find(h => side === 'local' ? h.esPuntoLocal : h.esPuntoRival);
         if (!item) {
-            showToast('⚠️ No hay puntos que restar');
+            showToast('⚠️ No hay puntos de acciones que restar. Usa − en Marcador para ajuste manual.');
             return;
         }
         eliminarRegistro(item.id);
