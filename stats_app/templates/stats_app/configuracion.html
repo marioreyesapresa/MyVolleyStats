@@ -91,6 +91,60 @@
         </label>
     </section>
 
+    <!-- Sistema táctico (Modo Rápido) -->
+    <section class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-5">
+        <h2 class="text-sm font-black text-amber-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex items-center gap-2">
+            <i data-lucide="layout-grid" class="w-4 h-4"></i>
+            Sistema táctico (Modo Rápido)
+        </h2>
+        <p class="text-xs text-slate-500">
+            En recepción (K1) y defensa (K2) las tarjetas se reordenan según la formación real (no solo la rotación legal).
+            K0 sigue la rotación estática. Minivoley no cambia.
+        </p>
+
+        <div>
+            <span class="text-sm font-bold text-slate-200 block mb-2">Sistema de juego</span>
+            <div class="flex flex-wrap items-center bg-[#090d16] p-1 rounded-xl border border-slate-800 shadow-inner gap-1" id="cfg-sistema-picker">
+                <button type="button" data-sistema="5-1" onclick="setSistemaTactico('5-1')" class="cfg-sistema-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">5-1</button>
+                <button type="button" data-sistema="4-2" onclick="setSistemaTactico('4-2')" class="cfg-sistema-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">4-2</button>
+                <button type="button" data-sistema="6-2" onclick="setSistemaTactico('6-2')" class="cfg-sistema-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">6-2</button>
+                <button type="button" data-sistema="6-0" onclick="setSistemaTactico('6-0')" class="cfg-sistema-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">6-0</button>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-1.5">5-1: Co activa. 4-2: dos Co, coloca la delantera (O recibe). 6-2: dos Co, coloca la zaguera (R solo 1/5/6). K2 igual en todos. 6-0: rotación legal.</p>
+        </div>
+
+        <label class="flex items-center justify-between cursor-pointer gap-4">
+            <div>
+                <span class="text-sm font-bold text-slate-200">Líbero sustituye a la central zaguera</span>
+                <p class="text-[10px] text-slate-500 mt-0.5">Si se desactiva, la central zaguera permanece en el campo visual.</p>
+            </div>
+            <div class="relative flex-shrink-0">
+                <input type="checkbox" id="cfg-libero-sustituye" class="sr-only peer" onchange="setAppPref('voley_pref_libero_sustituye_central', this.checked)">
+                <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+            </div>
+        </label>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <span class="text-sm font-bold text-slate-200 block mb-2">Líbero en recepción (K1)</span>
+                <div class="flex items-center bg-[#090d16] p-1 rounded-xl border border-slate-800 shadow-inner">
+                    <button type="button" id="cfg-libero-k1-1" onclick="setLiberoFase('k1', '1')" class="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">L1</button>
+                    <button type="button" id="cfg-libero-k1-2" onclick="setLiberoFase('k1', '2')" class="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">L2</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1.5">Recibe y también defiende en transiciones desde K1.</p>
+            </div>
+            <div>
+                <span class="text-sm font-bold text-slate-200 block mb-2">Líbero en defensa (K0)</span>
+                <div class="flex items-center bg-[#090d16] p-1 rounded-xl border border-slate-800 shadow-inner">
+                    <button type="button" id="cfg-libero-k2-1" onclick="setLiberoFase('k2', '1')" class="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">L1</button>
+                    <button type="button" id="cfg-libero-k2-2" onclick="setLiberoFase('k2', '2')" class="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">L2</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1.5">Entra en K2 tras nuestro saque (complejo de breakpoint).</p>
+            </div>
+        </div>
+    </section>
+
     <!-- Interfaz -->
     <section class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
         <h2 class="text-sm font-black text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex items-center gap-2">
@@ -181,6 +235,34 @@
         syncScoutDefaultButtons(modo);
     }
 
+    function syncSistemaButtons(sistema) {
+        const active = 'cfg-sistema-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all bg-amber-600 text-white shadow-md';
+        const inactive = 'cfg-sistema-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all text-slate-400 hover:text-white';
+        document.querySelectorAll('.cfg-sistema-btn').forEach(btn => {
+            btn.className = btn.dataset.sistema === sistema ? active : inactive;
+        });
+    }
+
+    function setSistemaTactico(sistema) {
+        localStorage.setItem('voley_pref_sistema_tactico', sistema);
+        syncSistemaButtons(sistema);
+    }
+
+    function syncLiberoFaseButtons(fase, val) {
+        const active = 'flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all bg-amber-600 text-white shadow-md';
+        const inactive = 'flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all text-slate-400 hover:text-white';
+        const b1 = document.getElementById(`cfg-libero-${fase}-1`);
+        const b2 = document.getElementById(`cfg-libero-${fase}-2`);
+        if (b1) b1.className = val === '1' ? active : inactive;
+        if (b2) b2.className = val === '2' ? active : inactive;
+    }
+
+    function setLiberoFase(fase, num) {
+        const key = fase === 'k1' ? 'voley_pref_libero_recepcion' : 'voley_pref_libero_defensa';
+        localStorage.setItem(key, num);
+        syncLiberoFaseButtons(fase, num);
+    }
+
     function setSidebarDefault(collapsed) {
         localStorage.setItem('voley_sidebar_collapsed_default', collapsed ? '1' : '0');
         if (window.VoleySidebar) window.VoleySidebar.apply(collapsed);
@@ -196,6 +278,13 @@
 
         const scoutDefault = localStorage.getItem('voley_modo_scout_default') || 'rapido';
         syncScoutDefaultButtons(scoutDefault);
+
+        const sistema = localStorage.getItem('voley_pref_sistema_tactico') || '5-1';
+        syncSistemaButtons(sistema);
+
+        document.getElementById('cfg-libero-sustituye').checked = getBoolPref('voley_pref_libero_sustituye_central', true);
+        syncLiberoFaseButtons('k1', localStorage.getItem('voley_pref_libero_recepcion') || '1');
+        syncLiberoFaseButtons('k2', localStorage.getItem('voley_pref_libero_defensa') || '1');
 
         const sidebarDefault = localStorage.getItem('voley_sidebar_collapsed_default');
         document.getElementById('cfg-sidebar-collapsed').checked = sidebarDefault === '1';

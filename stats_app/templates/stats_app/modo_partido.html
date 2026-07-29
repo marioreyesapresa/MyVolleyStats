@@ -269,6 +269,37 @@
                         </div>
                     </div>
                 </div>
+                <!-- Colocadoras (roles según sistema 5-1 / 4-2 / 6-2) -->
+                <div class="bg-[#0d1117] rounded-2xl p-4 border border-amber-500/30 space-y-2" id="pizarra-colocadoras-box">
+                    <label class="text-[9px] font-black text-amber-400 uppercase tracking-widest block" id="pizarra-colocadoras-label">
+                        Colocadora activa (roles 5-1)
+                    </label>
+                    <p class="text-[8px] text-slate-500 leading-snug" id="pizarra-colocadoras-help">
+                        Quién es la Co en pista para R1/R2/C1/C2/O. Cámbiala en dobles cambios o si una colocadora juega de opuesta.
+                    </p>
+                    <div id="wrap-co-single-pizarra">
+                        <select id="select-colocadora-activa-pizarra" onchange="setColocadoraActiva(this.value)"
+                            class="w-full bg-[#121824] border border-amber-500/40 text-white text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-400">
+                            <option value="">Auto (plantilla)</option>
+                        </select>
+                    </div>
+                    <div id="wrap-co-par-pizarra" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <span class="text-[8px] font-black text-slate-400 uppercase">Colocadora A</span>
+                            <select id="select-colocadora-par-a-pizarra" onchange="setColocadoraPar('A', this.value)"
+                                class="w-full mt-1 bg-[#121824] border border-amber-500/40 text-white text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-400">
+                                <option value="">Auto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <span class="text-[8px] font-black text-slate-400 uppercase">Colocadora B</span>
+                            <select id="select-colocadora-par-b-pizarra" onchange="setColocadoraPar('B', this.value)"
+                                class="w-full mt-1 bg-[#121824] border border-amber-500/40 text-white text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-400">
+                                <option value="">Auto</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -672,12 +703,10 @@
                 </button>
             </div>
 
-            <!-- Líberos: dos rectángulos (izq / der) encima del campo -->
-            <div id="libero-quick-bar" class="flex-shrink-0 hidden grid grid-cols-2 gap-2"></div>
-
             <!-- Contenedor del Grid Dinámico de Zonas del Campo (Poblado por JS).
                  flex-shrink-0: tamaño natural siempre completo, incluida la fila
-                 de zonas zagueras (5/6/1), que son las que más se usan. -->
+                 de zonas zagueras (5/6/1), que son las que más se usan.
+                 El líbero va dentro del grid en K1/K2 (sustituye central zaguera). -->
             <div id="gameplay-grid-container" class="flex-shrink-0">
                 <!-- Poblado dinámicamente por renderGameplayGrid() -->
             </div>
@@ -906,6 +935,80 @@
                     <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
                 </div>
             </label>
+        </div>
+
+        <!-- Sistema táctico (layout dinámico K1/K2) -->
+        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-5">
+            <h3 class="text-sm font-black text-amber-400 uppercase tracking-widest border-b border-slate-800 pb-2">Sistema táctico</h3>
+            <p class="text-[10px] text-slate-500 font-bold">K1 = recepción · K2 = defensa (especialidad). K0 = rotación legal. Minivoley sin cambios.</p>
+
+            <div>
+                <span class="text-xs font-bold text-slate-300 block mb-2">Sistema de juego</span>
+                <div class="flex flex-wrap gap-1 bg-[#090d16] p-1 rounded-xl border border-slate-800">
+                    <button type="button" id="btn-sistema-5-1" onclick="setSistemaTacticoPref('5-1')" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">5-1</button>
+                    <button type="button" id="btn-sistema-4-2" onclick="setSistemaTacticoPref('4-2')" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">4-2</button>
+                    <button type="button" id="btn-sistema-6-2" onclick="setSistemaTacticoPref('6-2')" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">6-2</button>
+                    <button type="button" id="btn-sistema-6-0" onclick="setSistemaTacticoPref('6-0')" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">6-0</button>
+                </div>
+            </div>
+
+            <label class="flex items-center justify-between cursor-pointer gap-4">
+                <span class="text-xs font-bold text-slate-300">Líbero sustituye central zaguera</span>
+                <div class="relative flex-shrink-0">
+                    <input type="checkbox" id="toggle-libero-sustituye" class="sr-only peer" onchange="togglePref('liberoSustituyeCentral', 'voley_pref_libero_sustituye_central', this.checked); if (state.modo_scout === 'rapido') renderGameplayGrid();">
+                    <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                    <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+                </div>
+            </label>
+
+            <div>
+                <span class="text-xs font-bold text-slate-300 block mb-2" id="ajustes-colocadoras-label">Colocadora activa (roles 5-1)</span>
+                <div id="wrap-co-single-ajustes">
+                    <select id="select-colocadora-activa" onchange="setColocadoraActiva(this.value)"
+                        class="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2.5 text-white text-xs font-bold focus:outline-none focus:border-amber-500">
+                        <option value="">Auto (plantilla)</option>
+                    </select>
+                    <p class="text-[9px] text-slate-500 mt-1.5" id="ajustes-colocadoras-help">
+                        Define quién es la Co en pista para calcular R1/R2/C1/C2/O.
+                    </p>
+                </div>
+                <div id="wrap-co-par-ajustes" class="hidden grid grid-cols-2 gap-2">
+                    <div>
+                        <span class="text-[8px] font-black text-slate-400 uppercase">Colocadora A</span>
+                        <select id="select-colocadora-par-a" onchange="setColocadoraPar('A', this.value)"
+                            class="w-full mt-1 bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2.5 text-white text-xs font-bold focus:outline-none focus:border-amber-500">
+                            <option value="">Auto</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-[8px] font-black text-slate-400 uppercase">Colocadora B</span>
+                        <select id="select-colocadora-par-b" onchange="setColocadoraPar('B', this.value)"
+                            class="w-full mt-1 bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2.5 text-white text-xs font-bold focus:outline-none focus:border-amber-500">
+                            <option value="">Auto</option>
+                        </select>
+                    </div>
+                    <p class="text-[9px] text-slate-500 col-span-2">4-2: coloca la delantera. 6-2: coloca la zaguera (R solo 1/5/6).</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <span class="text-xs font-bold text-slate-300 block mb-2">Líbero recepción (K1)</span>
+                    <div class="flex bg-[#090d16] p-1 rounded-xl border border-slate-800">
+                        <button type="button" id="btn-libero-k1-1" onclick="setLiberoFasePref('recepcion', '1')" class="flex-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all">L1</button>
+                        <button type="button" id="btn-libero-k1-2" onclick="setLiberoFasePref('recepcion', '2')" class="flex-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all">L2</button>
+                    </div>
+                    <p class="text-[9px] text-slate-500 mt-1">También defiende tras recepción</p>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-slate-300 block mb-2">Líbero defensa (K0)</span>
+                    <div class="flex bg-[#090d16] p-1 rounded-xl border border-slate-800">
+                        <button type="button" id="btn-libero-k2-1" onclick="setLiberoFasePref('defensa', '1')" class="flex-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all">L1</button>
+                        <button type="button" id="btn-libero-k2-2" onclick="setLiberoFasePref('defensa', '2')" class="flex-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all">L2</button>
+                    </div>
+                    <p class="text-[9px] text-slate-500 mt-1">Tras nuestro saque → K2</p>
+                </div>
+            </div>
         </div>
 
         <!-- Otras Acciones -->
@@ -1506,6 +1609,17 @@
         // ── Fases de juego (K0=Saque propio, K1=Recepción, K2=Defensa) ──
         fase_actual: 'K1',   // default: start receiving (rival serves first)
         tenemos_saque: false, // true when we are serving
+        // Si la central acaba de sacar, el líbero no entra en esa misma jugada (K2).
+        liberoExcluidoPorSaqueCentral: false,
+        // Qué líbero está activa en la jugada actual:
+        // 'recepcion' = L de recepción (K1 y transiciones K1→K2; también defiende)
+        // 'defensa'   = L de defensa (K0 y transiciones K0→K2)
+        liberoContexto: 'recepcion',
+        // Colocadora(s) que definen el sistema en pista.
+        // 5-1: colocadoraActivaId (una). 4-2/6-2: par A+B.
+        colocadoraActivaId: null,
+        colocadoraParIdA: null,
+        colocadoraParIdB: null,
         rotacion_num: 1,       // current rotation (R1-R6 for VOLEY, R1-R4 for MINIVOLEY)
         partido_finalizado: {% if partido.finalizado %}true{% else %}false{% endif %},
         modo_scout: 'rapido',   // default scouting mode: rapido
@@ -1515,7 +1629,12 @@
         prefs: {
             autoRotacion: true,       // rota automáticamente al ganar el saque (side-out)
             vibracion: true,          // feedback háptico al registrar acciones (si el dispositivo lo soporta)
-            confirmarBorrado: true    // pedir confirmación antes de deshacer / restar punto
+            confirmarBorrado: true,   // pedir confirmación antes de deshacer / restar punto
+            // Sistema táctico Modo Rápido (localStorage global)
+            sistemaTactico: '5-1',    // '5-1' | '4-2' | '6-2' | '6-0'
+            liberoSustituyeCentral: true,
+            liberoRecepcion: '1',     // L1 o L2 en K1
+            liberoDefensa: '1'        // L1 o L2 en K2 (reservado)
         },
         // ── Reglas del set (editable desde Ajustes) ─────────────────────
         reglas: {
@@ -1572,12 +1691,28 @@
         state.prefs.autoRotacion     = getBool('voley_pref_auto_rotacion', true);
         state.prefs.vibracion        = getBool('voley_pref_vibracion', true);
         state.prefs.confirmarBorrado = getBool('voley_pref_confirmar_borrado', true);
+        state.prefs.liberoSustituyeCentral = getBool('voley_pref_libero_sustituye_central', true);
+
+        const sistema = localStorage.getItem('voley_pref_sistema_tactico') || '5-1';
+        state.prefs.sistemaTactico = ['5-1', '4-2', '6-2', '6-0'].includes(sistema) ? sistema : '5-1';
+
+        const libK1 = localStorage.getItem('voley_pref_libero_recepcion') || '1';
+        const libK2 = localStorage.getItem('voley_pref_libero_defensa') || '1';
+        state.prefs.liberoRecepcion = (libK1 === '2') ? '2' : '1';
+        state.prefs.liberoDefensa = (libK2 === '2') ? '2' : '1';
 
         const savedModo = localStorage.getItem(`voley_modo_scout_${state.partido_id}`)
             || localStorage.getItem('voley_modo_scout_default');
         if (savedModo === 'rapido' || savedModo === 'avanzado') {
             state.modo_scout = savedModo;
         }
+
+        const savedCo = localStorage.getItem(`partido_${state.partido_id}_colocadora_activa`);
+        state.colocadoraActivaId = savedCo ? String(savedCo) : null;
+        const savedCoA = localStorage.getItem(`partido_${state.partido_id}_colocadora_par_a`);
+        const savedCoB = localStorage.getItem(`partido_${state.partido_id}_colocadora_par_b`);
+        state.colocadoraParIdA = savedCoA ? String(savedCoA) : null;
+        state.colocadoraParIdB = savedCoB ? String(savedCoB) : null;
     }
 
     function setPref(key, value) {
@@ -2396,6 +2531,7 @@
             }
         }
         if (window.lucide) lucide.createIcons();
+        syncColocadoraActivaSelect();
     }
 
     function drawBenchPlayers() {
@@ -2556,13 +2692,16 @@
     // ── Selector de estado inicial K0/K1 ────────────────────────────────
     function selectEstadoInicial(estado) {
         selectedEstadoInicial = estado;
+        state.liberoExcluidoPorSaqueCentral = false;
         // Actualiza el estado del scout inmediatamente
         if (estado === 'K0') {
             state.fase_actual   = 'K0';
             state.tenemos_saque = true;
+            state.liberoContexto = 'defensa';
         } else {
             state.fase_actual   = 'K1';
             state.tenemos_saque = false;
+            state.liberoContexto = 'recepcion';
         }
         updateFaseIndicator();
         // Estilos visuales del selector
@@ -2651,14 +2790,14 @@
                 if (esPrimerSexteto) {
                     saveRotacionInicial(selectedRotInit);
                     saveRotacionActual(selectedRotInit);
-                } else {
-                    saveRotacionActual(state.rotacion_num);
                 }
+                await loadRotation();
+                // Tras doble cambio / Co activa: R = zona de la colocadora
+                syncRotacionConColocadora();
+                const rotLabel = `R${state.rotacion_num}`;
                 const estadoLabel = selectedEstadoInicial === 'K0' ? 'Saque (K0)' : 'Recepción (K1)';
-                const rotLabel = esPrimerSexteto ? `R${selectedRotInit}` : `R${state.rotacion_num} (sin cambiar)`;
                 volverAlScoutTrasGuardar = false;
                 showToast(irAlScout ? '✅ Alineación guardada — volviendo al scout' : `✅ Alineación guardada — ${rotLabel} — ${estadoLabel}`);
-                await loadRotation();
                 if (irAlScout) {
                     volverAlScoutActivo();
                 }
@@ -2757,7 +2896,9 @@
         
         // 2. Desplazar las posiciones locales en el frontend
         shiftRotationLocally(dir);
-        
+        // 6-2: R solo 1/5/6 — remapear tras el giro
+        syncRotacionConColocadora({ silent: true });
+
         // 3. Repintar la interfaz en caliente
         updateRotBadge();
         updateUIHeader();
@@ -2839,7 +2980,9 @@
         
         // 2. Desplazar las posiciones locales en el frontend
         shiftRotationLocally('horario');
-        
+        // 6-2: R solo 1/5/6 — remapear tras side-out
+        syncRotacionConColocadora({ silent: true });
+
         // 3. Repintar la interfaz en caliente
         updateRotBadge();
         updateUIHeader();
@@ -2947,12 +3090,17 @@
                 const esPuntoNuestro    = (calidad === '++') || (accion === 'ERROR_RIVAL');
                 const esPuntoRival      = (calidad === '--') || (accion === 'PUNTO_RIVAL');
                 const esAccionIntermedia = !esPuntoNuestro && !esPuntoRival;
+                const faseAntes = state.fase_actual;
+                const saqueCentralActivo = state.tenemos_saque
+                    && getPlayerPosicion(getRotPlayer(1)) === 'CENTRAL';
 
                 if (esPuntoNuestro) {
+                    state.liberoExcluidoPorSaqueCentral = false;
                     if (!state.tenemos_saque) {
                         // Side-out ganado: rotamos y pasamos a K0
                         state.tenemos_saque = true;
                         state.fase_actual   = 'K0';
+                        state.liberoContexto = 'defensa';
                         if (state.prefs.autoRotacion) {
                             await autoRotarSideOut();
                         } else {
@@ -2961,22 +3109,32 @@
                     } else {
                         // Punto con saque propio: mantenemos K0
                         state.fase_actual = 'K0';
+                        state.liberoContexto = 'defensa';
                     }
                 } else if (esPuntoRival) {
                     // Side-out perdido o error con saque propio → rival saca → K1
+                    state.liberoExcluidoPorSaqueCentral = false;
                     state.tenemos_saque = false;
                     state.fase_actual   = 'K1';
+                    state.liberoContexto = 'recepcion';
                 } else if (esAccionIntermedia) {
                     // Rally continúa: avanzar fase si aplica
-                    if (accion === 'RECEPCION' && (calidad === '++' || calidad === '+' || calidad === '=')) {
-                        // Recepción exitosa → siguiente acción será ataque K1 (o K2 en modo rápido)
-                        state.fase_actual = (state.modo_scout === 'rapido') ? 'K2' : 'K1';
-                    } else if (accion === 'DEFENSA' && (calidad === '++' || calidad === '+')) {
-                        // Defensa positiva → contra-ataque K2
-                        state.fase_actual = 'K2';
-                    }
-                    // SAQUE positivo (+) o neutral (=) → rival recibe → podemos entrar a K2
+                    // liberoContexto NO cambia en K0→K2 ni K1→K2:
+                    // - desde K0: sigue la de defensa
+                    // - desde K1: sigue la de recepción (también defiende)
                     if (accion === 'SAQUE' && (calidad === '+' || calidad === '=')) {
+                        state.liberoExcluidoPorSaqueCentral = saqueCentralActivo;
+                        state.fase_actual = 'K2';
+                    } else if (accion === 'RECEPCION' && (calidad === '++' || calidad === '+' || calidad === '=')) {
+                        state.liberoExcluidoPorSaqueCentral = false;
+                        state.fase_actual = 'K2';
+                    } else if (accion === 'DEFENSA' && (calidad === '++' || calidad === '+' || calidad === '=')) {
+                        if (faseAntes === 'K0' && saqueCentralActivo) {
+                            state.liberoExcluidoPorSaqueCentral = true;
+                        }
+                        state.fase_actual = 'K2';
+                    } else if (faseAntes === 'K0' && state.tenemos_saque) {
+                        state.liberoExcluidoPorSaqueCentral = saqueCentralActivo;
                         state.fase_actual = 'K2';
                     }
                 }
@@ -4414,9 +4572,15 @@
         const toggleAutoRot = document.getElementById('toggle-auto-rotacion');
         const toggleVibracion = document.getElementById('toggle-vibracion');
         const toggleConfirmar = document.getElementById('toggle-confirmar-borrado');
+        const toggleLiberoSust = document.getElementById('toggle-libero-sustituye');
         if (toggleAutoRot) toggleAutoRot.checked = state.prefs.autoRotacion;
         if (toggleVibracion) toggleVibracion.checked = state.prefs.vibracion;
         if (toggleConfirmar) toggleConfirmar.checked = state.prefs.confirmarBorrado;
+        if (toggleLiberoSust) toggleLiberoSust.checked = state.prefs.liberoSustituyeCentral;
+
+        syncSistemaTacticoButtons();
+        syncLiberoFaseButtons();
+        syncColocadoraActivaSelect();
 
         const inputPuntosSet = document.getElementById('input-puntos-set');
         const inputPuntosDecisivo = document.getElementById('input-puntos-set-decisivo');
@@ -4430,6 +4594,306 @@
         state.prefs[prefKey] = checked;
         setPref(storageKey, checked);
         showToast(checked ? '✅ Preferencia activada' : '⛔ Preferencia desactivada');
+    }
+
+    function syncSistemaTacticoButtons() {
+        const active = 'px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all bg-amber-600 text-white shadow-md';
+        const inactive = 'px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all text-slate-400 hover:text-white';
+        ['5-1', '4-2', '6-2', '6-0'].forEach(s => {
+            const btn = document.getElementById(`btn-sistema-${s}`);
+            if (btn) btn.className = state.prefs.sistemaTactico === s ? active : inactive;
+        });
+    }
+
+    function setSistemaTacticoPref(sistema) {
+        if (!['5-1', '4-2', '6-2', '6-0'].includes(sistema)) return;
+        state.prefs.sistemaTactico = sistema;
+        localStorage.setItem('voley_pref_sistema_tactico', sistema);
+        syncSistemaTacticoButtons();
+        syncColocadoraActivaSelect();
+        syncRotacionConColocadora({ silent: true });
+        if (state.modo_scout === 'rapido') renderGameplayGrid();
+        else renderBotonerasAcciones();
+        showToast(`Sistema ${sistema}`);
+    }
+
+    function syncLiberoFaseButtons() {
+        const active = 'flex-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all bg-amber-600 text-white shadow-md';
+        const inactive = 'flex-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all text-slate-400 hover:text-white';
+        const k1 = state.prefs.liberoRecepcion;
+        const k2 = state.prefs.liberoDefensa;
+        const b11 = document.getElementById('btn-libero-k1-1');
+        const b12 = document.getElementById('btn-libero-k1-2');
+        const b21 = document.getElementById('btn-libero-k2-1');
+        const b22 = document.getElementById('btn-libero-k2-2');
+        if (b11) b11.className = k1 === '1' ? active : inactive;
+        if (b12) b12.className = k1 === '2' ? active : inactive;
+        if (b21) b21.className = k2 === '1' ? active : inactive;
+        if (b22) b22.className = k2 === '2' ? active : inactive;
+    }
+
+    function setLiberoFasePref(fase, num) {
+        const n = (num === '2') ? '2' : '1';
+        if (fase === 'recepcion') {
+            state.prefs.liberoRecepcion = n;
+            localStorage.setItem('voley_pref_libero_recepcion', n);
+        } else {
+            state.prefs.liberoDefensa = n;
+            localStorage.setItem('voley_pref_libero_defensa', n);
+        }
+        syncLiberoFaseButtons();
+        if (state.modo_scout === 'rapido') renderGameplayGrid();
+        showToast(`Líbero ${fase === 'recepcion' ? 'K1' : 'K2'}: L${n}`);
+    }
+
+    function colocadoraActivaStorageKey() {
+        return `partido_${state.partido_id}_colocadora_activa`;
+    }
+    function colocadoraParStorageKey(which) {
+        return `partido_${state.partido_id}_colocadora_par_${which === 'A' ? 'a' : 'b'}`;
+    }
+
+    function usesColocadoraPar() {
+        const s = state.prefs.sistemaTactico || '5-1';
+        return s === '4-2' || s === '6-2';
+    }
+
+    /** Jugadoras en pista (pos1–6) para elegir Co activa. */
+    function getOnCourtPlayers() {
+        const maxZ = MODALIDAD.toUpperCase() === 'MINIVOLEY' ? 4 : 6;
+        const out = [];
+        const source = state.rotation || null;
+        for (let z = 1; z <= maxZ; z++) {
+            let p = null;
+            if (source && source[`pos${z}`]) {
+                p = source[`pos${z}`];
+            } else if (tempLineup[`pos${z}`]) {
+                const id = tempLineup[`pos${z}`];
+                const pj = allJugadoras.find(x => String(x.id) === String(id));
+                if (pj) p = { id: pj.id, dorsal: pj.dorsal };
+            }
+            if (!p) continue;
+            const pj = allJugadoras.find(x => String(x.id) === String(p.id));
+            out.push({
+                id: String(p.id),
+                dorsal: p.dorsal,
+                nombre: pj ? pj.nombre : 'Jugadora',
+                posicion: pj && pj.posicion ? String(pj.posicion).toUpperCase() : '',
+                zone: z,
+            });
+        }
+        return out;
+    }
+
+    function syncColocadoraActivaSelect() {
+        const onCourt = getOnCourtPlayers();
+        const par = usesColocadoraPar();
+
+        document.querySelectorAll('#wrap-co-single-pizarra, #wrap-co-single-ajustes').forEach(el => {
+            el.classList.toggle('hidden', par);
+        });
+        document.querySelectorAll('#wrap-co-par-pizarra, #wrap-co-par-ajustes').forEach(el => {
+            el.classList.toggle('hidden', !par);
+        });
+
+        const label = par
+            ? `Colocadoras (sistema ${state.prefs.sistemaTactico})`
+            : 'Colocadora activa (roles 5-1)';
+        const help = par
+            ? (state.prefs.sistemaTactico === '4-2'
+                ? 'Elige las dos Co. Coloca la que esté delantera; la otra actúa de opuesta y SÍ recibe.'
+                : 'Elige las dos Co. Coloca la zaguera; la delantera es opuesta. R solo 1 / 5 / 6.')
+            : 'Quién es la Co en pista para R1/R2/C1/C2/O.';
+        ['pizarra-colocadoras-label', 'ajustes-colocadoras-label'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = label;
+        });
+        ['pizarra-colocadoras-help', 'ajustes-colocadoras-help'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = help;
+        });
+
+        const fillSelect = (sel, value) => {
+            if (!sel) return;
+            let html = `<option value="">Auto</option>`;
+            onCourt.forEach(p => {
+                const tag = p.posicion ? ` · ${p.posicion.charAt(0)}${p.posicion.slice(1).toLowerCase()}` : '';
+                html += `<option value="${p.id}">#${p.dorsal} ${p.nombre}${tag}</option>`;
+            });
+            sel.innerHTML = html;
+            const v = value && onCourt.some(p => p.id === value) ? value : '';
+            sel.value = v;
+        };
+
+        if (!par) {
+            const cur = state.colocadoraActivaId ? String(state.colocadoraActivaId) : '';
+            if (cur && !onCourt.some(p => p.id === cur)) {
+                state.colocadoraActivaId = null;
+                localStorage.removeItem(colocadoraActivaStorageKey());
+            }
+            fillSelect(document.getElementById('select-colocadora-activa'), state.colocadoraActivaId);
+            fillSelect(document.getElementById('select-colocadora-activa-pizarra'), state.colocadoraActivaId);
+            return;
+        }
+
+        ['A', 'B'].forEach(which => {
+            const key = which === 'A' ? 'colocadoraParIdA' : 'colocadoraParIdB';
+            const cur = state[key] ? String(state[key]) : '';
+            if (cur && !onCourt.some(p => p.id === cur)) {
+                state[key] = null;
+                localStorage.removeItem(colocadoraParStorageKey(which));
+            }
+            const val = state[key] ? String(state[key]) : '';
+            fillSelect(document.getElementById(`select-colocadora-par-${which === 'A' ? 'a' : 'b'}`), val);
+            fillSelect(document.getElementById(`select-colocadora-par-${which === 'A' ? 'a' : 'b'}-pizarra`), val);
+        });
+    }
+
+    function setColocadoraActiva(id) {
+        if (!id) {
+            state.colocadoraActivaId = null;
+            localStorage.removeItem(colocadoraActivaStorageKey());
+            syncColocadoraActivaSelect();
+            syncRotacionConColocadora({ silent: true });
+            showToast('Colocadora: auto (plantilla)');
+        } else {
+            state.colocadoraActivaId = String(id);
+            localStorage.setItem(colocadoraActivaStorageKey(), String(id));
+            syncColocadoraActivaSelect();
+            const rAntes = parseInt(state.rotacion_num, 10);
+            syncRotacionConColocadora({ silent: true });
+            const rAhora = parseInt(state.rotacion_num, 10);
+            const p = getOnCourtPlayers().find(x => x.id === String(id));
+            const name = p ? `#${p.dorsal} ${p.nombre}` : 'Co';
+            showToast(rAhora !== rAntes ? `Co activa: ${name} · R${rAhora}` : `Co activa: ${name}`);
+        }
+        if (state.modo_scout === 'rapido') renderGameplayGrid();
+        else renderBotonerasAcciones();
+    }
+
+    function setColocadoraPar(which, id) {
+        const key = which === 'A' ? 'colocadoraParIdA' : 'colocadoraParIdB';
+        if (!id) {
+            state[key] = null;
+            localStorage.removeItem(colocadoraParStorageKey(which));
+        } else {
+            state[key] = String(id);
+            localStorage.setItem(colocadoraParStorageKey(which), String(id));
+            // Evitar la misma en A y B
+            const otherKey = which === 'A' ? 'colocadoraParIdB' : 'colocadoraParIdA';
+            if (state[otherKey] && String(state[otherKey]) === String(id)) {
+                state[otherKey] = null;
+                localStorage.removeItem(colocadoraParStorageKey(which === 'A' ? 'B' : 'A'));
+            }
+        }
+        syncColocadoraActivaSelect();
+        const rAntes = parseInt(state.rotacion_num, 10);
+        syncRotacionConColocadora({ silent: true });
+        const rAhora = parseInt(state.rotacion_num, 10);
+        showToast(rAhora !== rAntes
+            ? `Par Co actualizado · R${rAhora}`
+            : `Colocadora ${which} actualizada`);
+        if (state.modo_scout === 'rapido') renderGameplayGrid();
+        else renderBotonerasAcciones();
+    }
+
+    /**
+     * En 5-1 / 4-2 / 6-2, R en juego = zona de quien COLOCA ahora.
+     * 6-2: solo R1/R5/R6 (colocadora zaguera).
+     */
+    function syncRotacionConColocadora(opts) {
+        if (MODALIDAD.toUpperCase() === 'MINIVOLEY') return;
+        const sistema = state.prefs.sistemaTactico || '5-1';
+        if (sistema === '6-0') return;
+        const z = resolveSettingZone();
+        if (!z) return;
+        if (parseInt(state.rotacion_num, 10) !== z) {
+            saveRotacionActual(z);
+            if (!(opts && opts.silent)) showToast(`Rotación actualizada: R${z}`);
+        } else {
+            updateRotBadge();
+        }
+    }
+
+    function playerIdInCourtZone(z) {
+        const p = getRotPlayer(z);
+        if (p && p.id != null && p.id !== '') return String(p.id);
+        if (tempLineup[`pos${z}`]) return String(tempLineup[`pos${z}`]);
+        return null;
+    }
+
+    /** IDs del par de colocadoras (explícito o auto plantilla). */
+    function getColocadoraParIds() {
+        const onCourt = getOnCourtPlayers();
+        const explicit = [state.colocadoraParIdA, state.colocadoraParIdB]
+            .filter(Boolean)
+            .map(String)
+            .filter(id => onCourt.some(p => p.id === id));
+        if (explicit.length >= 2) return explicit.slice(0, 2);
+        if (explicit.length === 1) {
+            const plantilla = onCourt
+                .filter(p => p.posicion === 'COLOCADORA' && p.id !== explicit[0])
+                .map(p => p.id);
+            return plantilla.length ? [explicit[0], plantilla[0]] : explicit;
+        }
+        const fromPlantilla = onCourt.filter(p => p.posicion === 'COLOCADORA').map(p => p.id);
+        return fromPlantilla.slice(0, 2);
+    }
+
+    /**
+     * Zona de quien coloca ahora según el sistema.
+     * 5-1: Co activa / plantilla.
+     * 4-2: la del par que esté delantera.
+     * 6-2: la del par que esté zaguera (remap a 1/5/6).
+     */
+    function resolveSettingZone() {
+        const maxZ = MODALIDAD.toUpperCase() === 'MINIVOLEY' ? 4 : 6;
+        const sistema = state.prefs.sistemaTactico || '5-1';
+
+        const zoneOfId = (id) => {
+            if (!id) return null;
+            for (let z = 1; z <= maxZ; z++) {
+                if (playerIdInCourtZone(z) === String(id)) return z;
+            }
+            return null;
+        };
+
+        if (sistema === '4-2' || sistema === '6-2') {
+            const ids = getColocadoraParIds();
+            const zones = ids.map(id => ({ id, zone: zoneOfId(id) })).filter(x => x.zone);
+            if (!zones.length) return null;
+            if (sistema === '4-2') {
+                const front = zones.filter(x => [2, 3, 4].includes(x.zone));
+                return (front[0] || zones[0]).zone;
+            }
+            // 6-2: zaguera
+            const back = zones.filter(x => [1, 5, 6].includes(x.zone));
+            if (back.length) return back[0].zone;
+            // Remap: si ambas/delantera, la opuesta (+3) debería ser la zaguera
+            const z = zones[0].zone;
+            const opposite = zoneSteps(z, 3);
+            if ([1, 5, 6].includes(opposite)) return opposite;
+            // Fallback: mapear 2→1, 3→6, 4→5
+            const remap = { 2: 1, 3: 6, 4: 5 };
+            return remap[z] || z;
+        }
+
+        // 5-1
+        if (state.colocadoraActivaId) {
+            const z = zoneOfId(state.colocadoraActivaId);
+            if (z) return z;
+        }
+        for (let z = 1; z <= maxZ; z++) {
+            const id = playerIdInCourtZone(z);
+            if (!id) continue;
+            if (getPlayerPosicion({ id }) === 'COLOCADORA') return z;
+        }
+        return null;
+    }
+
+    /** @deprecated alias — usar resolveSettingZone */
+    function findColocadoraZone() {
+        return resolveSettingZone();
     }
 
     // ── Notas de partido (pestaña Notas) ───────────────────────────────────
@@ -4702,98 +5166,321 @@
         registrar(accion, calidad);
     }
 
-    function getLiberosForGameplay() {
-        if (!PERMITE_LIBERO || !state.rotation) return { l1: null, l2: null };
-        const mk = (n) => {
-            const lib = state.rotation[`libero${n}`];
-            if (!lib) return null;
-            const pj = allJugadoras.find(x => String(x.id) === String(lib.id));
-            return { n, id: lib.id, dorsal: lib.dorsal, nombre: pj ? pj.nombre : `L${n}` };
-        };
-        return { l1: mk(1), l2: mk(2) };
+    // ── Layout dinámico Modo Rápido (5-1 / 4-2 / 6-2) ─────────────────────
+    // K0: rotación legal; líbero de defensa si no saca la central.
+    // K1: formación recepción (4-2: la O también recibe).
+    // K2: especialidad igual en todos (R4/R6, C3, L5, Co/O en 2·1).
+    // 6-2: coloca la zaguera → R solo 1/5/6.
+
+    function nextZone(z) {
+        return z === 6 ? 1 : z + 1;
     }
 
-    function buildLiberoBarCardHtml(lib) {
-        if (!lib) {
-            return `<div class="rounded-xl border border-dashed border-slate-800/60 bg-slate-900/20 min-h-[4.5rem]"></div>`;
-        }
-        // Mismo criterio de "Volumen Rápido" que las tarjetas de zona: un solo
-        // toque para la acción final (Recepción/Defensa según la fase, o su
-        // error), sin niveles intermedios de calidad.
-        const esRecepcion = state.fase_actual === 'K1';
-        const volumenAccion = esRecepcion ? 'RECEPCION' : 'DEFENSA';
-        const volumenLabel = esRecepcion ? 'Recepción' : 'Defensa';
-        const volumenLabelError = esRecepcion ? 'Error Recepción' : 'Error Defensa';
-        const btnSm = 'gameplay-action-btn';
-        return `
-            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-2 py-1.5 flex flex-col gap-1.5 min-w-0">
-                <div class="flex items-center gap-2 border-b border-amber-500/20 pb-1 min-w-0">
-                    <div class="flex-shrink-0 text-center w-10 sm:w-12">
-                        <span class="text-[8px] font-black text-amber-400/80 uppercase tracking-wider block">L${lib.n}</span>
-                        <span class="text-xs sm:text-sm font-black text-amber-300">#${lib.dorsal}</span>
-                    </div>
-                    <span class="text-[8px] sm:text-[9px] font-bold text-amber-400/80 truncate flex-1 min-w-0">${lib.nombre}</span>
-                </div>
-                <div class="gameplay-btn-row">
-                    <button onclick="registrarGameplay('${volumenAccion}', '=', '${lib.id}')" class="${btnSm} bg-white hover:bg-slate-200 text-black">${volumenLabel}</button>
-                    <button onclick="registrarGameplay('${volumenAccion}', '--', '${lib.id}')" class="${btnSm} bg-rose-600 hover:bg-rose-500 text-white">${volumenLabelError}</button>
-                </div>
-            </div>
-        `;
+    function zoneSteps(from, steps) {
+        let z = from;
+        for (let i = 0; i < steps; i++) z = nextZone(z);
+        return z;
     }
 
-    function renderLiberoQuickBar() {
-        const container = document.getElementById('libero-quick-bar');
-        if (!container) return;
-
-        const { l1, l2 } = getLiberosForGameplay();
-        if (!l1 && !l2) {
-            container.classList.add('hidden');
-            container.innerHTML = '';
-            return;
-        }
-
-        container.classList.remove('hidden');
-        const soloUna = (l1 && !l2) || (!l1 && l2);
-        container.className = soloUna
-            ? 'flex-shrink-0 grid grid-cols-1 gap-2'
-            : 'flex-shrink-0 grid grid-cols-2 gap-2';
-
-        if (l1 && l2) {
-            container.innerHTML = buildLiberoBarCardHtml(l1) + buildLiberoBarCardHtml(l2);
-        } else {
-            container.innerHTML = buildLiberoBarCardHtml(l1 || l2);
-        }
+    function getPlayerPosicion(player) {
+        if (!player) return '';
+        const pj = allJugadoras.find(x => String(x.id) === String(player.id));
+        return (pj && pj.posicion) ? String(pj.posicion).toUpperCase() : '';
     }
 
-    // ── Colocación: barra fija compartida (no depende de la zona) ──────────
-    // La colocadora se detecta automáticamente buscando en la rotación
-    // actual a la jugadora cuya posición es COLOCADORA, sin importar en qué
-    // zona esté rotada en cada momento.
-    function getColocadoraForGameplay() {
+    function getRotPlayer(zone) {
         if (!state.rotation) return null;
-        const maxZ = MODALIDAD.toUpperCase() === 'MINIVOLEY' ? 4 : 6;
-        for (let z = 1; z <= maxZ; z++) {
-            const p = state.rotation[`pos${z}`];
-            if (!p) continue;
-            const pj = allJugadoras.find(x => String(x.id) === String(p.id));
-            if (pj && pj.posicion && pj.posicion.toUpperCase() === 'COLOCADORA') {
-                return { id: p.id, dorsal: p.dorsal, nombre: pj.nombre };
-            }
+        return state.rotation[`pos${zone}`] || null;
+    }
+
+    /** Roles caminando desde quien coloca: Co → R1 → C2 → O → R2 → C1 */
+    function getRoleMap() {
+        if (!state.rotation) return null;
+        const coZone = resolveSettingZone();
+        if (!coZone) return null;
+
+        const roleAt = (steps) => {
+            const z = zoneSteps(coZone, steps);
+            return { zone: z, player: getRotPlayer(z), front: [2, 3, 4].includes(z) };
+        };
+
+        return {
+            coZone,
+            sistema: state.prefs.sistemaTactico || '5-1',
+            Co: roleAt(0),
+            R1: roleAt(1),
+            C2: roleAt(2),
+            O: roleAt(3),
+            R2: roleAt(4),
+            C1: roleAt(5),
+        };
+    }
+    function getRoleMap51() { return getRoleMap(); }
+
+    /**
+     * Líbero activa según contexto. Sin líbero en pizarra → null (central se queda).
+     */
+    function getLiberoPlayerActiva() {
+        if (!PERMITE_LIBERO || !state.rotation) return null;
+        const pref = (state.liberoContexto === 'defensa')
+            ? state.prefs.liberoDefensa
+            : state.prefs.liberoRecepcion;
+        const primary = state.rotation[`libero${pref}`];
+        if (primary && primary.id != null && primary.id !== '') {
+            return { ...primary, _libSlot: pref };
+        }
+        const other = pref === '1' ? '2' : '1';
+        const fallback = state.rotation[`libero${other}`];
+        if (fallback && fallback.id != null && fallback.id !== '') {
+            return { ...fallback, _libSlot: other };
         }
         return null;
     }
 
+    /** Central zaguera (zona rotacional 1, 5 o 6) a sustituir por líbero. */
+    function getCentralZagueraRole(roles) {
+        if (!roles) return null;
+        if (roles.C1 && !roles.C1.front) return 'C1';
+        if (roles.C2 && !roles.C2.front) return 'C2';
+        return null;
+    }
+
+    /**
+     * Mapa visual K1 5-1 / 6-2: O no recibe (escondida / delantera).
+     * Fila atrás = R's + central/L.
+     */
+    function getK1VisualRoleMap51(coZone) {
+        const maps = {
+            1: { 4: 'O', 3: 'C2', 2: 'Co', 5: 'R2', 6: 'C1', 1: 'R1' },
+            2: { 4: 'C2', 3: 'O', 2: 'Co', 5: 'R1', 6: 'R2', 1: 'C1' },
+            3: { 4: 'O', 3: 'Co', 2: 'C1', 5: 'R1', 6: 'C2', 1: 'R2' },
+            4: { 4: 'Co', 3: 'C1', 2: 'O', 5: 'R2', 6: 'R1', 1: 'C2' },
+            5: { 4: 'Co', 3: 'C1', 2: 'O', 5: 'R2', 6: 'R1', 1: 'C2' },
+            6: { 4: 'O', 3: 'Co', 2: 'C2', 5: 'R2', 6: 'C1', 1: 'R1' },
+        };
+        return maps[coZone] || null;
+    }
+
+    /**
+     * Mapa visual K1 4-2: la O SÍ recibe (no se esconde).
+     * Recepción: R1, R2, O + L/C. Delante: Co + central (R delantera puede quedar delante con recepción corta).
+     */
+    function getK1VisualRoleMap42(coZone) {
+        const maps = {
+            2: { 4: 'C2', 3: 'Co', 2: 'R2', 5: 'R1', 6: 'C1', 1: 'O' },
+            3: { 4: 'R1', 3: 'Co', 2: 'C1', 5: 'C2', 6: 'O', 1: 'R2' },
+            4: { 4: 'Co', 3: 'C1', 2: 'R2', 5: 'R1', 6: 'C2', 1: 'O' },
+            // Fallback si la Co resolvió zaguera (alineación rara / transición)
+            1: { 4: 'C2', 3: 'Co', 2: 'R2', 5: 'R1', 6: 'C1', 1: 'O' },
+            5: { 4: 'Co', 3: 'C1', 2: 'R2', 5: 'R1', 6: 'C2', 1: 'O' },
+            6: { 4: 'R1', 3: 'Co', 2: 'C1', 5: 'C2', 6: 'O', 1: 'R2' },
+        };
+        return maps[coZone] || null;
+    }
+
+    function getK1VisualRoleMap(coZone) {
+        const sistema = state.prefs.sistemaTactico || '5-1';
+        if (sistema === '4-2') return getK1VisualRoleMap42(coZone);
+        return getK1VisualRoleMap51(coZone);
+    }
+
+    /**
+     * Mapa visual K2 (especialidad): igual en 5-1 / 4-2 / 6-2.
+     */
+    function getK2VisualRoleMap(roles) {
+        if (!roles) return null;
+        const rFront = roles.R1.front ? 'R1' : 'R2';
+        const rBack = roles.R1.front ? 'R2' : 'R1';
+        const cFront = roles.C1.front ? 'C1' : 'C2';
+        const cBack = roles.C1.front ? 'C2' : 'C1';
+        const rightFront = roles.Co.front ? 'Co' : 'O';
+        const rightBack = roles.Co.front ? 'O' : 'Co';
+        return {
+            4: rFront,
+            3: cFront,
+            2: rightFront,
+            5: cBack,
+            6: rBack,
+            1: rightBack,
+            _centralZag: cBack,
+        };
+    }
+
+    /**
+     * Devuelve slots de display: { 1:{player, rotZone, isLibero, roleKey, roleLabel}, ... }
+     */
+    function getDisplaySlots() {
+        const roles = getRoleMap();
+
+        const roleLabelForRotZone = (rotZone) => {
+            if (!roles) return '';
+            for (const key of ['Co', 'R1', 'C2', 'O', 'R2', 'C1']) {
+                if (roles[key] && roles[key].zone === rotZone) return key;
+            }
+            return '';
+        };
+
+        const empty = () => {
+            const slots = {};
+            for (let z = 1; z <= 6; z++) {
+                const roleKey = roleLabelForRotZone(z);
+                slots[z] = {
+                    player: getRotPlayer(z),
+                    rotZone: z,
+                    isLibero: false,
+                    roleKey,
+                    roleLabel: roleKey,
+                };
+            }
+            return { slots };
+        };
+
+        if (!state.rotation) return { slots: {} };
+
+        const isMinivoley = MODALIDAD.toUpperCase() === 'MINIVOLEY';
+        const sistema = state.prefs.sistemaTactico || '5-1';
+        const fase = state.fase_actual;
+        const sistemaDinamico = sistema === '5-1' || sistema === '4-2' || sistema === '6-2';
+
+        if (isMinivoley || sistema === '6-0' || !sistemaDinamico) {
+            return empty();
+        }
+        if (!roles) return empty();
+
+        // K0 = rotación legal, pero el líbero de defensa ya está si NO saca la central.
+        if (fase === 'K0') {
+            const base = empty();
+            const centralZag = getCentralZagueraRole(roles);
+            const serverIsCentral = getPlayerPosicion(getRotPlayer(1)) === 'CENTRAL';
+            if (state.prefs.liberoSustituyeCentral && centralZag && !serverIsCentral) {
+                const libero = getLiberoPlayerActiva();
+                if (libero) {
+                    const zagZone = roles[centralZag].zone;
+                    const pref = state.prefs.liberoDefensa || '1';
+                    base.slots[zagZone] = {
+                        player: { id: libero.id, dorsal: libero.dorsal },
+                        rotZone: zagZone,
+                        isLibero: true,
+                        roleKey: centralZag,
+                        roleLabel: `L${libero._libSlot || pref}`,
+                    };
+                }
+            }
+            return base;
+        }
+
+        if (fase !== 'K1' && fase !== 'K2') {
+            return empty();
+        }
+
+        let visual;
+        let centralZag;
+        if (fase === 'K1') {
+            visual = getK1VisualRoleMap(roles.coZone);
+            centralZag = getCentralZagueraRole(roles);
+        } else {
+            visual = getK2VisualRoleMap(roles);
+            centralZag = visual ? visual._centralZag : null;
+        }
+        if (!visual) return empty();
+
+        const libero = (state.prefs.liberoSustituyeCentral && centralZag
+            && !(fase === 'K2' && state.liberoExcluidoPorSaqueCentral))
+            ? getLiberoPlayerActiva()
+            : null;
+        const liberoPrefKey = (state.liberoContexto === 'defensa')
+            ? (state.prefs.liberoDefensa || '1')
+            : (state.prefs.liberoRecepcion || '1');
+
+        const slots = {};
+
+        for (let vz = 1; vz <= 6; vz++) {
+            const roleKey = visual[vz];
+            const role = roles[roleKey];
+            let player = role ? role.player : null;
+            let rotZone = role ? role.zone : vz;
+            let isLibero = false;
+            let roleLabel = roleKey || '';
+
+            if (libero && centralZag && roleKey === centralZag) {
+                player = { id: libero.id, dorsal: libero.dorsal };
+                isLibero = true;
+                roleLabel = `L${libero._libSlot || liberoPrefKey}`;
+            }
+
+            slots[vz] = { player, rotZone, isLibero, roleKey, roleLabel };
+        }
+
+        return { slots };
+    }
+
+    // ── Colocación: barra fija + selector de Co activa ─────────────────────
+    function getColocadoraForGameplay() {
+        if (!state.rotation) return null;
+        const z = findColocadoraZone();
+        if (!z) return null;
+        const p = getRotPlayer(z);
+        if (!p) return null;
+        const pj = allJugadoras.find(x => String(x.id) === String(p.id));
+        return { id: p.id, dorsal: p.dorsal, nombre: pj ? pj.nombre : 'Jugadora', zone: z };
+    }
+
     function buildColocacionBarHtml(col) {
         const pId = col ? col.id : '';
-        const label = col ? `Colocación · #${col.dorsal} ${col.nombre}` : 'Colocación';
+        const label = col ? `Colocación · #${col.dorsal} ${col.nombre}` : 'Colocación (elige Co)';
         const btnCls = 'gameplay-action-btn';
+        const onCourt = getOnCourtPlayers();
+        const par = usesColocadoraPar();
+        const optHtml = (val) => onCourt.map(p => {
+            const sel = val === p.id ? ' selected' : '';
+            return `<option value="${p.id}"${sel}>#${p.dorsal} ${p.nombre}</option>`;
+        }).join('');
+
+        let selectorHtml;
+        if (par) {
+            const valA = state.colocadoraParIdA ? String(state.colocadoraParIdA) : '';
+            const valB = state.colocadoraParIdB ? String(state.colocadoraParIdB) : '';
+            selectorHtml = `
+                    <div class="flex flex-wrap items-center gap-2 min-w-0">
+                        <label class="flex items-center gap-1 min-w-0">
+                            <span class="text-[8px] font-black text-amber-400/90 uppercase tracking-wider flex-shrink-0">Co A</span>
+                            <select onchange="setColocadoraPar('A', this.value)"
+                                class="bg-[#090d16] border border-amber-500/40 text-white text-[10px] font-bold rounded-lg px-2 py-1 max-w-[8.5rem] focus:outline-none focus:border-amber-400">
+                                <option value=""${valA === '' ? ' selected' : ''}>Auto</option>
+                                ${optHtml(valA)}
+                            </select>
+                        </label>
+                        <label class="flex items-center gap-1 min-w-0">
+                            <span class="text-[8px] font-black text-amber-400/90 uppercase tracking-wider flex-shrink-0">Co B</span>
+                            <select onchange="setColocadoraPar('B', this.value)"
+                                class="bg-[#090d16] border border-amber-500/40 text-white text-[10px] font-bold rounded-lg px-2 py-1 max-w-[8.5rem] focus:outline-none focus:border-amber-400">
+                                <option value=""${valB === '' ? ' selected' : ''}>Auto</option>
+                                ${optHtml(valB)}
+                            </select>
+                        </label>
+                    </div>`;
+        } else {
+            const selectVal = state.colocadoraActivaId ? String(state.colocadoraActivaId) : '';
+            selectorHtml = `
+                    <label class="flex items-center gap-1.5 min-w-0">
+                        <span class="text-[8px] font-black text-amber-400/90 uppercase tracking-wider flex-shrink-0">Co activa</span>
+                        <select onchange="setColocadoraActiva(this.value)"
+                            class="bg-[#090d16] border border-amber-500/40 text-white text-[10px] font-bold rounded-lg px-2 py-1 max-w-[9.5rem] focus:outline-none focus:border-amber-400">
+                            <option value=""${selectVal === '' ? ' selected' : ''}>Auto</option>
+                            ${optHtml(selectVal)}
+                        </select>
+                    </label>`;
+        }
+
         return `
-            <div class="bg-[#121824] rounded-2xl p-2.5 border border-slate-800">
-                <div class="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-wider mb-1.5 truncate">${label}</div>
+            <div class="bg-[#121824] rounded-2xl p-2.5 border border-slate-800 space-y-2">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-wider truncate min-w-0">${label}</div>
+                    ${selectorHtml}
+                </div>
                 <div class="gameplay-btn-row">
-                    <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnCls} bg-white hover:bg-slate-200 text-black">Colocación</button>
-                    <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Colocación</button>
+                    <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnCls} bg-white hover:bg-slate-200 text-black"${pId ? '' : ' disabled'}>Colocación</button>
+                    <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white"${pId ? '' : ' disabled'}>Error Colocación</button>
                 </div>
             </div>
         `;
@@ -4809,77 +5496,81 @@
         container.innerHTML = buildColocacionBarHtml(getColocadoraForGameplay());
     }
 
-    // ── Tarjetas de zona del Modo Rápido ("Estadísticas Rápidas") ───────────
-    // Botones ESTÁTICOS (Ataque, Bloqueo en zonas de red, Saque en Zona 1)
-    // + una fila DINÁMICA por fase ("Volumen Rápido": Recepción cuando
-    // recibimos el saque rival, Defensa el resto del tiempo). La Colocación
-    // vive fuera de las tarjetas, en una barra fija común (ver
-    // buildColocacionBarHtml). Un solo toque registra siempre la acción
-    // final —sin botones intermedios de "continuidad"— para no interrumpir
-    // el ritmo del partido en el iPad.
-    function buildZoneCardHtml(z, btnCls) {
-        const player = state.rotation[`pos${z}`];
+    // ── Tarjetas de zona del Modo Rápido ───────────────────────────────────
+    // En K1/K2 el jugador de cada hueco viene de getDisplaySlots();
+    // la zona registrada es el hueco visual (dónde está recibiendo / actuando).
+    function buildZoneCardHtml(visualZone, btnCls, slot) {
+        const player = slot && slot.player ? slot.player : null;
         let pId = '';
         let pLabel = 'Anónimo (EQ)';
+        let roleLabel = (slot && slot.roleLabel) ? String(slot.roleLabel) : '';
         if (player) {
             pId = player.id;
             const pj = allJugadoras.find(x => String(x.id) === String(player.id));
-            const nombre = pj ? pj.nombre : 'Jugadora';
+            const nombre = pj ? pj.nombre : (slot && slot.isLibero ? 'Líbero' : 'Jugadora');
             pLabel = `#${player.dorsal} ${nombre}`;
         }
-        const isServer = (z === 1);
-        const esZonaRed = [2, 3, 4].includes(z);
-        const zoneTitle = isServer ? 'Saque (Zona 1)' : `Zona ${z}`;
+        const isServer = (visualZone === 1);
+        const esZonaRed = [2, 3, 4].includes(visualZone);
+        const zoneTitle = isServer ? 'Zona 1' : `Zona ${visualZone}`;
 
-        // Fila de Volumen Rápido: K1 (recibimos) → Recepción; cualquier otra
-        // fase (K0 sacamos / K2 transición) → Defensa, ya que en ambos casos
-        // el equipo está en labor defensiva sobre el ataque rival.
         const esRecepcion = state.fase_actual === 'K1';
         const volumenAccion = esRecepcion ? 'RECEPCION' : 'DEFENSA';
         const volumenLabel = esRecepcion ? 'Recepción' : 'Defensa';
         const volumenLabelError = esRecepcion ? 'Error Recepción' : 'Error Defensa';
 
+        const borderCls = slot && slot.isLibero ? 'border-amber-500/40' : 'border-slate-800';
+        const roleBadge = roleLabel
+            ? `<span class="ml-1.5 px-1.5 py-0.5 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-wider ${
+                slot && slot.isLibero
+                    ? 'bg-amber-500/20 text-amber-300'
+                    : roleLabel === 'Co'
+                        ? 'bg-violet-500/25 text-violet-300 ring-1 ring-violet-400/40'
+                        : 'bg-blue-500/20 text-blue-300'
+              }">${roleLabel}</span>`
+            : '';
+
         let html = `
-            <div class="gameplay-zone-card bg-[#121824] rounded-2xl p-2.5 md:p-3 border border-slate-800">
-                <div class="flex justify-between items-center border-b border-slate-800/80 pb-1.5 mb-2 flex-shrink-0">
-                    <span class="text-[10px] md:text-xs font-black text-blue-400 uppercase tracking-wider">${zoneTitle}</span>
-                    <span class="text-xs md:text-sm font-black text-white truncate max-w-[130px]">${pLabel}</span>
+            <div class="gameplay-zone-card bg-[#121824] rounded-2xl p-2.5 md:p-3 border ${borderCls}">
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-1.5 mb-2 flex-shrink-0 gap-2">
+                    <span class="text-[10px] md:text-xs font-black text-blue-400 uppercase tracking-wider flex-shrink-0">${zoneTitle}</span>
+                    <span class="text-xs md:text-sm font-black text-white truncate min-w-0 flex items-center justify-end">${pLabel}${roleBadge}</span>
                 </div>
                 <div class="gameplay-zone-card__actions">
                     <div class="gameplay-btn-row">
-                        <button onclick="registrarGameplay('ATAQUE', '++', '${pId}', ${z})" class="${btnCls} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Ataque</button>
-                        <button onclick="registrarGameplay('ATAQUE', '--', '${pId}', ${z})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Ataque</button>
+                        <button onclick="registrarGameplay('ATAQUE', '++', '${pId}', ${visualZone})" class="${btnCls} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Ataque</button>
+                        <button onclick="registrarGameplay('ATAQUE', '--', '${pId}', ${visualZone})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Ataque</button>
                     </div>
         `;
 
         if (esZonaRed) {
             html += `
                     <div class="gameplay-btn-row">
-                        <button onclick="registrarGameplay('BLOQUEO', '++', '${pId}', ${z})" class="${btnCls} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Bloqueo</button>
-                        <button onclick="registrarGameplay('BLOQUEO', '--', '${pId}', ${z})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Bloqueo</button>
+                        <button onclick="registrarGameplay('BLOQUEO', '++', '${pId}', ${visualZone})" class="${btnCls} bg-emerald-600 hover:bg-emerald-500 text-white">Punto Bloqueo</button>
+                        <button onclick="registrarGameplay('BLOQUEO', '--', '${pId}', ${visualZone})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Bloqueo</button>
                     </div>
             `;
         }
 
         const filaSaqueHtml = `
                     <div class="gameplay-btn-row">
-                        <button onclick="registrarGameplay('SAQUE', '++', '${pId}', ${z})" class="${btnCls} bg-emerald-600 hover:bg-emerald-500 text-white">Ace Saque</button>
-                        <button onclick="registrarGameplay('SAQUE', '--', '${pId}', ${z})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Saque</button>
+                        <button onclick="registrarGameplay('SAQUE', '++', '${pId}', ${visualZone})" class="${btnCls} bg-emerald-600 hover:bg-emerald-500 text-white">Ace Saque</button>
+                        <button onclick="registrarGameplay('SAQUE', '--', '${pId}', ${visualZone})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">Error Saque</button>
+                    </div>
+                    <div class="gameplay-btn-row">
+                        <button onclick="registrarGameplay('SAQUE', '=', '${pId}', ${visualZone})" class="${btnCls} col-span-2 bg-blue-600 hover:bg-blue-500 text-white">Saque OK → K2</button>
                     </div>
         `;
         const filaVolumenHtml = `
                     <div class="gameplay-btn-row">
-                        <button onclick="registrarGameplay('${volumenAccion}', '=', '${pId}', ${z})" class="${btnCls} bg-white hover:bg-slate-200 text-black">${volumenLabel}</button>
-                        <button onclick="registrarGameplay('${volumenAccion}', '--', '${pId}', ${z})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">${volumenLabelError}</button>
+                        <button onclick="registrarGameplay('${volumenAccion}', '=', '${pId}', ${visualZone})" class="${btnCls} bg-white hover:bg-slate-200 text-black">${volumenLabel}</button>
+                        <button onclick="registrarGameplay('${volumenAccion}', '--', '${pId}', ${visualZone})" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white">${volumenLabelError}</button>
                     </div>
         `;
 
-        // En Zona 1 el orden es Ataque → Defensa/Recepción → Saque (el saque
-        // queda siempre en la última fila, solo visible si el saque es
-        // nuestro). En el resto de zonas la fila de Volumen Rápido es la
-        // última, como hasta ahora.
         html += filaVolumenHtml;
-        if (isServer && state.tenemos_saque) html += filaSaqueHtml;
+        // Solo en K0 (momento de saque). En K2 el saque ya entró: ocultar Ace/Error/OK.
+        if (isServer && state.tenemos_saque && state.fase_actual === 'K0') html += filaSaqueHtml;
 
         html += `
                 </div>
@@ -4898,42 +5589,48 @@
                     Carga o define una alineación en la pestaña "Pizarra de Rotación" para jugar
                 </div>
             `;
-            renderLiberoQuickBar();
             renderColocacionBar();
             return;
         }
 
         const isMinivoley = MODALIDAD.toUpperCase() === 'MINIVOLEY';
         const btnCls = 'gameplay-action-btn';
+        const { slots } = getDisplaySlots();
 
         let html;
         if (isMinivoley) {
             html = `<div class="gameplay-field-grid gameplay-field-grid--mini">
-                ${buildZoneCardHtml(3, btnCls)}
-                ${buildZoneCardHtml(2, btnCls)}
-                ${buildZoneCardHtml(4, btnCls)}
-                ${buildZoneCardHtml(1, btnCls)}
+                ${buildZoneCardHtml(3, btnCls, slots[3])}
+                ${buildZoneCardHtml(2, btnCls, slots[2])}
+                ${buildZoneCardHtml(4, btnCls, slots[4])}
+                ${buildZoneCardHtml(1, btnCls, slots[1])}
             </div>`;
         } else {
             const zonasOrdenadas = [4, 3, 2, 5, 6, 1];
-            html = `<div class="gameplay-field-grid">`;
-            zonasOrdenadas.forEach(z => { html += buildZoneCardHtml(z, btnCls); });
+            const sis = state.prefs.sistemaTactico || '5-1';
+            const formHint = (['5-1', '4-2', '6-2'].includes(sis) && (state.fase_actual === 'K1' || state.fase_actual === 'K2'))
+                ? `<div class="text-[9px] font-bold text-amber-400/80 uppercase tracking-wider mb-1.5 px-0.5">${
+                    state.fase_actual === 'K1'
+                        ? (sis === '4-2'
+                            ? 'K1 4-2 · O recibe · Co delantera coloca'
+                            : sis === '6-2'
+                                ? 'K1 6-2 · Co zaguera · R solo 1/5/6'
+                                : 'Formación recepción (K1) · zona = posición en pista')
+                        : 'Formación defensa (K2) · R4/R6 · C3 · L5 · Co/O en 2·1'
+                  }</div>`
+                : '';
+            html = formHint + `<div class="gameplay-field-grid">`;
+            zonasOrdenadas.forEach(z => { html += buildZoneCardHtml(z, btnCls, slots[z]); });
             html += `</div>`;
         }
 
         container.innerHTML = html;
         if (window.lucide) lucide.createIcons();
-        renderLiberoQuickBar();
         renderColocacionBar();
+        syncColocadoraActivaSelect();
         resizeGameplayLayout();
     }
 
-    // ── Da al panel de juego una altura MÍNIMA igual al viewport disponible
-    // (para que en pantallas grandes no quede un hueco vacío), pero SIN forzar
-    // una altura exacta: todo (zonas, colocación, puntos) se renderiza a
-    // tamaño natural y, si no cabe entero, es el <main> exterior el que hace
-    // scroll de página normal — nunca se comprime ningún bloque a una caja
-    // diminuta.
     function resizeGameplayLayout() {
         const gameplayContent = document.getElementById('rapido-gameplay-content');
         if (!gameplayContent || gameplayContent.classList.contains('hidden')) return;
@@ -4947,6 +5644,7 @@
     window.addEventListener('resize', () => {
         requestAnimationFrame(resizeGameplayLayout);
     });
+
     window.addEventListener('load', () => {
         requestAnimationFrame(resizeGameplayLayout);
     });
@@ -4960,6 +5658,8 @@
         const cambia = state.tenemos_saque !== nosotros;
         state.tenemos_saque = nosotros;
         state.fase_actual = nosotros ? 'K0' : 'K1';
+        state.liberoContexto = nosotros ? 'defensa' : 'recepcion';
+        state.liberoExcluidoPorSaqueCentral = false;
         updateFaseIndicator();
         renderBotonerasAcciones();
         renderGameplayGrid();
