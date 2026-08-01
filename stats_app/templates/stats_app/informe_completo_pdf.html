@@ -144,6 +144,20 @@
         .trazo-cold { background-color: #f8fafc; color: #94a3b8; }
         table.trazo-flows { width: 100%; margin-top: 4px; }
         table.trazo-flows th, table.trazo-flows td { font-size: 7px; padding: 2px 4px; }
+        table.trazo-matrix { width: auto; margin-top: 4px; border-collapse: collapse; }
+        table.trazo-matrix th, table.trazo-matrix td {
+            font-size: 6.5px; padding: 2px 3px; text-align: center; border: 1px solid #e2e8f0;
+        }
+        table.trazo-matrix th { background: #f1f5f9; font-weight: bold; }
+        table.trazo-matrix th.orig { text-align: left; background: #e2e8f0; }
+        table.trazo-matrix td.zero { color: #cbd5e1; }
+        .trazo-empty {
+            font-size: 7.5px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a;
+            padding: 6px 8px; margin: 4px 0 6px; border-radius: 3px;
+        }
+        .trazo-aviso {
+            font-size: 6.5px; color: #9a3412; margin: 0 0 4px;
+        }
 
         .legend {
             margin-top: 10px;
@@ -541,13 +555,20 @@
             </tbody>
         </table>
 
-        {% if set_data.trazo and set_data.trazo.tiene_datos %}
+        {% if set_data.trazo %}
         <div class="section-title">Direcciones (Trazo) — Set {{ set_data.set_num }}</div>
+        {% if not set_data.trazo.tiene_datos %}
+        <div class="trazo-empty">{{ set_data.trazo.mensaje_vacio|default:"Sin datos de direcciones en este set." }}</div>
+        {% else %}
         <p style="font-size:7px;color:#64748b;margin:0 0 4px;">
             Destinos = solo Ace / punto de ataque con zona rival (vista nuestra: lejos 1-6-5 · cerca 2-3-4).
             Recepción = nuestro campo (4-3-2 / 5-6-1) = dónde nos sacan. % sobre el total con dato.
             Cobertura = % de puntos/recepciones con zona anotada.
+            Matriz = origen (fila) → destino rival (columna).
         </p>
+        {% if set_data.trazo.aviso_cobertura %}
+        <p class="trazo-aviso">⚠ {{ set_data.trazo.aviso_cobertura }}</p>
+        {% endif %}
         <table class="trazo-wrap">
             <tr>
                 <td style="width:33%;">
@@ -644,6 +665,34 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% endif %}
+        {% if set_data.trazo.matriz_ataque.tiene_datos %}
+        <p class="trazo-meta" style="margin-top:6px;"><strong>Matriz ataque</strong> origen (fila) → destino rival (columna) · n={{ set_data.trazo.matriz_ataque.n }}</p>
+        <table class="trazo-matrix">
+            <thead>
+                <tr>
+                    <th class="orig">Orig. \\ Dest.</th>
+                    {% for d in set_data.trazo.matriz_ataque.destinos %}
+                    <th>Z{{ d }}</th>
+                    {% endfor %}
+                    <th>Σ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in set_data.trazo.matriz_ataque.filas %}
+                <tr>
+                    <th class="orig">Z{{ fila.origen }}</th>
+                    {% for c in fila.celdas %}
+                    <td class="{% if c.n == 0 %}zero{% elif c.pct >= 35 %}trazo-hot{% elif c.pct >= 18 %}trazo-mid{% endif %}">
+                        {% if c.n %}{{ c.n }}{% else %}·{% endif %}
+                    </td>
+                    {% endfor %}
+                    <td><strong>{% if fila.total %}{{ fila.total }}{% else %}·{% endif %}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
         {% endif %}
         {% endif %}
 

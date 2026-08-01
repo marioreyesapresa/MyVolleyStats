@@ -967,16 +967,78 @@ def trazo_analysis(partido, set_num):
             continue
         if 1 <= o <= max_z and 1 <= d <= max_z:
             flows[(o, d)] += 1
+    flujos_n = sum(flows.values())
     flujos = [
         {
             'origen': o,
             'destino': d,
             'n': n,
-            'pct': round(n / atq_n * 100, 1) if atq_n else 0.0,
+            'pct': round(n / flujos_n * 100, 1) if flujos_n else 0.0,
             'label': f'Z{o} → Z{d}',
         }
         for (o, d), n in sorted(flows.items(), key=lambda x: (-x[1], x[0][0], x[0][1]))
     ]
+
+    # Matriz completa origen (filas) × destino rival (columnas), solo puntos ++
+    # con ambas zonas. Celdas vacías = 0 (útil para ver huecos tácticos).
+    zonas_ord = list(range(1, max_z + 1))
+    matriz_filas = []
+    for o in zonas_ord:
+        celdas = []
+        row_n = 0
+        for d in zonas_ord:
+            n = flows.get((o, d), 0)
+            row_n += n
+            celdas.append({
+                'destino': d,
+                'n': n,
+                'pct': round(n / flujos_n * 100, 1) if flujos_n and n else 0.0,
+            })
+        matriz_filas.append({'origen': o, 'celdas': celdas, 'total': row_n})
+    matriz_ataque = {
+        'destinos': zonas_ord,
+        'filas': matriz_filas,
+        'n': flujos_n,
+        'tiene_datos': flujos_n > 0,
+    }
+
+    tiene_trazo = saque_n > 0 or atq_n > 0
+    tiene_recepcion = rec_n > 0
+    tiene_datos = tiene_trazo or tiene_recepcion
+
+    aces_sin = max(0, len(aces) - saque_n)
+    kills_sin = max(0, len(kills) - atq_n)
+    rec_sin = recepcion.get('sin_zona') or 0
+
+    mensaje_vacio = None
+    if not tiene_datos:
+        partes = []
+        if aces_sin or kills_sin:
+            partes.append(
+                f'Hay {aces_sin} ace(s) y {kills_sin} punto(s) de ataque sin destino '
+                '(Trazo OFF o «Sin destino»). Actívalo en Ajustes y anota destino en Ace / Punto.'
+            )
+        if rec_sin:
+            partes.append(
+                f'{rec_sin} recepción(es) sin zona (modo rápido con zona o recepción en cancha).'
+            )
+        if not partes:
+            if not aces and not kills and not todas_rec:
+                partes.append('Sin aces, puntos de ataque ni recepciones en este set.')
+            else:
+                partes.append(
+                    'Sin destinos de Trazo ni recepciones con zona en este set.'
+                )
+        mensaje_vacio = ' '.join(partes)
+
+    aviso_cobertura = None
+    if tiene_trazo and (
+        (saque.get('sin_destino') or 0) > 0 or (ataque.get('sin_destino') or 0) > 0
+    ):
+        aviso_cobertura = (
+            f'Cobertura incompleta: {saque.get("sin_destino") or 0} ace(s) y '
+            f'{ataque.get("sin_destino") or 0} punto(s) de ataque sin destino.'
+        )
 
     return {
         'max_zona': max_z,
@@ -987,10 +1049,15 @@ def trazo_analysis(partido, set_num):
         'ataque': ataque,
         'recepcion': recepcion,
         'flujos_ataque': flujos[:10],
-        'flujos_ataque_n': sum(f['n'] for f in flujos),
-        'tiene_trazo': saque_n > 0 or atq_n > 0,
-        'tiene_recepcion': rec_n > 0,
-        'tiene_datos': saque_n > 0 or atq_n > 0 or rec_n > 0,
+        'flujos_ataque_n': flujos_n,
+        'matriz_ataque': matriz_ataque,
+        'tiene_trazo': tiene_trazo,
+        'tiene_recepcion': tiene_recepcion,
+        'tiene_datos': tiene_datos,
+        'mensaje_vacio': mensaje_vacio,
+        'aviso_cobertura': aviso_cobertura,
+        'aces_sin_destino': aces_sin,
+        'ataques_sin_destino': kills_sin,
     }
 
 

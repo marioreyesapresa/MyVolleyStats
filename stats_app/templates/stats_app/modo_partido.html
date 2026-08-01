@@ -1300,7 +1300,7 @@
                     <span class="text-rose-400">Rojo</span> = negativo o candidata a cambio.
                     <span class="text-slate-600">| Atq P/E = puntos/error ataque · Efic.% = (pts−err)/intentos</span>
                 </div>
-                <div class="overflow-x-auto max-h-[52vh] overflow-y-auto">
+                <div class="overflow-x-auto max-h-[40vh] overflow-y-auto">
                     <table class="w-full text-left border-collapse quick-stats-table">
                         <thead class="sticky top-0 z-10 bg-[#090d16]">
                             <tr class="text-[7px] sm:text-[8px] font-black text-slate-500 uppercase tracking-tight border-b border-slate-800">
@@ -1322,6 +1322,48 @@
                             <tr><td colspan="12" class="p-6 text-center text-slate-600 italic">Sin datos en este set</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Trazo en columna principal: canchas lado a lado aprovechan el ancho -->
+            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-3" id="trazo-live-card">
+                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1 pb-1 border-b border-slate-800">
+                    <h3 class="text-[10px] font-black text-amber-400/90 uppercase tracking-[0.2em]">Direcciones (Trazo)</h3>
+                    <p class="text-[8px] text-slate-600 leading-relaxed">
+                        Destinos = Ace / punto de ataque · Recepción = dónde nos sacan · Cobertura = % con zona
+                    </p>
+                </div>
+                <p id="trazo-live-empty" class="text-[9px] text-slate-600 italic text-center py-3">
+                    Aún no hay destinos ni recepciones con zona en este set.
+                </p>
+                <div id="trazo-live-body" class="space-y-3 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="min-w-0">
+                            <div class="flex flex-col gap-0.5 mb-2">
+                                <span class="text-[9px] font-black text-emerald-400 uppercase tracking-wider">Aces → rival</span>
+                                <span id="trazo-saque-meta" class="text-[8px] text-slate-500 font-bold truncate"></span>
+                            </div>
+                            <div id="trazo-saque-court" class="space-y-1.5"></div>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex flex-col gap-0.5 mb-2">
+                                <span class="text-[9px] font-black text-blue-400 uppercase tracking-wider">Ataques → rival</span>
+                                <span id="trazo-ataque-meta" class="text-[8px] text-slate-500 font-bold truncate"></span>
+                            </div>
+                            <div id="trazo-ataque-court" class="space-y-1.5"></div>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex flex-col gap-0.5 mb-2">
+                                <span class="text-[9px] font-black text-violet-400 uppercase tracking-wider">Recepción (nos sacan)</span>
+                                <span id="trazo-recepcion-meta" class="text-[8px] text-slate-500 font-bold truncate"></span>
+                            </div>
+                            <div id="trazo-recepcion-court" class="space-y-1.5"></div>
+                        </div>
+                    </div>
+                    <div id="trazo-flujos-wrap" class="hidden pt-2 border-t border-slate-800/80">
+                        <span class="text-[8px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Flujos ataque</span>
+                        <div id="trazo-flujos-list" class="flex flex-wrap gap-1.5"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1479,18 +1521,6 @@
                     </div>
                     {% endfor %}
                     {% endif %}
-                </div>
-            </div>
-
-            <div class="bg-[#121824] rounded-3xl p-4 border border-slate-800 shadow-xl space-y-2">
-                <div class="flex justify-between items-center pb-1 border-b border-slate-800">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Parones</h3>
-                    <button onclick="registrarTimeout()" class="text-[8px] font-black text-slate-500 hover:text-amber-400 uppercase tracking-wider flex items-center space-x-1 transition-colors">
-                        <i data-lucide="plus" class="w-3 h-3"></i><span>T. Muerto</span>
-                    </button>
-                </div>
-                <div id="parones-list" class="space-y-1.5 max-h-32 overflow-y-auto pr-0.5 scrollbar-hide">
-                    <p id="parones-empty" class="text-[9px] text-slate-600 italic text-center py-2">Sin parones</p>
                 </div>
             </div>
 
@@ -3999,6 +4029,93 @@
         updateIndicadoresPanel(true);
     }
 
+    function trazoCellClass(pct) {
+        if (pct >= 35) return 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300';
+        if (pct >= 18) return 'bg-amber-500/15 border-amber-500/30 text-amber-200';
+        return 'bg-[#090d16] border-slate-800 text-slate-500';
+    }
+
+    function renderTrazoCourt(container, court) {
+        if (!container) return;
+        if (!court || !court.length) {
+            container.innerHTML = '<p class="text-[8px] text-slate-600 italic">Sin datos</p>';
+            return;
+        }
+        container.innerHTML = court.map(row => {
+            const cols = row.length;
+            const cells = row.map(c => {
+                const cls = trazoCellClass(c.pct || 0);
+                const body = c.n > 0
+                    ? `<span class="text-[10px] font-black">${c.n}</span><span class="text-[8px] opacity-80">${c.pct}%</span>`
+                    : `<span class="text-[9px]">—</span>`;
+                return `<div class="rounded-xl border p-2 text-center flex flex-col items-center gap-0.5 min-h-[3.25rem] justify-center ${cls}">
+                    <span class="text-[7px] font-black uppercase tracking-wider opacity-70">Z${c.zona}</span>
+                    ${body}
+                </div>`;
+            }).join('');
+            return `<div class="grid gap-1" style="grid-template-columns: repeat(${cols}, minmax(0, 1fr));">${cells}</div>`;
+        }).join('');
+    }
+
+    function trazoMetaText(bloque) {
+        if (!bloque) return '';
+        const parts = [`n=${bloque.n || 0}`];
+        if (bloque.cobertura_pct != null) {
+            parts.push(`cob. ${bloque.cobertura_pct}%`);
+        }
+        if (bloque.top_label) parts.push(`top ${bloque.top_label}`);
+        return parts.join(' · ');
+    }
+
+    function paintTrazoLive(trazo) {
+        const emptyEl = document.getElementById('trazo-live-empty');
+        const bodyEl = document.getElementById('trazo-live-body');
+        if (!emptyEl || !bodyEl) return;
+
+        if (!trazo || !trazo.tiene_datos) {
+            emptyEl.classList.remove('hidden');
+            bodyEl.classList.add('hidden');
+            if (trazo && trazo.mensaje_vacio) {
+                emptyEl.textContent = trazo.mensaje_vacio;
+            } else {
+                emptyEl.textContent = 'Aún no hay destinos ni recepciones con zona en este set.';
+            }
+            return;
+        }
+        emptyEl.classList.add('hidden');
+        bodyEl.classList.remove('hidden');
+
+        const saqueMeta = document.getElementById('trazo-saque-meta');
+        const ataqueMeta = document.getElementById('trazo-ataque-meta');
+        const recepMeta = document.getElementById('trazo-recepcion-meta');
+        if (saqueMeta) saqueMeta.textContent = trazoMetaText(trazo.saque);
+        if (ataqueMeta) ataqueMeta.textContent = trazoMetaText(trazo.ataque);
+        if (recepMeta) recepMeta.textContent = trazoMetaText(trazo.recepcion);
+
+        renderTrazoCourt(document.getElementById('trazo-saque-court'), trazo.saque && trazo.saque.court);
+        renderTrazoCourt(document.getElementById('trazo-ataque-court'), trazo.ataque && trazo.ataque.court);
+        renderTrazoCourt(document.getElementById('trazo-recepcion-court'), trazo.recepcion && trazo.recepcion.court);
+
+        const flujosWrap = document.getElementById('trazo-flujos-wrap');
+        const flujosList = document.getElementById('trazo-flujos-list');
+        const flujos = (trazo.flujos_ataque || []).slice(0, 6);
+        if (flujosWrap && flujosList) {
+            if (!flujos.length) {
+                flujosWrap.classList.add('hidden');
+                flujosList.innerHTML = '';
+            } else {
+                flujosWrap.classList.remove('hidden');
+                flujosList.innerHTML = flujos.map(f => `
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#090d16] border border-slate-800 text-[9px] font-bold text-slate-300">
+                        ${f.label}
+                        <span class="text-emerald-400">${f.n}</span>
+                        <span class="text-slate-500 font-normal">${f.pct}%</span>
+                    </span>
+                `).join('');
+            }
+        }
+    }
+
     function paintIndicadoresFromResponse(res) {
         const fmtLider = (j) => j ? `#${j.dorsal} ${j.nombre} (${j.detalle})` : '--';
         const lideres = res.lideres || {};
@@ -4111,6 +4228,8 @@
                 if (bloEl) bloEl.innerText = z.es_red ? (z.bloqueo_total > 0 ? `${z.bloqueo_pct}%` : '—') : '';
             });
         }
+
+        paintTrazoLive(res.trazo);
 
         const rachaCard = document.getElementById('racha-card');
         if (rachaCard && res.racha) {

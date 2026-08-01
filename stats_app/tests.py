@@ -1397,6 +1397,32 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(trazo['recepcion']['top_zona']['zona'], 6)
         self.assertEqual(trazo['flujos_ataque'][0]['label'], 'Z4 → Z1')
         self.assertEqual(trazo['flujos_ataque'][0]['n'], 1)
+        self.assertTrue(trazo['matriz_ataque']['tiene_datos'])
+        self.assertEqual(trazo['matriz_ataque']['n'], 1)
+        celda_41 = trazo['matriz_ataque']['filas'][3]['celdas'][0]  # origen Z4, destino Z1
+        self.assertEqual(trazo['matriz_ataque']['filas'][3]['origen'], 4)
+        self.assertEqual(celda_41['destino'], 1)
+        self.assertEqual(celda_41['n'], 1)
+        self.assertIsNotNone(trazo['aviso_cobertura'])  # 1 ace sin destino
+        self.assertIsNone(trazo['mensaje_vacio'])
+
+    def test_trazo_analysis_mensaje_vacio_sin_destinos(self):
+        """Si hay aces/puntos pero sin zona_destino, el informe explica por qué."""
+        j = self.jugadora
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K0', accion='SAQUE',
+            calidad='++', set_numero=1, zona=1, zona_destino=None, rotacion_num=1,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K1', accion='ATAQUE',
+            calidad='++', set_numero=1, zona=4, zona_destino=None, rotacion_num=1,
+        )
+        trazo = trazo_analysis(self.partido, 1)
+        self.assertFalse(trazo['tiene_datos'])
+        self.assertFalse(trazo['matriz_ataque']['tiene_datos'])
+        self.assertIn('sin destino', trazo['mensaje_vacio'].lower())
+        self.assertEqual(trazo['aces_sin_destino'], 1)
+        self.assertEqual(trazo['ataques_sin_destino'], 1)
 
     def test_build_full_report_incluye_detalle_total_con_varios_sets(self):
         j = Jugadora.objects.create(equipo=self.equipo, nombre='Test', dorsal=7)

@@ -33,6 +33,7 @@ from ..services.reporting import (
     count_sets_won,
     rotation_matrix,
     zone_performance,
+    trazo_analysis,
     get_sets_con_datos,
     merito_y_error_rival,
     origen_puntos_totales,
@@ -510,9 +511,11 @@ def ObtenerStatsSetAPI(request):
     if not ligero:
         payload['rotaciones'] = rotation_matrix(partido, set_num)
         payload['zonas'] = zone_performance(partido, set_num)
+        payload['trazo'] = trazo_analysis(partido, set_num)
     else:
         payload['rotaciones'] = []
         payload['zonas'] = []
+        payload['trazo'] = None
     return JsonResponse(payload)
 
 
