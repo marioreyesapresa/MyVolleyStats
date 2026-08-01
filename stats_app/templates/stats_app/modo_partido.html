@@ -43,6 +43,48 @@
     </div>
 </div>
 
+<!-- Onboarding Scout (primera vez / desde Ajustes) -->
+<div id="scout-onboarding-overlay"
+     class="hidden fixed inset-0 z-[190] bg-[#050810]/92 backdrop-blur-md items-center justify-center p-4 md:p-6"
+     role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+    <div class="w-full max-w-sm bg-[#121824] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
+        <div class="px-5 pt-5 pb-2 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <p class="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                    Guía · <span id="onboarding-step-index">1/3</span>
+                </p>
+                <h2 id="onboarding-title" class="text-base font-black text-white uppercase tracking-wide leading-snug">Scout en vivo</h2>
+            </div>
+            <button type="button" onclick="skipScoutOnboarding()"
+                    class="text-[10px] font-black uppercase tracking-wider text-slate-500 hover:text-slate-300 px-2 py-1 rounded-lg transition-colors flex-shrink-0">
+                Saltar
+            </button>
+        </div>
+
+        <div class="px-5 pb-1">
+            <div id="onboarding-icon-wrap"
+                 class="mx-auto w-14 h-14 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center mb-3 transition-colors">
+                <i id="onboarding-icon" data-lucide="zap" class="w-6 h-6 text-blue-300"></i>
+            </div>
+            <h3 id="onboarding-step-title" class="text-sm font-black text-emerald-300 uppercase tracking-wider text-center mb-1.5">—</h3>
+            <p id="onboarding-step-body" class="text-[13px] text-slate-400 leading-relaxed text-center">—</p>
+        </div>
+
+        <div class="flex justify-center gap-1.5 py-3" id="onboarding-dots" aria-hidden="true"></div>
+
+        <div class="px-5 pb-5 flex gap-2">
+            <button type="button" id="onboarding-btn-prev" onclick="prevScoutOnboardingStep()"
+                    class="hidden flex-1 py-3 min-h-[2.75rem] rounded-2xl border border-slate-700 text-slate-300 text-xs font-black uppercase tracking-wider active:scale-95 transition-all">
+                Atrás
+            </button>
+            <button type="button" id="onboarding-btn-next" onclick="nextScoutOnboardingStep()"
+                    class="flex-1 py-3 min-h-[2.75rem] rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all">
+                Siguiente
+            </button>
+        </div>
+    </div>
+</div>
+
 <style>
     @keyframes mobile-hint-wiggle {
         0%, 100% { transform: rotate(0deg); }
@@ -54,6 +96,20 @@
     }
     body.mobile-portrait-lock {
         overflow: hidden;
+    }
+    #scout-onboarding-overlay:not(.hidden) {
+        display: flex;
+    }
+    .onboarding-dot {
+        width: 0.4rem;
+        height: 0.4rem;
+        border-radius: 9999px;
+        background: rgba(100, 116, 139, 0.55);
+        transition: all 0.2s ease;
+    }
+    .onboarding-dot.is-active {
+        width: 1.1rem;
+        background: rgb(59, 130, 246);
     }
 </style>
 
@@ -1109,6 +1165,15 @@
                     <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
                 </div>
             </label>
+
+            <div class="pt-2 border-t border-slate-800">
+                <button type="button" onclick="resetAndShowScoutOnboarding()"
+                        class="w-full py-3 rounded-2xl border border-slate-700 hover:border-blue-500/40 bg-[#0b0f19] text-slate-200 hover:text-white text-xs font-black uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i data-lucide="book-open" class="w-4 h-4 text-blue-400"></i>
+                    Ver guía del Scout
+                </button>
+                <p class="text-[9px] text-slate-600 font-bold text-center mt-2 uppercase tracking-wider">Rápido · Avanzado · Offline</p>
+            </div>
         </div>
 
         <!-- Sistema táctico (layout dinámico K1/K2) — solo voleibol 6×6 -->
@@ -2083,6 +2148,9 @@
 
         // Tras mostrar la pestaña Scout, comprobar si el set ya está cerrado en BD
         checkSetEnd(state.marcador.local, state.marcador.rival);
+
+        // Guía primera vez (no compite con el aviso de orientación)
+        setTimeout(() => maybeShowScoutOnboarding(), 700);
     });
 
     // Helper to get url params
@@ -2090,6 +2158,154 @@
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get(param);
     }
+
+    // ── Onboarding Scout (3 pasos) ──────────────────────────────────────
+    const ONBOARDING_KEY = 'voley_onboarding_scout_v1';
+    let onboardingStep = 0;
+    const ONBOARDING_STEPS = [
+        {
+            icon: 'zap',
+            iconWrap: 'bg-blue-600/20 border-blue-500/30',
+            iconColor: 'text-blue-300',
+            title: 'Rápido o Avanzado',
+            body: 'Rápido: tocas zona y calidad. Avanzado: eliges jugadora y luego ++ / + / = / − / −−. Cámbialo arriba cuando quieras.',
+        },
+        {
+            icon: 'target',
+            iconWrap: 'bg-emerald-600/20 border-emerald-500/30',
+            iconColor: 'text-emerald-300',
+            title: 'Cómo registrar',
+            body: 'Jugadora o zona → calidad → listo. Deshacer si te equivocas. El marcador y la fase (K0/K1/K2) se actualizan solos.',
+        },
+        {
+            icon: 'wifi-off',
+            iconWrap: 'bg-amber-500/15 border-amber-500/30',
+            iconColor: 'text-amber-300',
+            title: 'Sin WiFi',
+            body: 'Si cae la red, el banner guarda las acciones en el iPad y las sube al volver. No finalices el partido con pendientes.',
+        },
+    ];
+
+    function hasCompletedScoutOnboarding() {
+        return localStorage.getItem(ONBOARDING_KEY) === '1';
+    }
+
+    function markScoutOnboardingDone() {
+        localStorage.setItem(ONBOARDING_KEY, '1');
+    }
+
+    function partidoTieneActividadScout() {
+        if (state.partido_finalizado) return true;
+        if (Array.isArray(historialInicial) && historialInicial.length > 0) return true;
+        if ((state.quickHistory || []).length > 0) return true;
+        const pL = state.marcador ? state.marcador.local : 0;
+        const pR = state.marcador ? state.marcador.rival : 0;
+        if (pL > 0 || pR > 0) return true;
+        if ((setsLocal || 0) > 0 || (setsRival || 0) > 0) return true;
+        return false;
+    }
+
+    function maybeShowScoutOnboarding() {
+        if (hasCompletedScoutOnboarding()) return;
+        // En partidos ya en curso no interrumpir; se puede ver desde Ajustes
+        if (partidoTieneActividadScout()) return;
+        const portrait = document.getElementById('mobile-portrait-overlay');
+        if (portrait && !portrait.classList.contains('hidden')) {
+            setTimeout(() => maybeShowScoutOnboarding(), 1200);
+            return;
+        }
+        showScoutOnboarding(0);
+    }
+
+    function resetAndShowScoutOnboarding() {
+        showScoutOnboarding(0);
+    }
+
+    function showScoutOnboarding(step) {
+        onboardingStep = Math.max(0, Math.min(step, ONBOARDING_STEPS.length - 1));
+        const overlay = document.getElementById('scout-onboarding-overlay');
+        if (!overlay) return;
+        overlay.classList.remove('hidden');
+        renderScoutOnboardingStep();
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function hideScoutOnboarding() {
+        const overlay = document.getElementById('scout-onboarding-overlay');
+        if (overlay) overlay.classList.add('hidden');
+    }
+
+    function renderScoutOnboardingStep() {
+        const step = ONBOARDING_STEPS[onboardingStep];
+        if (!step) return;
+        const titleEl = document.getElementById('onboarding-step-title');
+        const bodyEl = document.getElementById('onboarding-step-body');
+        const iconEl = document.getElementById('onboarding-icon');
+        const iconWrap = document.getElementById('onboarding-icon-wrap');
+        const btnPrev = document.getElementById('onboarding-btn-prev');
+        const btnNext = document.getElementById('onboarding-btn-next');
+        const dots = document.getElementById('onboarding-dots');
+        const idxEl = document.getElementById('onboarding-step-index');
+
+        if (idxEl) idxEl.textContent = `${onboardingStep + 1}/${ONBOARDING_STEPS.length}`;
+        if (titleEl) titleEl.textContent = step.title;
+        if (bodyEl) bodyEl.textContent = step.body;
+        if (iconEl) {
+            iconEl.setAttribute('data-lucide', step.icon);
+            iconEl.className = `w-6 h-6 ${step.iconColor || 'text-blue-300'}`;
+        }
+        if (iconWrap) {
+            iconWrap.className = `mx-auto w-14 h-14 rounded-2xl border flex items-center justify-center mb-3 transition-colors ${step.iconWrap || 'bg-blue-600/20 border-blue-500/30'}`;
+        }
+        if (btnPrev) {
+            if (onboardingStep === 0) btnPrev.classList.add('hidden');
+            else btnPrev.classList.remove('hidden');
+        }
+        if (btnNext) {
+            btnNext.textContent = onboardingStep >= ONBOARDING_STEPS.length - 1 ? 'Entendido' : 'Siguiente';
+        }
+        if (dots) {
+            dots.innerHTML = ONBOARDING_STEPS.map((_, i) =>
+                `<span class="onboarding-dot${i === onboardingStep ? ' is-active' : ''}"></span>`
+            ).join('');
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function nextScoutOnboardingStep() {
+        if (onboardingStep >= ONBOARDING_STEPS.length - 1) {
+            markScoutOnboardingDone();
+            hideScoutOnboarding();
+            showToast('✅ Listo para scoutear');
+            return;
+        }
+        showScoutOnboarding(onboardingStep + 1);
+    }
+
+    function prevScoutOnboardingStep() {
+        if (onboardingStep <= 0) return;
+        showScoutOnboarding(onboardingStep - 1);
+    }
+
+    function skipScoutOnboarding() {
+        markScoutOnboardingDone();
+        hideScoutOnboarding();
+    }
+
+    document.addEventListener('keydown', (e) => {
+        const overlay = document.getElementById('scout-onboarding-overlay');
+        if (!overlay || overlay.classList.contains('hidden')) return;
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            skipScoutOnboarding();
+        } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+            e.preventDefault();
+            nextScoutOnboardingStep();
+        } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            prevScoutOnboardingStep();
+        }
+    });
 
     // Dynamic tab switcher with pushState
     function switchTab(tabId) {
