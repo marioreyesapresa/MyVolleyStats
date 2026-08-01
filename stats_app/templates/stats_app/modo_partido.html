@@ -29,6 +29,13 @@
     </div>
 </div>
 
+<!-- Banner cola offline / sin conexión (scout en vivo) -->
+<div id="offline-banner"
+     class="hidden sticky top-0 z-[90] w-full px-3 py-2.5 bg-amber-500/15 border-b border-amber-500/40 text-amber-200 text-center text-[11px] md:text-xs font-black uppercase tracking-wider backdrop-blur-sm"
+     role="status" aria-live="polite">
+    <span id="offline-banner-text">Sin conexión</span>
+</div>
+
 <style>
     @keyframes mobile-hint-wiggle {
         0%, 100% { transform: rotate(0deg); }
@@ -2016,6 +2023,18 @@
             lockScoutInterface();
         }
 
+        updateOfflineBanner();
+        window.addEventListener('online', () => {
+            updateOfflineBanner();
+            flushOfflineQueue();
+        });
+        window.addEventListener('offline', updateOfflineBanner);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') flushOfflineQueue();
+        });
+        // Reintento al cargar por si quedaron pendientes de una sesión anterior
+        setTimeout(() => flushOfflineQueue(), 800);
+
         // Active tab detection
         const initialTab = getQueryParam('tab') || 'scout';
         switchTab(initialTab);
@@ -3422,6 +3441,174 @@
         showToast('⛔ Registro cancelado');
     }
 
+    // ── Cola offline (WiFi del pabellón) ─────────────────────────────────
+    // Si falla el POST de registrar tras reintentos, la acción queda en
+    // localStorage y el marcador/historial siguen en local. Al volver la red
+    // se reenvían en orden. No cacheamos /api/ en el Service Worker.
+    const API_REGISTRAR_URL = '{% url "stats_app:api_registrar_estadistica" %}';
+    const API_ELIMINAR_URL = '{% url "stats_app:api_eliminar_estadistica" %}';
+    const CSRF_TOKEN = '{{ csrf_token }}';
+    let offlineFlushInProgress = false;
+
+    function offlineQueueKey() {
+        return `voley_offline_queue_${state.partido_id}`;
+    }
+
+    function loadOfflineQueue() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(offlineQueueKey()) || '[]');
+            return Array.isArray(raw) ? raw : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveOfflineQueue(queue) {
+        localStorage.setItem(offlineQueueKey(), JSON.stringify(queue));
+        updateOfflineBanner();
+    }
+
+    function updateOfflineBanner() {
+        const banner = document.getElementById('offline-banner');
+        const textEl = document.getElementById('offline-banner-text');
+        if (!banner || !textEl) return;
+        const n = loadOfflineQueue().length;
+        const online = navigator.onLine !== false;
+        if (n > 0) {
+            banner.classList.remove('hidden');
+            textEl.textContent = online
+                ? (offlineFlushInProgress
+                    ? `Sincronizando ${n} acción(es)…`
+                    : `${n} acción(es) pendientes de sincronizar`)
+                : `Sin conexión · ${n} acción(es) guardada(s) en este dispositivo`;
+        } else if (!online) {
+            banner.classList.remove('hidden');
+            textEl.textContent = 'Sin conexión · Las nuevas acciones se guardarán aquí hasta recuperar red';
+        } else {
+            banner.classList.add('hidden');
+        }
+    }
+
+    function buildAccionTextoLocal(accion, calidad) {
+        if (accion === 'RED') return '🥅 Red (punto rival)';
+        if (accion === 'ERROR_RIVAL') return 'Error del Rival';
+        if (accion === 'PUNTO_RIVAL') return 'Punto del Rival';
+        const labels = {
+            SAQUE: 'Saque',
+            RECEPCION: 'Recepción',
+            COLOCACION: 'Colocación',
+            ATAQUE: 'Ataque',
+            BLOQUEO: 'Bloqueo',
+            DEFENSA: 'Defensa',
+        };
+        const base = labels[accion] || accion;
+        return `${base}${calidad ? ' ' + calidad : ''}`.trim();
+    }
+
+    function dorsalForJugadora(jugId) {
+        if (!jugId) return 'EQ';
+        const pj = allJugadoras.find(x => String(x.id) === String(jugId));
+        return pj ? pj.dorsal : 'EQ';
+    }
+
+    function enqueueOfflineOp(op) {
+        const q = loadOfflineQueue();
+        q.push(op);
+        saveOfflineQueue(q);
+    }
+
+    function removeOfflineOpByClientId(clientId) {
+        const q = loadOfflineQueue().filter(op => op.clientId !== clientId);
+        saveOfflineQueue(q);
+    }
+
+    function remapPendingRegistroId(clientId, serverRes) {
+        const oldEl = document.getElementById(`reg-${clientId}`);
+        if (oldEl && serverRes && serverRes.id != null) {
+            oldEl.id = `reg-${serverRes.id}`;
+            const btn = oldEl.querySelector('button[onclick]');
+            if (btn) btn.setAttribute('onclick', `eliminarRegistro('${String(serverRes.id).replace(/'/g, '')}')`);
+            if (serverRes.accion_texto) {
+                const txt = oldEl.querySelector('.font-black.text-xs.uppercase');
+                if (txt) txt.textContent = serverRes.accion_texto;
+            }
+            if (serverRes.dorsal != null) {
+                const dorsalEl = oldEl.querySelector('.w-8.h-8');
+                if (dorsalEl) dorsalEl.textContent = serverRes.dorsal;
+            }
+        }
+        state.quickHistory.forEach(item => {
+            if (String(item.id) === String(clientId)) {
+                item.id = serverRes.id;
+                if (serverRes.accion_texto) item.actionLabel = serverRes.accion_texto;
+            }
+        });
+        renderQuickHistory();
+    }
+
+    async function flushOfflineQueue() {
+        if (offlineFlushInProgress) return;
+        if (navigator.onLine === false) {
+            updateOfflineBanner();
+            return;
+        }
+        if (!loadOfflineQueue().length) {
+            updateOfflineBanner();
+            return;
+        }
+        offlineFlushInProgress = true;
+        updateOfflineBanner();
+        let syncedAny = false;
+        try {
+            while (true) {
+                const q = loadOfflineQueue();
+                if (!q.length) break;
+                const item = q[0];
+                try {
+                    if (item.kind === 'registrar') {
+                        const response = await fetchConReintentos(API_REGISTRAR_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': CSRF_TOKEN,
+                            },
+                            body: JSON.stringify(item.body),
+                        }, { maxIntentos: 3, silencioso: true });
+                        const res = await response.json();
+                        if (res.status !== 'ok') throw new Error(res.mensaje || 'Error al sincronizar');
+                        remapPendingRegistroId(item.clientId, res);
+                    } else if (item.kind === 'eliminar') {
+                        const response = await fetchConReintentos(API_ELIMINAR_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': CSRF_TOKEN,
+                            },
+                            body: JSON.stringify({ id: item.id }),
+                        }, { maxIntentos: 3, silencioso: true });
+                        const res = await response.json();
+                        if (res.status !== 'ok') throw new Error(res.mensaje || 'Error al eliminar');
+                    } else {
+                        // Op desconocida: descartar para no bloquear la cola
+                    }
+                    const rest = loadOfflineQueue();
+                    rest.shift();
+                    saveOfflineQueue(rest);
+                    syncedAny = true;
+                } catch (err) {
+                    updateOfflineBanner();
+                    break;
+                }
+            }
+            if (syncedAny && loadOfflineQueue().length === 0 && navigator.onLine !== false) {
+                showToast('✅ Acciones sincronizadas');
+            }
+        } finally {
+            offlineFlushInProgress = false;
+            updateOfflineBanner();
+        }
+    }
+
     // Register tactical action
     async function registrar(accion, calidad, opts) {
         opts = opts || {};
@@ -3482,116 +3669,138 @@
         if (accion === 'BLOQUEO'  || accion === 'DEFENSA')    faseTag = 'K2';
         // ATAQUE inherits the current phase (K1 if after reception, K2 if after defence)
         
-        try {
-            const response = await fetchConReintentos('{% url "stats_app:api_registrar_estadistica" %}', { 
-                method: 'POST', 
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-CSRFToken': '{{ csrf_token }}' 
-                }, 
-                body: JSON.stringify({ 
-                    partido_id: state.partido_id, 
-                    jugadora_id: jug_id, 
-                    accion: accion, 
-                    calidad: calidad, 
-                    set_numero: state.set_numero, 
-                    fase: faseTag,
-                    rotacion_num: state.rotacion_num,
-                    zona: zonaActual,
-                    zona_destino: zonaDestinoActual
-                }) 
-            });
-            
-            const res = await response.json();
-            if (res.status === 'ok') { 
-                // Registra SIEMPRE la acción en el historial ("Últimas Acciones"),
-                // sin importar la calidad (++, +, =, -, --). Cambios de jugadora
-                // (api_registrar_cambio) y Tiempos Muertos (registrarTimeout) usan
-                // flujos independientes y quedan excluidos intencionadamente.
-                try { pushQuickHistory(res, calidad, accion, jug_id); } catch (e) { /* no bloquear el flujo principal */ }
-                try { renderAction(res, calidad); } catch (e) { /* no bloquear el flujo principal */ }
-                hapticFeedback();
-                showToast("✅ Acción registrada");
+        const payload = {
+            partido_id: state.partido_id,
+            jugadora_id: jug_id,
+            accion: accion,
+            calidad: calidad,
+            set_numero: state.set_numero,
+            fase: faseTag,
+            rotacion_num: state.rotacion_num,
+            zona: zonaActual,
+            zona_destino: zonaDestinoActual,
+        };
 
-                if (isRapido && state.jugadora_id) {
-                    selectJugadora('null'); // clear selection for next touch
-                }
-                if (!isRapido) {
-                    // Wizard Avanzado: tras cada acción, otra jugadora (vuelve a formación).
-                    state.jugadora_id = null;
-                    state.zona = null;
-                    updateAvanzadoSelectedChip();
-                    showAvanzadoStep('roster');
-                    renderAvanzadoCourt();
-                }
+        const aplicarTrasRegistro = async (res, { offline }) => {
+            // Registra SIEMPRE la acción en el historial ("Últimas Acciones"),
+            // sin importar la calidad (++, +, =, -, --). Cambios de jugadora
+            // (api_registrar_cambio) y Tiempos Muertos (registrarTimeout) usan
+            // flujos independientes y quedan excluidos intencionadamente.
+            try { pushQuickHistory(res, calidad, accion, jug_id); } catch (e) { /* no bloquear el flujo principal */ }
+            try { renderAction(res, calidad); } catch (e) { /* no bloquear el flujo principal */ }
+            hapticFeedback();
+            showToast(offline ? '💾 Guardada sin conexión (se sincronizará)' : '✅ Acción registrada');
 
-                // ── Phase-transition logic after each registered action ───
-                const esPuntoNuestro    = (calidad === '++') || (accion === 'ERROR_RIVAL');
-                const esPuntoRival      = (calidad === '--') || (accion === 'PUNTO_RIVAL');
-                const esAccionIntermedia = !esPuntoNuestro && !esPuntoRival;
-                const faseAntes = state.fase_actual;
-                const saqueCentralActivo = state.tenemos_saque
-                    && getPlayerPosicion(getRotPlayer(1)) === 'CENTRAL';
+            if (isRapido && state.jugadora_id) {
+                selectJugadora('null'); // clear selection for next touch
+            }
+            if (!isRapido) {
+                // Wizard Avanzado: tras cada acción, otra jugadora (vuelve a formación).
+                state.jugadora_id = null;
+                state.zona = null;
+                updateAvanzadoSelectedChip();
+                showAvanzadoStep('roster');
+                renderAvanzadoCourt();
+            }
 
-                if (esPuntoNuestro) {
-                    state.liberoExcluidoPorSaqueCentral = false;
-                    if (!state.tenemos_saque) {
-                        // Side-out ganado: rotamos y pasamos a K0
-                        state.tenemos_saque = true;
-                        state.fase_actual   = 'K0';
-                        state.liberoContexto = 'defensa';
-                        if (state.prefs.autoRotacion) {
-                            await autoRotarSideOut();
-                        } else {
-                            showToast("🏐 Saque ganado. Recuerda rotar manualmente");
-                        }
+            // ── Phase-transition logic after each registered action ───
+            const esPuntoNuestroLocal = (calidad === '++') || (accion === 'ERROR_RIVAL');
+            const esPuntoRivalLocal = (calidad === '--') || (accion === 'PUNTO_RIVAL') || (accion === 'RED');
+            const esAccionIntermedia = !esPuntoNuestroLocal && !esPuntoRivalLocal;
+            const faseAntes = state.fase_actual;
+            const saqueCentralActivo = state.tenemos_saque
+                && getPlayerPosicion(getRotPlayer(1)) === 'CENTRAL';
+
+            if (esPuntoNuestroLocal) {
+                state.liberoExcluidoPorSaqueCentral = false;
+                if (!state.tenemos_saque) {
+                    // Side-out ganado: rotamos y pasamos a K0
+                    state.tenemos_saque = true;
+                    state.fase_actual   = 'K0';
+                    state.liberoContexto = 'defensa';
+                    if (state.prefs.autoRotacion) {
+                        await autoRotarSideOut();
                     } else {
-                        // Punto con saque propio: mantenemos K0
-                        state.fase_actual = 'K0';
-                        state.liberoContexto = 'defensa';
+                        showToast("🏐 Saque ganado. Recuerda rotar manualmente");
                     }
-                } else if (esPuntoRival) {
-                    // Side-out perdido o error con saque propio → rival saca → K1
-                    state.liberoExcluidoPorSaqueCentral = false;
-                    state.tenemos_saque = false;
-                    state.fase_actual   = 'K1';
-                    state.liberoContexto = 'recepcion';
-                } else if (esAccionIntermedia) {
-                    // Rally continúa: avanzar fase si aplica
-                    // liberoContexto NO cambia en K0→K2 ni K1→K2:
-                    // - desde K0: sigue la de defensa
-                    // - desde K1: sigue la de recepción (también defiende)
-                    if (accion === 'SAQUE' && (calidad === '+' || calidad === '=')) {
-                        state.liberoExcluidoPorSaqueCentral = saqueCentralActivo;
-                        state.fase_actual = 'K2';
-                    } else if (accion === 'RECEPCION' && (calidad === '++' || calidad === '+' || calidad === '=')) {
-                        state.liberoExcluidoPorSaqueCentral = false;
-                        state.fase_actual = 'K2';
-                    } else if (accion === 'DEFENSA' && (calidad === '++' || calidad === '+' || calidad === '=')) {
-                        if (faseAntes === 'K0' && saqueCentralActivo) {
-                            state.liberoExcluidoPorSaqueCentral = true;
-                        }
-                        state.fase_actual = 'K2';
-                    } else if (faseAntes === 'K0' && state.tenemos_saque) {
-                        state.liberoExcluidoPorSaqueCentral = saqueCentralActivo;
-                        state.fase_actual = 'K2';
-                    }
+                } else {
+                    // Punto con saque propio: mantenemos K0
+                    state.fase_actual = 'K0';
+                    state.liberoContexto = 'defensa';
                 }
+            } else if (esPuntoRivalLocal) {
+                // Side-out perdido o error con saque propio → rival saca → K1
+                state.liberoExcluidoPorSaqueCentral = false;
+                state.tenemos_saque = false;
+                state.fase_actual   = 'K1';
+                state.liberoContexto = 'recepcion';
+            } else if (esAccionIntermedia) {
+                // Rally continúa: avanzar fase si aplica
+                // liberoContexto NO cambia en K0→K2 ni K1→K2:
+                // - desde K0: sigue la de defensa
+                // - desde K1: sigue la de recepción (también defiende)
+                if (accion === 'SAQUE' && (calidad === '+' || calidad === '=')) {
+                    state.liberoExcluidoPorSaqueCentral = saqueCentralActivo;
+                    state.fase_actual = 'K2';
+                } else if (accion === 'RECEPCION' && (calidad === '++' || calidad === '+' || calidad === '=')) {
+                    state.liberoExcluidoPorSaqueCentral = false;
+                    state.fase_actual = 'K2';
+                } else if (accion === 'DEFENSA' && (calidad === '++' || calidad === '+' || calidad === '=')) {
+                    if (faseAntes === 'K0' && saqueCentralActivo) {
+                        state.liberoExcluidoPorSaqueCentral = true;
+                    }
+                    state.fase_actual = 'K2';
+                } else if (faseAntes === 'K0' && state.tenemos_saque) {
+                    state.liberoExcluidoPorSaqueCentral = saqueCentralActivo;
+                    state.fase_actual = 'K2';
+                }
+            }
 
-                updateFaseIndicator();
-                invalidateIndicadoresCache();
-                updateFlashboard({ ligero: true });
-                resetVisual();
-                // Refresca las tarjetas de zona: la fila de Volumen Rápido
-                // (Recepción/Defensa) y el bloque de Saque dependen de la
-                // fase y de quién saca, que acaban de cambiar.
-                refreshModoCourtUI();
-                if (state.modo_scout === 'avanzado') renderBotonerasAcciones();
+            updateFaseIndicator();
+            invalidateIndicadoresCache();
+            updateFlashboard({ ligero: true });
+            resetVisual();
+            // Refresca las tarjetas de zona: la fila de Volumen Rápido
+            // (Recepción/Defensa) y el bloque de Saque dependen de la
+            // fase y de quién saca, que acaban de cambiar.
+            refreshModoCourtUI();
+            if (state.modo_scout === 'avanzado') renderBotonerasAcciones();
+        };
+
+        try {
+            const offlineYa = navigator.onLine === false;
+            const response = await fetchConReintentos(API_REGISTRAR_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN,
+                },
+                body: JSON.stringify(payload),
+            }, { maxIntentos: offlineYa ? 1 : 4, silencioso: offlineYa });
+
+            const res = await response.json();
+            if (res.status === 'ok') {
+                await aplicarTrasRegistro(res, { offline: false });
             } else {
                 showToast("❌ Error al registrar");
             }
-        } catch (e) { 
-            showToast("❌ Error de conexión"); 
+        } catch (e) {
+            ocultarToast();
+            const clientId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            enqueueOfflineOp({
+                kind: 'registrar',
+                clientId,
+                body: payload,
+                createdAt: Date.now(),
+            });
+            const synthetic = {
+                status: 'ok',
+                id: clientId,
+                dorsal: dorsalForJugadora(jug_id),
+                accion_texto: buildAccionTextoLocal(accion, calidad),
+            };
+            await aplicarTrasRegistro(synthetic, { offline: true });
+            updateOfflineBanner();
         }
     }
 
@@ -3619,7 +3828,7 @@
                 <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center font-black border border-slate-800 text-xs">${data.dorsal}</div>
                 <div class="font-black text-xs uppercase tracking-wider italic ${colorClass}">${displayActionText}</div>
             </div>
-            <button onclick="eliminarRegistro(${data.id})" class="text-rose-400/50 hover:text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl transition-all">
+            <button onclick="eliminarRegistro('${String(data.id).replace(/'/g, '')}')" class="text-rose-400/50 hover:text-rose-400 p-2 hover:bg-rose-500/10 rounded-xl transition-all">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
         </div>`;
@@ -3722,18 +3931,30 @@
 
     async function eliminarRegistro(id) {
         if (state.prefs.confirmarBorrado && !confirm('¿Eliminar esta acción?')) return;
+
+        // Pendiente offline: quitar de la cola local, sin llamar al servidor.
+        if (String(id).startsWith('pending-')) {
+            removeOfflineOpByClientId(String(id));
+            document.getElementById(`reg-${id}`)?.remove();
+            updateCounter();
+            state.quickHistory = state.quickHistory.filter(item => String(item.id) !== String(id));
+            renderQuickHistory();
+            showToast('🗑️ Acción pendiente eliminada');
+            return;
+        }
+
         try {
-            const r = await fetchConReintentos('{% url "stats_app:api_eliminar_estadistica" %}', { 
-                method: 'POST', 
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-CSRFToken': '{{ csrf_token }}' 
-                }, 
-                body: JSON.stringify({ id: id }) 
-            });
-            if ((await r.json()).status === 'ok') { 
-                document.getElementById(`reg-${id}`)?.remove(); 
-                updateCounter(); 
+            const r = await fetchConReintentos(API_ELIMINAR_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN,
+                },
+                body: JSON.stringify({ id: id }),
+            }, { maxIntentos: navigator.onLine === false ? 1 : 4 });
+            if ((await r.json()).status === 'ok') {
+                document.getElementById(`reg-${id}`)?.remove();
+                updateCounter();
                 state.quickHistory = state.quickHistory.filter(item => String(item.id) !== String(id));
                 renderQuickHistory();
                 showToast("🗑️ Acción eliminada");
@@ -3741,7 +3962,14 @@
                 updateFlashboard({ ligero: true });
             }
         } catch(e) {
-            showToast("❌ Error al eliminar");
+            // Sin red: encolar el borrado y quitar de la UI local.
+            enqueueOfflineOp({ kind: 'eliminar', id: id, createdAt: Date.now() });
+            document.getElementById(`reg-${id}`)?.remove();
+            updateCounter();
+            state.quickHistory = state.quickHistory.filter(item => String(item.id) !== String(id));
+            renderQuickHistory();
+            showToast('💾 Borrado guardado sin conexión');
+            updateOfflineBanner();
         }
     }
 
@@ -3905,6 +4133,7 @@
     async function fetchConReintentos(url, options = {}, config = {}) {
         const maxIntentos = config.maxIntentos ?? 4;
         const baseDelayMs = config.baseDelayMs ?? 600;
+        const silencioso = !!(config && config.silencioso);
         let intento = 0;
         let avisoMostrado = false;
 
@@ -3914,7 +4143,7 @@
                 if (REINTENTOS_HTTP_TRANSITORIOS.has(response.status) && intento < maxIntentos) {
                     throw new Error(`HTTP transitorio ${response.status}`);
                 }
-                if (avisoMostrado) {
+                if (avisoMostrado && !silencioso) {
                     showToast('✅ Conexión restablecida');
                 }
                 return response;
@@ -3922,11 +4151,15 @@
                 intento++;
                 if (intento > maxIntentos) {
                     ocultarToast();
-                    showToast('❌ Sin conexión. Revisa la cobertura e inténtalo de nuevo.');
+                    if (!silencioso) {
+                        showToast('❌ Sin conexión. Revisa la cobertura e inténtalo de nuevo.');
+                    }
                     throw err;
                 }
                 avisoMostrado = true;
-                showToast(`⚠️ Conexión inestable - Reintentando... (${intento}/${maxIntentos})`, { persistente: true });
+                if (!silencioso) {
+                    showToast(`⚠️ Conexión inestable - Reintentando... (${intento}/${maxIntentos})`, { persistente: true });
+                }
                 const backoff = baseDelayMs * (2 ** (intento - 1));
                 const jitter = Math.random() * 250;
                 await new Promise(resolve => setTimeout(resolve, backoff + jitter));
