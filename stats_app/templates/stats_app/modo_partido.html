@@ -269,7 +269,8 @@
                         </div>
                     </div>
                 </div>
-                <!-- Colocadoras (roles según sistema 5-1 / 4-2 / 6-2) -->
+                <!-- Colocadoras (roles según sistema 5-1 / 4-2 / 6-2) — solo voleibol 6×6 -->
+                {% if partido.modalidad != 'MINIVOLEY' %}
                 <div class="bg-[#0d1117] rounded-2xl p-4 border border-amber-500/30 space-y-2" id="pizarra-colocadoras-box">
                     <label class="text-[9px] font-black text-amber-400 uppercase tracking-widest block" id="pizarra-colocadoras-label">
                         Colocadora activa (roles 5-1)
@@ -300,6 +301,7 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
 
@@ -939,7 +941,7 @@
             <label class="flex items-center justify-between cursor-pointer gap-4">
                 <div class="min-w-0">
                     <span class="text-xs font-bold text-slate-300 block">Pedir destino en saque / ataque</span>
-                    <span class="text-[9px] text-slate-500 font-bold">Modo Trazo: tras Ace, error de saque o punto/error de ataque</span>
+                    <span class="text-[9px] text-slate-500 font-bold">Modo Trazo: solo tras Ace o punto de ataque (no en errores)</span>
                 </div>
                 <div class="relative flex-shrink-0">
                     <input type="checkbox" id="toggle-pedir-destino-trazo" class="sr-only peer" onchange="togglePref('pedirDestinoTrazo', 'voley_pref_pedir_destino_trazo', this.checked)">
@@ -949,10 +951,11 @@
             </label>
         </div>
 
-        <!-- Sistema táctico (layout dinámico K1/K2) -->
-        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-5">
+        <!-- Sistema táctico (layout dinámico K1/K2) — solo voleibol 6×6 -->
+        {% if partido.modalidad != 'MINIVOLEY' %}
+        <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-5" id="ajustes-sistema-tactico">
             <h3 class="text-sm font-black text-amber-400 uppercase tracking-widest border-b border-slate-800 pb-2">Sistema táctico</h3>
-            <p class="text-[10px] text-slate-500 font-bold">K1 = recepción · K2 = defensa (especialidad). K0 = rotación legal. Minivoley sin cambios.</p>
+            <p class="text-[10px] text-slate-500 font-bold">K1 = recepción · K2 = defensa (especialidad). K0 = rotación legal.</p>
 
             <div>
                 <span class="text-xs font-bold text-slate-300 block mb-2">Sistema de juego</span>
@@ -964,6 +967,7 @@
                 </div>
             </div>
 
+            {% if permite_libero %}
             <label class="flex items-center justify-between cursor-pointer gap-4">
                 <span class="text-xs font-bold text-slate-300">Líbero sustituye central zaguera</span>
                 <div class="relative flex-shrink-0">
@@ -972,6 +976,7 @@
                     <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
                 </div>
             </label>
+            {% endif %}
 
             <div>
                 <span class="text-xs font-bold text-slate-300 block mb-2" id="ajustes-colocadoras-label">Colocadora activa (roles 5-1)</span>
@@ -1003,6 +1008,7 @@
                 </div>
             </div>
 
+            {% if permite_libero %}
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <span class="text-xs font-bold text-slate-300 block mb-2">Líbero recepción (K1)</span>
@@ -1021,7 +1027,9 @@
                     <p class="text-[9px] text-slate-500 mt-1">Tras nuestro saque → K2</p>
                 </div>
             </div>
+            {% endif %}
         </div>
+        {% endif %}
 
         <!-- Otras Acciones -->
         <div class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
@@ -1680,7 +1688,7 @@
             liberoSustituyeCentral: true,
             liberoRecepcion: '1',     // L1 o L2 en K1
             liberoDefensa: '1',       // L1 o L2 en K2 (reservado)
-            pedirDestinoTrazo: true,  // sheet destino en saque/ataque ++/--
+            pedirDestinoTrazo: true,  // sheet destino en Ace / punto ataque (++)
         },
         zona: null,
         zona_destino: null,
@@ -3055,8 +3063,7 @@
     let pendingTrazo = null; // { accion, calidad }
 
     function needsTrazoDestino(accion, calidad) {
-        return (accion === 'SAQUE' || accion === 'ATAQUE')
-            && (calidad === '++' || calidad === '--');
+        return (accion === 'SAQUE' || accion === 'ATAQUE') && calidad === '++';
     }
 
     function trazoDestinoZoneButton(z) {
@@ -3079,8 +3086,8 @@
             return;
         }
         const labelAccion = accion === 'SAQUE'
-            ? (calidad === '++' ? 'Ace · destino del saque' : 'Error saque · ¿hacia dónde iba?')
-            : (calidad === '++' ? 'Punto ataque · destino' : 'Error ataque · ¿hacia dónde iba?');
+            ? 'Ace · destino del saque'
+            : 'Punto ataque · destino';
         if (title) title.textContent = labelAccion;
 
         const isMini = MODALIDAD.toUpperCase() === 'MINIVOLEY';
@@ -3093,12 +3100,7 @@
             grid.className = 'grid grid-cols-3 gap-2';
             const far = [1, 6, 5].map(trazoDestinoZoneButton).join('');
             const near = [2, 3, 4].map(trazoDestinoZoneButton).join('');
-            grid.innerHTML = `
-                <div class="col-span-3 text-[8px] font-black text-slate-500 uppercase tracking-widest text-center">Fondo rival</div>
-                ${far}
-                <div class="col-span-3 text-[8px] font-black text-slate-500 uppercase tracking-widest text-center pt-1">Red</div>
-                ${near}
-            `;
+            grid.innerHTML = far + near;
         }
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -5484,7 +5486,22 @@
         const fase = state.fase_actual;
         const sistemaDinamico = sistema === '5-1' || sistema === '4-2' || sistema === '6-2';
 
-        if (isMinivoley || sistema === '6-0' || !sistemaDinamico) {
+        // Minivoley 4×4: solo zonas 1–4, sin roles 5-1 ni líbero.
+        if (isMinivoley) {
+            const slots = {};
+            for (let z = 1; z <= 4; z++) {
+                slots[z] = {
+                    player: getRotPlayer(z),
+                    rotZone: z,
+                    isLibero: false,
+                    roleKey: '',
+                    roleLabel: '',
+                };
+            }
+            return { slots };
+        }
+
+        if (sistema === '6-0' || !sistemaDinamico) {
             return empty();
         }
         if (!roles) return empty();
@@ -5568,9 +5585,29 @@
     }
 
     function buildColocacionBarHtml(col) {
+        const btnCls = 'gameplay-action-btn';
+        const isMini = MODALIDAD.toUpperCase() === 'MINIVOLEY';
+
+        // Minivoley: colocación simple, sin selectores de sistema / Co activa.
+        if (isMini) {
+            const onCourt = getOnCourtPlayers();
+            const chosen = col || (onCourt[0] ? { id: onCourt[0].id, dorsal: onCourt[0].dorsal, nombre: onCourt[0].nombre } : null);
+            const pId = chosen ? chosen.id : '';
+            const label = chosen
+                ? `Colocación · #${chosen.dorsal} ${chosen.nombre}`
+                : 'Colocación';
+            return `
+            <div class="bg-[#121824] rounded-2xl p-2.5 border border-slate-800 space-y-2">
+                <div class="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-wider truncate">${label}</div>
+                <div class="gameplay-btn-row">
+                    <button onclick="registrarGameplay('COLOCACION', '=', '${pId}')" class="${btnCls} bg-white hover:bg-slate-200 text-black"${pId ? '' : ' disabled'}>Colocación</button>
+                    <button onclick="registrarGameplay('COLOCACION', '--', '${pId}')" class="${btnCls} bg-rose-600 hover:bg-rose-500 text-white"${pId ? '' : ' disabled'}>Error Colocación</button>
+                </div>
+            </div>`;
+        }
+
         const pId = col ? col.id : '';
         const label = col ? `Colocación · #${col.dorsal} ${col.nombre}` : 'Colocación (elige Co)';
-        const btnCls = 'gameplay-action-btn';
         const onCourt = getOnCourtPlayers();
         const par = usesColocadoraPar();
         const optHtml = (val) => onCourt.map(p => {

@@ -93,7 +93,7 @@
         <label class="flex items-center justify-between cursor-pointer gap-4">
             <div class="min-w-0">
                 <span class="text-sm font-bold text-slate-200 block">Pedir destino en saque / ataque</span>
-                <p class="text-[10px] text-slate-500 mt-0.5">Modo Trazo: tras Ace, error de saque o punto/error de ataque eliges zona rival (6 zonas).</p>
+                <p class="text-[10px] text-slate-500 mt-0.5">Modo Trazo: tras Ace o punto de ataque eliges zona rival (6 zonas). Los errores no piden destino.</p>
             </div>
             <div class="relative flex-shrink-0">
                 <input type="checkbox" id="cfg-pedir-destino-trazo" class="sr-only peer" onchange="setAppPref('voley_pref_pedir_destino_trazo', this.checked)">
@@ -103,15 +103,15 @@
         </label>
     </section>
 
-    <!-- Sistema táctico (Modo Rápido) -->
+    <!-- Sistema táctico (Modo Rápido) — solo voleibol 6×6 -->
     <section class="bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl space-y-5">
         <h2 class="text-sm font-black text-amber-400 uppercase tracking-widest border-b border-slate-800 pb-2 flex items-center gap-2">
             <i data-lucide="layout-grid" class="w-4 h-4"></i>
             Sistema táctico (Modo Rápido)
         </h2>
         <p class="text-xs text-slate-500">
-            En recepción (K1) y defensa (K2) las tarjetas se reordenan según la formación real (no solo la rotación legal).
-            K0 sigue la rotación estática. Minivoley no cambia.
+            Solo aplica a <strong class="text-slate-400">voleibol 6×6</strong> (Cadete+). En Minivoley 4×4 no se usa: las tarjetas van por zona de rotación.
+            En recepción (K1) y defensa (K2) las tarjetas se reordenan según la formación. K0 sigue la rotación legal.
         </p>
 
         <div>
@@ -128,7 +128,7 @@
         <label class="flex items-center justify-between cursor-pointer gap-4">
             <div>
                 <span class="text-sm font-bold text-slate-200">Líbero sustituye a la central zaguera</span>
-                <p class="text-[10px] text-slate-500 mt-0.5">Si se desactiva, la central zaguera permanece en el campo visual.</p>
+                <p class="text-[10px] text-slate-500 mt-0.5">Cadete+. Si se desactiva, la central zaguera permanece en el campo visual.</p>
             </div>
             <div class="relative flex-shrink-0">
                 <input type="checkbox" id="cfg-libero-sustituye" class="sr-only peer" onchange="setAppPref('voley_pref_libero_sustituye_central', this.checked)">
@@ -144,7 +144,7 @@
                     <button type="button" id="cfg-libero-k1-1" onclick="setLiberoFase('k1', '1')" class="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">L1</button>
                     <button type="button" id="cfg-libero-k1-2" onclick="setLiberoFase('k1', '2')" class="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">L2</button>
                 </div>
-                <p class="text-[10px] text-slate-500 mt-1.5">Recibe y también defiende en transiciones desde K1.</p>
+                <p class="text-[10px] text-slate-500 mt-1.5">Cadete+. Recibe y también defiende en transiciones desde K1.</p>
             </div>
             <div>
                 <span class="text-sm font-bold text-slate-200 block mb-2">Líbero en defensa (K0)</span>
@@ -152,7 +152,7 @@
                     <button type="button" id="cfg-libero-k2-1" onclick="setLiberoFase('k2', '1')" class="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">L1</button>
                     <button type="button" id="cfg-libero-k2-2" onclick="setLiberoFase('k2', '2')" class="flex-1 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">L2</button>
                 </div>
-                <p class="text-[10px] text-slate-500 mt-1.5">Entra en K2 tras nuestro saque (complejo de breakpoint).</p>
+                <p class="text-[10px] text-slate-500 mt-1.5">Cadete+. Entra en K2 tras nuestro saque (complejo de breakpoint).</p>
             </div>
         </div>
     </section>
