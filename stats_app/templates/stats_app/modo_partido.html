@@ -2032,6 +2032,20 @@
 
         updateOfflineBanner();
         ensureOfflineSyncGuards();
+        try {
+            const cachedNotas = loadNotasCache();
+            if (cachedNotas.length) notasPartido = cachedNotas;
+            const cachedReglas = loadReglasCache();
+            if (cachedReglas) {
+                Object.assign(state.reglas, cachedReglas);
+                const pps = document.getElementById('input-puntos-set');
+                const psd = document.getElementById('input-puntos-set-decisivo');
+                const spg = document.getElementById('input-sets-para-ganar');
+                if (pps && cachedReglas.puntosPorSet) pps.value = cachedReglas.puntosPorSet;
+                if (psd && cachedReglas.puntosSetDecisivo) psd.value = cachedReglas.puntosSetDecisivo;
+                if (spg && cachedReglas.setsParaGanar) spg.value = cachedReglas.setsParaGanar;
+            }
+        } catch (e) { /* cache opcional */ }
         window.addEventListener('online', () => {
             updateOfflineBanner();
             flushOfflineQueue();
@@ -2805,16 +2819,23 @@
                 container.innerHTML = '';
             }
             
-            const response = await fetchConReintentos(`{% url "stats_app:api_get_rotacion" partido.id %}?set=${state.set_numero}`);
+            const response = await fetchConReintentos(`${API_GET_ROTACION_URL}?set=${state.set_numero}`);
             if (response.status === 200) {
                 state.rotation = await response.json();
+                persistRotacionCache(state.rotation);
             } else {
-                state.rotation = null;
+                state.rotation = loadRotacionCache(state.set_numero);
             }
             updateUIHeader();
             updateRotacionScoutButtons();
         } catch(e) {
             console.error("Error al renderizar jugadoras activas: ", e);
+            const cached = loadRotacionCache(state.set_numero);
+            if (cached) {
+                state.rotation = cached;
+                updateUIHeader();
+                updateRotacionScoutButtons();
+            }
         }
     }
 
@@ -3529,6 +3550,11 @@
     const API_ROTAR_URL = '{% url "stats_app:api_rotar_manual" partido.id %}';
     const API_GUARDAR_ROT_URL = '{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}';
     const API_CAMBIO_URL = '{% url "stats_app:api_registrar_cambio" %}';
+    const API_CREAR_NOTA_URL = '{% url "stats_app:api_crear_nota" partido.id %}';
+    const API_ACTUALIZAR_NOTA_TMPL = '{% url "stats_app:api_actualizar_nota" partido.id 0 %}';
+    const API_ELIMINAR_NOTA_TMPL = '{% url "stats_app:api_eliminar_nota" partido.id 0 %}';
+    const API_CONFIG_SET_URL = '{% url "stats_app:api_actualizar_config_set" partido.id %}';
+    const API_GET_ROTACION_URL = '{% url "stats_app:api_get_rotacion" partido.id %}';
     const CSRF_TOKEN = '{{ csrf_token }}';
     let offlineFlushInProgress = false;
     let offlineFlushTimer = null;
@@ -3648,9 +3674,110 @@
             if (op.clientId === clientId) return false;
             // Si se cancela un registrar pendiente, también su eliminar asociado
             if (op.kind === 'eliminar' && String(op.id) === String(clientId)) return false;
+            if (op.kind === 'crear_nota' && op.clientId === clientId) return false;
+            if ((op.kind === 'actualizar_nota' || op.kind === 'eliminar_nota') && String(op.notaId) === String(clientId)) return false;
             return true;
         });
         saveOfflineQueue(q);
+    }
+
+    function notasCacheKey() {
+        return `voley_notas_cache_${state.partido_id}`;
+    }
+
+    function persistNotasCache() {
+        try {
+            localStorage.setItem(notasCacheKey(), JSON.stringify(notasPartido || []));
+        } catch (e) { /* quota */ }
+    }
+
+    function loadNotasCache() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(notasCacheKey()) || '[]');
+            return Array.isArray(raw) ? raw : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function reglasCacheKey() {
+        return `voley_reglas_cache_${state.partido_id}`;
+    }
+
+    function persistReglasCache() {
+        try {
+            localStorage.setItem(reglasCacheKey(), JSON.stringify(state.reglas || {}));
+        } catch (e) { /* quota */ }
+    }
+
+    function loadReglasCache() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(reglasCacheKey()) || 'null');
+            return raw && typeof raw === 'object' ? raw : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function rotacionCacheKey(setNum) {
+        return `voley_rot_cache_${state.partido_id}_${setNum || state.set_numero}`;
+    }
+
+    function persistRotacionCache(rot) {
+        try {
+            localStorage.setItem(rotacionCacheKey(state.set_numero), JSON.stringify(rot));
+        } catch (e) { /* quota */ }
+    }
+
+    function loadRotacionCache(setNum) {
+        try {
+            return JSON.parse(localStorage.getItem(rotacionCacheKey(setNum)) || 'null');
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function remapPendingNotaId(clientId, serverNota) {
+        if (!serverNota || serverNota.id == null) return;
+        if (typeof notasPartido !== 'undefined' && Array.isArray(notasPartido)) {
+            const idx = notasPartido.findIndex(n => String(n.id) === String(clientId));
+            if (idx >= 0) {
+                notasPartido[idx] = serverNota;
+                persistNotasCache();
+                try { renderNotasList(); } catch (e) { /* panel no montado */ }
+            }
+        }
+        if (typeof notaEditId !== 'undefined' && String(notaEditId) === String(clientId)) {
+            notaEditId = serverNota.id;
+        }
+        const q = loadOfflineQueue();
+        let changed = false;
+        q.forEach(op => {
+            if ((op.kind === 'actualizar_nota' || op.kind === 'eliminar_nota') && String(op.notaId) === String(clientId)) {
+                op.notaId = serverNota.id;
+                changed = true;
+            }
+        });
+        if (changed) saveOfflineQueue(q);
+    }
+
+    function buildNotaLocalFromPayload(payload, clientId) {
+        const jugId = payload.jugadora_id || null;
+        const pj = jugId ? allJugadoras.find(x => String(x.id) === String(jugId)) : null;
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const fecha = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        return {
+            id: clientId,
+            texto: payload.texto,
+            set_numero: payload.set_numero || state.set_numero,
+            jugadora_id: jugId,
+            jugadora_dorsal: pj ? pj.dorsal : null,
+            jugadora_nombre: pj ? pj.nombre : null,
+            creado_en: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+            creado_en_fecha: fecha,
+            _offline: true,
+        };
     }
 
     function remapPendingRegistroId(clientId, serverRes) {
@@ -3728,6 +3855,44 @@
         }
         if (item.kind === 'cambio') {
             await post(API_CAMBIO_URL, item.body);
+            return;
+        }
+        if (item.kind === 'crear_nota') {
+            const res = await post(API_CREAR_NOTA_URL, item.body);
+            if (item.clientId && res && res.nota) remapPendingNotaId(item.clientId, res.nota);
+            return;
+        }
+        if (item.kind === 'actualizar_nota') {
+            if (String(item.notaId).startsWith('pending-')) {
+                throw new Error('Nota pendiente aún no sincronizada');
+            }
+            const url = API_ACTUALIZAR_NOTA_TMPL.replace('/0/', `/${item.notaId}/`);
+            const res = await post(url, item.body);
+            if (res && res.nota) {
+                const idx = notasPartido.findIndex(n => String(n.id) === String(item.notaId));
+                if (idx >= 0) {
+                    notasPartido[idx] = res.nota;
+                    persistNotasCache();
+                    renderNotasList();
+                }
+            }
+            return;
+        }
+        if (item.kind === 'eliminar_nota') {
+            if (String(item.notaId).startsWith('pending-')) return;
+            const url = API_ELIMINAR_NOTA_TMPL.replace('/0/', `/${item.notaId}/`);
+            await post(url, {});
+            return;
+        }
+        if (item.kind === 'config_set') {
+            const res = await post(API_CONFIG_SET_URL, item.body);
+            if (res && res.status === 'ok') {
+                state.reglas.puntosPorSet = res.puntos_por_set;
+                state.reglas.puntosSetDecisivo = res.puntos_set_decisivo;
+                state.reglas.setsParaGanar = res.sets_para_ganar;
+                state.reglas.setDecisivoNumero = res.set_decisivo_numero;
+                persistReglasCache();
+            }
             return;
         }
         // Op desconocida: se descarta al hacer shift
@@ -5977,9 +6142,9 @@
     }
 
     function editarNotaPartido(id) {
-        const nota = notasPartido.find(n => n.id === id);
+        const nota = notasPartido.find(n => String(n.id) === String(id));
         if (!nota) return;
-        notaEditId = id;
+        notaEditId = nota.id;
         if (nota.jugadora_id) {
             setNotaTipo('jugadora');
             const jugSel = document.getElementById('nota-jugadora-select');
@@ -6002,13 +6167,24 @@
 
     async function cargarNotasPartido() {
         try {
-            const r = await fetchConReintentos(`{% url "stats_app:api_list_notas" partido.id %}`);
+            const offlineYa = navigator.onLine === false;
+            const r = await fetchConReintentos(`{% url "stats_app:api_list_notas" partido.id %}`, {}, {
+                maxIntentos: offlineYa ? 1 : 3,
+                silencioso: offlineYa,
+            });
             const data = await r.json();
             if (data.status === 'ok') {
-                notasPartido = data.notas || [];
+                // Conservar notas pendientes locales que aún no están en servidor
+                const serverNotas = data.notas || [];
+                const pendingLocal = (notasPartido || []).filter(n => String(n.id).startsWith('pending-'));
+                const serverIds = new Set(serverNotas.map(n => String(n.id)));
+                notasPartido = serverNotas.concat(pendingLocal.filter(n => !serverIds.has(String(n.id))));
+                persistNotasCache();
             }
         } catch (e) {
             console.error('Error cargando notas', e);
+            const cached = loadNotasCache();
+            if (cached.length) notasPartido = cached;
         }
     }
 
@@ -6064,10 +6240,10 @@
 
         if (!readOnly) {
             list.querySelectorAll('[data-nota-edit]').forEach(btn => {
-                btn.addEventListener('click', () => editarNotaPartido(parseInt(btn.dataset.notaEdit, 10)));
+                btn.addEventListener('click', () => editarNotaPartido(btn.dataset.notaEdit));
             });
             list.querySelectorAll('[data-nota-del]').forEach(btn => {
-                btn.addEventListener('click', () => eliminarNotaPartido(parseInt(btn.dataset.notaDel, 10)));
+                btn.addEventListener('click', () => eliminarNotaPartido(btn.dataset.notaDel));
             });
         }
     }
@@ -6119,17 +6295,32 @@
             payload.jugadora_id = parseInt(jugId, 10);
         }
 
-        const url = notaEditId
-            ? `{% url "stats_app:api_actualizar_nota" partido.id 0 %}`.replace('/0/', `/${notaEditId}/`)
-            : '{% url "stats_app:api_crear_nota" partido.id %}';
+        const wasEdit = !!notaEditId;
+        const editId = notaEditId;
+        const url = wasEdit
+            ? API_ACTUALIZAR_NOTA_TMPL.replace('/0/', `/${editId}/`)
+            : API_CREAR_NOTA_URL;
+
+        const applyLocalNota = (notaObj) => {
+            if (wasEdit) {
+                const idx = notasPartido.findIndex(n => String(n.id) === String(editId));
+                if (idx >= 0) notasPartido[idx] = Object.assign({}, notasPartido[idx], notaObj, { id: editId });
+                else notasPartido.unshift(notaObj);
+            } else {
+                notasPartido.unshift(notaObj);
+            }
+            persistNotasCache();
+            resetNotaForm();
+            renderNotasList();
+        };
 
         try {
-            const wasEdit = !!notaEditId;
+            const offlineYa = navigator.onLine === false;
             const r = await fetchConReintentos(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                 body: JSON.stringify(payload),
-            });
+            }, { maxIntentos: offlineYa ? 1 : 4, silencioso: offlineYa });
             const data = await r.json();
             if (data.status !== 'ok') {
                 showToast('❌ ' + (data.mensaje || 'Error al guardar'));
@@ -6140,30 +6331,67 @@
             renderNotasList();
             showToast(wasEdit ? '✅ Nota actualizada' : '✅ Nota guardada');
         } catch (e) {
-            showToast('❌ Error de conexión');
+            ocultarToast();
+            if (wasEdit) {
+                if (String(editId).startsWith('pending-')) {
+                    // Aún no está en servidor: actualizar el crear encolado + UI local
+                    const q = loadOfflineQueue();
+                    const crear = q.find(op => op.kind === 'crear_nota' && op.clientId === editId);
+                    if (crear) crear.body = payload;
+                    saveOfflineQueue(q);
+                } else {
+                    enqueueOfflineOp({ kind: 'actualizar_nota', notaId: editId, body: payload });
+                }
+                applyLocalNota(buildNotaLocalFromPayload(payload, editId));
+            } else {
+                const clientId = newPendingClientId('pending-nota');
+                enqueueOfflineOp({ kind: 'crear_nota', clientId, body: payload });
+                applyLocalNota(buildNotaLocalFromPayload(payload, clientId));
+            }
+            showToast('💾 Nota guardada sin conexión');
+            updateOfflineBanner();
         }
     }
 
     async function eliminarNotaPartido(id) {
         if (!confirm('¿Eliminar esta nota?')) return;
+        const notaId = id;
+
+        const applyLocalDelete = () => {
+            notasPartido = notasPartido.filter(n => String(n.id) !== String(notaId));
+            persistNotasCache();
+            if (String(notaEditId) === String(notaId)) resetNotaForm();
+            renderNotasList();
+        };
+
+        if (String(notaId).startsWith('pending-')) {
+            removeOfflineOpByClientId(String(notaId));
+            applyLocalDelete();
+            showToast('🗑️ Nota pendiente eliminada');
+            return;
+        }
+
         try {
-            const url = `{% url "stats_app:api_eliminar_nota" partido.id 0 %}`.replace('/0/', `/${id}/`);
+            const offlineYa = navigator.onLine === false;
+            const url = API_ELIMINAR_NOTA_TMPL.replace('/0/', `/${notaId}/`);
             const r = await fetchConReintentos(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                 body: '{}',
-            });
+            }, { maxIntentos: offlineYa ? 1 : 4, silencioso: offlineYa });
             const data = await r.json();
             if (data.status !== 'ok') {
                 showToast('❌ No se pudo eliminar');
                 return;
             }
-            if (notaEditId === id) resetNotaForm();
-            await cargarNotasPartido();
-            renderNotasList();
+            applyLocalDelete();
             showToast('🗑️ Nota eliminada');
         } catch (e) {
-            showToast('❌ Error de conexión');
+            ocultarToast();
+            enqueueOfflineOp({ kind: 'eliminar_nota', notaId: notaId });
+            applyLocalDelete();
+            showToast('💾 Borrado de nota guardado sin conexión');
+            updateOfflineBanner();
         }
     }
 
@@ -6171,29 +6399,42 @@
         const puntosPorSet = parseInt(document.getElementById('input-puntos-set').value) || state.reglas.puntosPorSet;
         const puntosSetDecisivo = parseInt(document.getElementById('input-puntos-set-decisivo').value) || state.reglas.puntosSetDecisivo;
         const setsParaGanar = parseInt(document.getElementById('input-sets-para-ganar').value) || state.reglas.setsParaGanar;
+        const body = {
+            puntos_por_set: puntosPorSet,
+            puntos_set_decisivo: puntosSetDecisivo,
+            sets_para_ganar: setsParaGanar
+        };
 
         try {
-            const r = await fetchConReintentos('{% url "stats_app:api_actualizar_config_set" partido.id %}', {
+            const offlineYa = navigator.onLine === false;
+            const r = await fetchConReintentos(API_CONFIG_SET_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify({
-                    puntos_por_set: puntosPorSet,
-                    puntos_set_decisivo: puntosSetDecisivo,
-                    sets_para_ganar: setsParaGanar
-                })
-            });
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                body: JSON.stringify(body)
+            }, { maxIntentos: offlineYa ? 1 : 4, silencioso: offlineYa });
             const res = await r.json();
             if (res.status === 'ok') {
                 state.reglas.puntosPorSet = res.puntos_por_set;
                 state.reglas.puntosSetDecisivo = res.puntos_set_decisivo;
                 state.reglas.setsParaGanar = res.sets_para_ganar;
                 state.reglas.setDecisivoNumero = res.set_decisivo_numero;
+                persistReglasCache();
                 showToast('✅ Reglas del set actualizadas');
             } else {
                 showToast('❌ ' + (res.mensaje || 'Error al guardar'));
             }
         } catch (e) {
-            showToast('❌ Error de conexión');
+            ocultarToast();
+            // Aplicar en local y encolar
+            state.reglas.puntosPorSet = puntosPorSet;
+            state.reglas.puntosSetDecisivo = puntosSetDecisivo;
+            state.reglas.setsParaGanar = setsParaGanar;
+            // set decisivo típico = 2*setsParaGanar - 1
+            state.reglas.setDecisivoNumero = (setsParaGanar * 2) - 1;
+            persistReglasCache();
+            enqueueOfflineOp({ kind: 'config_set', body });
+            showToast('💾 Reglas guardadas sin conexión');
+            updateOfflineBanner();
         }
     }
 

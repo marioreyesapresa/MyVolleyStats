@@ -1,39 +1,71 @@
 /**
- * Service Worker mínimo de MyVolleyStats.
+ * Service Worker de MyVolleyStats.
  *
- * Objetivo único: cumplir el requisito de instalación de PWA en iOS/Android
- * (Safari/Chrome exigen un Service Worker registrado con un manejador de
- * `fetch`, aunque sea trivial, para permitir "Añadir a pantalla de inicio"
- * en modo standalone). Deliberadamente NO cachea nada ni intercepta la
- * lógica de red: todas las peticiones pasan de largo directas a la red.
- *
- * Esto es intencional. El modo partido depende de datos en tiempo real
- * (marcador, rotaciones, estadísticas) y ya implementa su propio mecanismo
- * de reintentos con backoff exponencial en el cliente (`fetchConReintentos`
- * en modo_partido.html). Una estrategia de caché aquí (cache-first o
- * stale-while-revalidate) podría servir datos obsoletos del partido en
- * curso, lo cual sería mucho peor que no tener Service Worker. Si en el
- * futuro se añade soporte offline real, debe hacerse con mucho cuidado y
- * solo para assets estáticos (CSS/JS/iconos), nunca para las respuestas de
- * `/api/`.
+ * - Cumple el requisito de instalación PWA (iOS/Android).
+ * - Cachea SOLO assets estáticos (/static/…) con network-first y fallback
+ *   a caché si no hay red. Así la UI ya abierta aguanta mejor cortes de
+ *   cobertura en el pabellón.
+ * - NUNCA cachea HTML de páginas ni respuestas /api/: el scout en vivo
+ *   usa cola offline propia en modo_partido.html.
  */
 
-const SW_VERSION = 'myvolleystats-sw-v1';
+const SW_VERSION = 'myvolleystats-sw-v2';
+const STATIC_CACHE = `${SW_VERSION}-static`;
+
+function esAssetEstatico(url) {
+    return url.pathname.startsWith('/static/')
+        || url.pathname === '/service-worker.js';
+}
 
 self.addEventListener('install', (event) => {
-    // Activa la nueva versión del Service Worker sin esperar a que se
-    // cierren las pestañas/instancias abiertas de la PWA.
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-    // Toma el control inmediato de los clientes ya abiertos (evita tener
-    // que recargar manualmente tras la primera instalación).
-    event.waitUntil(self.clients.claim());
+    event.waitUntil((async () => {
+        const keys = await caches.keys();
+        await Promise.all(
+            keys
+                .filter((k) => k.startsWith('myvolleystats-sw-') && k !== STATIC_CACHE)
+                .map((k) => caches.delete(k))
+        );
+        await self.clients.claim();
+    })());
 });
 
 self.addEventListener('fetch', (event) => {
-    // Pass-through explícito: no se cachea nada, no se interfiere con los
-    // reintentos ni con las peticiones a las APIs de scouting en vivo.
-    event.respondWith(fetch(event.request));
+    const req = event.request;
+    if (req.method !== 'GET') {
+        event.respondWith(fetch(req));
+        return;
+    }
+
+    let url;
+    try {
+        url = new URL(req.url);
+    } catch (e) {
+        event.respondWith(fetch(req));
+        return;
+    }
+
+    // Solo assets estáticos; HTML y /api/ pasan siempre a red.
+    if (!esAssetEstatico(url)) {
+        event.respondWith(fetch(req));
+        return;
+    }
+
+    event.respondWith((async () => {
+        const cache = await caches.open(STATIC_CACHE);
+        try {
+            const net = await fetch(req);
+            if (net && net.ok) {
+                cache.put(req, net.clone());
+            }
+            return net;
+        } catch (err) {
+            const cached = await cache.match(req);
+            if (cached) return cached;
+            throw err;
+        }
+    })());
 });
