@@ -31,9 +31,16 @@
 
 <!-- Banner cola offline / sin conexión (scout en vivo) -->
 <div id="offline-banner"
-     class="hidden sticky top-0 z-[90] w-full px-3 py-2.5 bg-amber-500/15 border-b border-amber-500/40 text-amber-200 text-center text-[11px] md:text-xs font-black uppercase tracking-wider backdrop-blur-sm"
+     class="hidden sticky top-0 z-[90] w-full px-3 py-2.5 border-b backdrop-blur-sm"
      role="status" aria-live="polite">
-    <span id="offline-banner-text">Sin conexión</span>
+    <div class="flex items-center justify-center gap-2 md:gap-3 flex-wrap max-w-5xl mx-auto">
+        <span id="offline-banner-dot" class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" aria-hidden="true"></span>
+        <span id="offline-banner-text" class="text-amber-100 text-[11px] md:text-xs font-black uppercase tracking-wider text-center">Sin conexión</span>
+        <button type="button" id="offline-banner-sync" onclick="flushOfflineQueue()"
+                class="hidden px-3 py-1 rounded-lg bg-amber-500/25 border border-amber-400/40 text-amber-100 text-[10px] font-black uppercase tracking-wider active:scale-95 transition-all">
+            Sincronizar
+        </button>
+    </div>
 </div>
 
 <style>
@@ -2024,6 +2031,7 @@
         }
 
         updateOfflineBanner();
+        ensureOfflineSyncGuards();
         window.addEventListener('online', () => {
             updateOfflineBanner();
             flushOfflineQueue();
@@ -2419,20 +2427,65 @@
                         }
                     }
 
-                    const [rCambio, rRot] = await Promise.all([
-                        fetchConReintentos('{% url "stats_app:api_registrar_cambio" %}', {
+                    const offlineYa = navigator.onLine === false;
+                    const fetchOpts = { maxIntentos: offlineYa ? 1 : 4, silencioso: offlineYa };
+                    const results = await Promise.allSettled([
+                        fetchConReintentos(API_CAMBIO_URL, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                             body: cambioPayload,
-                        }),
-                        fetchConReintentos(`{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}`, {
+                        }, fetchOpts),
+                        fetchConReintentos(API_GUARDAR_ROT_URL, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                             body: JSON.stringify(newPositions),
-                        }),
+                        }, fetchOpts),
                     ]);
 
-                    if (rCambio.ok && rRot.ok) {
+                    const rCambio = results[0].status === 'fulfilled' ? results[0].value : null;
+                    const rRot = results[1].status === 'fulfilled' ? results[1].value : null;
+                    const cambioOk = !!(rCambio && rCambio.ok);
+                    const rotOk = !!(rRot && rRot.ok);
+
+                    if (!cambioOk || !rotOk) {
+                        ocultarToast();
+                        let cambioBody;
+                        try { cambioBody = JSON.parse(cambioPayload); } catch (err) { cambioBody = null; }
+                        if (!cambioOk && cambioBody) enqueueOfflineOp({ kind: 'cambio', body: cambioBody });
+                        if (!rotOk) enqueueOfflineOp({ kind: 'guardar_rotacion', body: newPositions });
+
+                        let cambioRes = null;
+                        if (cambioOk) {
+                            try { cambioRes = await rCambio.json(); } catch (err) { cambioRes = null; }
+                        }
+                        if (!cambioRes) {
+                            const saleJ0 = allJugadoras.find(x => String(x.id) === saleId);
+                            const entraJ0 = allJugadoras.find(x => String(x.id) === entraId);
+                            cambioRes = {
+                                id: newPendingClientId('pending'),
+                                dorsal: entraJ0?.dorsal || 'EQ',
+                                accion_texto: `🔄 CAMBIO: #${saleJ0?.dorsal ?? '?'} > #${entraJ0?.dorsal ?? '?'}`,
+                            };
+                        }
+                        renderAction(cambioRes, '=');
+
+                        const saleJ = allJugadoras.find(x => String(x.id) === saleId);
+                        const entraJ = allJugadoras.find(x => String(x.id) === entraId);
+                        const pL = document.getElementById('score-local')?.innerText || '?';
+                        const pR = document.getElementById('score-rival')?.innerText || '?';
+                        addParonEntry(
+                            `🔄 Cambio: #${saleJ?.dorsal ?? '?'} → #${entraJ?.dorsal ?? '?'}`,
+                            `${pL} - ${pR}`, 'cambio'
+                        );
+                        showToast((!cambioOk && !rotOk)
+                            ? '💾 Cambio guardado sin conexión'
+                            : '💾 Cambio parcial · resto en cola offline');
+                        updateOfflineBanner();
+                        toggleModal('modal-config');
+                        if (returnToScout) {
+                            volverAlScoutActivo();
+                        }
+                    } else {
                         const cambioRes = await rCambio.json();
                         renderAction(cambioRes, '=');
 
@@ -2446,15 +2499,13 @@
                         );
 
                         showToast(returnToScout ? '✅ Cambio guardado — volviendo al scout' : '✅ Cambio registrado');
-                        await loadRotation();
+                        try { await loadRotation(); } catch (e) { /* offline-tolerant */ }
                         toggleModal('modal-config');
                         invalidateIndicadoresCache();
                         updateFlashboard({ ligero: true });
                         if (returnToScout) {
                             volverAlScoutActivo();
                         }
-                    } else {
-                        showToast("❌ Error al registrar el cambio");
                     }
                 } catch (e) {
                     showToast("❌ Error al guardar alineación");
@@ -3141,11 +3192,12 @@
         }
 
         try {
-            const r = await fetchConReintentos(`{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}`, {
+            const offlineYa = navigator.onLine === false;
+            const r = await fetchConReintentos(API_GUARDAR_ROT_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                 body: JSON.stringify(body)
-            });
+            }, { maxIntentos: offlineYa ? 1 : 4, silencioso: offlineYa });
             if(r.ok) {
                 // ── Persistir estado inicial (K0/K1) por set ─────────────────
                 localStorage.setItem(
@@ -3156,7 +3208,7 @@
                     saveRotacionInicial(selectedRotInit);
                     saveRotacionActual(selectedRotInit);
                 }
-                await loadRotation();
+                try { await loadRotation(); } catch (e) { /* offline: UI ya tiene tempLineup */ }
                 // Tras doble cambio / Co activa: R = zona de la colocadora
                 syncRotacionConColocadora();
                 const rotLabel = `R${state.rotacion_num}`;
@@ -3171,8 +3223,23 @@
                 showToast("❌ Error al guardar alineación");
             }
         } catch(e) {
+            ocultarToast();
+            enqueueOfflineOp({ kind: 'guardar_rotacion', body });
+            localStorage.setItem(
+                `partido_${state.partido_id}_set_${state.set_numero}_estado_init`,
+                selectedEstadoInicial
+            );
+            if (esPrimerSexteto) {
+                saveRotacionInicial(selectedRotInit);
+                saveRotacionActual(selectedRotInit);
+            }
+            syncRotacionConColocadora({ silent: true });
             volverAlScoutTrasGuardar = false;
-            showToast("❌ Error de conexión");
+            showToast('💾 Alineación guardada sin conexión');
+            updateOfflineBanner();
+            if (irAlScout) {
+                volverAlScoutActivo();
+            }
         }
     }
 
@@ -3273,18 +3340,25 @@
         
         try {
             // 4. Persistir la rotación en el servidor
-            const r = await fetchConReintentos(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
+            const offlineYa = navigator.onLine === false;
+            const r = await fetchConReintentos(API_ROTAR_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                 body: JSON.stringify({ set_numero: state.set_numero, direccion: dir })
-            });
+            }, { maxIntentos: offlineYa ? 1 : 4, silencioso: offlineYa });
             if(r.ok) {
                 showToast("🔄 Rotación completada");
             } else {
                 showToast("❌ Error al persistir la rotación en el servidor");
             }
         } catch(e) {
-            showToast("❌ Error de red al persistir la rotación");
+            ocultarToast();
+            enqueueOfflineOp({
+                kind: 'rotar',
+                body: { set_numero: state.set_numero, direccion: dir },
+            });
+            showToast("💾 Rotación guardada sin conexión");
+            updateOfflineBanner();
         }
     }
 
@@ -3357,12 +3431,18 @@
         
         try {
             // 4. Persistir en el servidor
-            await fetchConReintentos(`{% url "stats_app:api_rotar_manual" partido.id %}`, {
+            await fetchConReintentos(API_ROTAR_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                 body: JSON.stringify({ set_numero: state.set_numero, direccion: 'horario' })
+            }, { maxIntentos: navigator.onLine === false ? 1 : 4, silencioso: true });
+        } catch (e) {
+            enqueueOfflineOp({
+                kind: 'rotar',
+                body: { set_numero: state.set_numero, direccion: 'horario' },
             });
-        } catch (e) { /* silent */ }
+            updateOfflineBanner();
+        }
     }
 
     // ── Modo Trazo: destino saque/ataque ───────────────────────────────────
@@ -3442,13 +3522,16 @@
     }
 
     // ── Cola offline (WiFi del pabellón) ─────────────────────────────────
-    // Si falla el POST de registrar tras reintentos, la acción queda en
-    // localStorage y el marcador/historial siguen en local. Al volver la red
-    // se reenvían en orden. No cacheamos /api/ en el Service Worker.
+    // Acciones de scout se guardan en localStorage si falla la red y se
+    // reenvían en orden al recuperar conexión. No cacheamos /api/ en el SW.
     const API_REGISTRAR_URL = '{% url "stats_app:api_registrar_estadistica" %}';
     const API_ELIMINAR_URL = '{% url "stats_app:api_eliminar_estadistica" %}';
+    const API_ROTAR_URL = '{% url "stats_app:api_rotar_manual" partido.id %}';
+    const API_GUARDAR_ROT_URL = '{% url "stats_app:api_guardar_rotacion_inicial" partido.id %}';
+    const API_CAMBIO_URL = '{% url "stats_app:api_registrar_cambio" %}';
     const CSRF_TOKEN = '{{ csrf_token }}';
     let offlineFlushInProgress = false;
+    let offlineFlushTimer = null;
 
     function offlineQueueKey() {
         return `voley_offline_queue_${state.partido_id}`;
@@ -3468,24 +3551,59 @@
         updateOfflineBanner();
     }
 
+    function offlineQueueCount() {
+        return loadOfflineQueue().length;
+    }
+
+    function newPendingClientId(prefix) {
+        return `${prefix || 'pending'}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
     function updateOfflineBanner() {
         const banner = document.getElementById('offline-banner');
         const textEl = document.getElementById('offline-banner-text');
+        const syncBtn = document.getElementById('offline-banner-sync');
+        const dot = document.getElementById('offline-banner-dot');
         if (!banner || !textEl) return;
-        const n = loadOfflineQueue().length;
+        const n = offlineQueueCount();
         const online = navigator.onLine !== false;
-        if (n > 0) {
+
+        banner.classList.remove('bg-amber-500/15', 'border-amber-500/40', 'bg-rose-500/15', 'border-rose-500/40', 'bg-sky-500/15', 'border-sky-500/40');
+        if (dot) {
+            dot.classList.remove('bg-amber-400', 'bg-rose-400', 'bg-sky-400', 'animate-pulse');
+        }
+
+        if (n > 0 && !online) {
             banner.classList.remove('hidden');
-            textEl.textContent = online
-                ? (offlineFlushInProgress
-                    ? `Sincronizando ${n} acción(es)…`
-                    : `${n} acción(es) pendientes de sincronizar`)
-                : `Sin conexión · ${n} acción(es) guardada(s) en este dispositivo`;
+            banner.classList.add('bg-rose-500/15', 'border-rose-500/40');
+            if (dot) dot.classList.add('bg-rose-400', 'animate-pulse');
+            textEl.className = 'text-rose-100 text-[11px] md:text-xs font-black uppercase tracking-wider text-center';
+            textEl.textContent = `Sin conexión · ${n} pendiente${n === 1 ? '' : 's'} en este dispositivo`;
+            if (syncBtn) syncBtn.classList.add('hidden');
+        } else if (n > 0 && offlineFlushInProgress) {
+            banner.classList.remove('hidden');
+            banner.classList.add('bg-sky-500/15', 'border-sky-500/40');
+            if (dot) dot.classList.add('bg-sky-400', 'animate-pulse');
+            textEl.className = 'text-sky-100 text-[11px] md:text-xs font-black uppercase tracking-wider text-center';
+            textEl.textContent = `Sincronizando ${n} pendiente${n === 1 ? '' : 's'}…`;
+            if (syncBtn) syncBtn.classList.add('hidden');
+        } else if (n > 0) {
+            banner.classList.remove('hidden');
+            banner.classList.add('bg-amber-500/15', 'border-amber-500/40');
+            if (dot) dot.classList.add('bg-amber-400');
+            textEl.className = 'text-amber-100 text-[11px] md:text-xs font-black uppercase tracking-wider text-center';
+            textEl.textContent = `${n} pendiente${n === 1 ? '' : 's'} de sincronizar · no cierres el partido aún`;
+            if (syncBtn) syncBtn.classList.remove('hidden');
         } else if (!online) {
             banner.classList.remove('hidden');
-            textEl.textContent = 'Sin conexión · Las nuevas acciones se guardarán aquí hasta recuperar red';
+            banner.classList.add('bg-amber-500/15', 'border-amber-500/40');
+            if (dot) dot.classList.add('bg-amber-400', 'animate-pulse');
+            textEl.className = 'text-amber-100 text-[11px] md:text-xs font-black uppercase tracking-wider text-center';
+            textEl.textContent = 'Sin conexión · las acciones se guardarán aquí hasta recuperar red';
+            if (syncBtn) syncBtn.classList.add('hidden');
         } else {
             banner.classList.add('hidden');
+            if (syncBtn) syncBtn.classList.add('hidden');
         }
     }
 
@@ -3493,6 +3611,13 @@
         if (accion === 'RED') return '🥅 Red (punto rival)';
         if (accion === 'ERROR_RIVAL') return 'Error del Rival';
         if (accion === 'PUNTO_RIVAL') return 'Punto del Rival';
+        if (accion === 'AJUSTE_MARCADOR') {
+            if (calidad === '++') return '✏️ Ajuste +1 (nosotros)';
+            if (calidad === '+') return '✏️ Ajuste −1 (nosotros)';
+            if (calidad === '--') return '✏️ Ajuste +1 (rival)';
+            if (calidad === '-') return '✏️ Ajuste −1 (rival)';
+            return '✏️ Ajuste marcador';
+        }
         const labels = {
             SAQUE: 'Saque',
             RECEPCION: 'Recepción',
@@ -3513,12 +3638,18 @@
 
     function enqueueOfflineOp(op) {
         const q = loadOfflineQueue();
-        q.push(op);
+        q.push(Object.assign({ createdAt: Date.now() }, op));
         saveOfflineQueue(q);
+        scheduleOfflineFlush();
     }
 
     function removeOfflineOpByClientId(clientId) {
-        const q = loadOfflineQueue().filter(op => op.clientId !== clientId);
+        const q = loadOfflineQueue().filter(op => {
+            if (op.clientId === clientId) return false;
+            // Si se cancela un registrar pendiente, también su eliminar asociado
+            if (op.kind === 'eliminar' && String(op.id) === String(clientId)) return false;
+            return true;
+        });
         saveOfflineQueue(q);
     }
 
@@ -3543,7 +3674,63 @@
                 if (serverRes.accion_texto) item.actionLabel = serverRes.accion_texto;
             }
         });
+        // Actualizar eliminaciones encoladas que aún apuntan al id temporal
+        const q = loadOfflineQueue();
+        let changed = false;
+        q.forEach(op => {
+            if (op.kind === 'eliminar' && String(op.id) === String(clientId)) {
+                op.id = serverRes.id;
+                changed = true;
+            }
+        });
+        if (changed) saveOfflineQueue(q);
         renderQuickHistory();
+    }
+
+    async function flushOfflineOp(item) {
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRF_TOKEN,
+        };
+        const post = async (url, body) => {
+            const response = await fetchConReintentos(url, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(body),
+            }, { maxIntentos: 3, silencioso: true });
+            let data = null;
+            try { data = await response.json(); } catch (e) { data = null; }
+            if (!response.ok) throw new Error((data && data.mensaje) || `HTTP ${response.status}`);
+            if (data && data.status && data.status !== 'ok' && data.status !== 'success') {
+                throw new Error(data.mensaje || data.error || 'Error al sincronizar');
+            }
+            return data;
+        };
+
+        if (item.kind === 'registrar') {
+            const res = await post(API_REGISTRAR_URL, item.body);
+            if (item.clientId) remapPendingRegistroId(item.clientId, res);
+            return;
+        }
+        if (item.kind === 'eliminar') {
+            // Id temporal: el registrar asociado se canceló o aún no existe en servidor
+            if (String(item.id).startsWith('pending-')) return;
+            await post(API_ELIMINAR_URL, { id: item.id });
+            return;
+        }
+        if (item.kind === 'rotar') {
+            await post(API_ROTAR_URL, item.body);
+            return;
+        }
+        if (item.kind === 'guardar_rotacion') {
+            await post(API_GUARDAR_ROT_URL, item.body);
+            return;
+        }
+        if (item.kind === 'cambio') {
+            await post(API_CAMBIO_URL, item.body);
+            return;
+        }
+        // Op desconocida: se descarta al hacer shift
     }
 
     async function flushOfflineQueue() {
@@ -3552,61 +3739,83 @@
             updateOfflineBanner();
             return;
         }
-        if (!loadOfflineQueue().length) {
+        if (!offlineQueueCount()) {
             updateOfflineBanner();
             return;
         }
         offlineFlushInProgress = true;
         updateOfflineBanner();
         let syncedAny = false;
+        let hardFail = false;
         try {
             while (true) {
                 const q = loadOfflineQueue();
                 if (!q.length) break;
                 const item = q[0];
                 try {
-                    if (item.kind === 'registrar') {
-                        const response = await fetchConReintentos(API_REGISTRAR_URL, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': CSRF_TOKEN,
-                            },
-                            body: JSON.stringify(item.body),
-                        }, { maxIntentos: 3, silencioso: true });
-                        const res = await response.json();
-                        if (res.status !== 'ok') throw new Error(res.mensaje || 'Error al sincronizar');
-                        remapPendingRegistroId(item.clientId, res);
-                    } else if (item.kind === 'eliminar') {
-                        const response = await fetchConReintentos(API_ELIMINAR_URL, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': CSRF_TOKEN,
-                            },
-                            body: JSON.stringify({ id: item.id }),
-                        }, { maxIntentos: 3, silencioso: true });
-                        const res = await response.json();
-                        if (res.status !== 'ok') throw new Error(res.mensaje || 'Error al eliminar');
-                    } else {
-                        // Op desconocida: descartar para no bloquear la cola
-                    }
+                    await flushOfflineOp(item);
                     const rest = loadOfflineQueue();
                     rest.shift();
                     saveOfflineQueue(rest);
                     syncedAny = true;
                 } catch (err) {
+                    hardFail = true;
                     updateOfflineBanner();
                     break;
                 }
             }
-            if (syncedAny && loadOfflineQueue().length === 0 && navigator.onLine !== false) {
-                showToast('✅ Acciones sincronizadas');
+            if (syncedAny && !offlineQueueCount() && navigator.onLine !== false) {
+                showToast('✅ Todo sincronizado');
+            } else if (hardFail && offlineQueueCount() > 0) {
+                showToast('⚠️ No se pudo sincronizar todo. Reintenta cuando haya red.');
             }
         } finally {
             offlineFlushInProgress = false;
             updateOfflineBanner();
         }
+    }
+
+    function scheduleOfflineFlush() {
+        if (offlineFlushTimer) clearTimeout(offlineFlushTimer);
+        offlineFlushTimer = setTimeout(() => {
+            offlineFlushTimer = null;
+            if (navigator.onLine !== false) flushOfflineQueue();
+        }, 1200);
+    }
+
+    function ensureOfflineSyncGuards() {
+        window.addEventListener('beforeunload', (e) => {
+            if (offlineQueueCount() > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+        // Reintento periódico mientras haya pendientes
+        setInterval(() => {
+            if (navigator.onLine !== false && offlineQueueCount() > 0 && !offlineFlushInProgress) {
+                flushOfflineQueue();
+            }
+        }, 20000);
+    }
+
+    async function ensureOfflineSyncedOrWarn(contexto) {
+        const n = offlineQueueCount();
+        if (!n) return true;
+        if (navigator.onLine === false) {
+            showToast(`⚠️ Sin conexión: hay ${n} pendiente${n === 1 ? '' : 's'}. No se puede ${contexto}.`);
+            updateOfflineBanner();
+            return false;
+        }
+        const ok = confirm(
+            `Hay ${n} acción(es) sin sincronizar.\n\n¿Sincronizar ahora antes de ${contexto}?`
+        );
+        if (!ok) return false;
+        await flushOfflineQueue();
+        if (offlineQueueCount() > 0) {
+            showToast(`⚠️ Quedan ${offlineQueueCount()} pendiente(s). No se puede ${contexto}.`);
+            return false;
+        }
+        return true;
     }
 
     // Register tactical action
@@ -3786,12 +3995,11 @@
             }
         } catch (e) {
             ocultarToast();
-            const clientId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            const clientId = newPendingClientId('pending');
             enqueueOfflineOp({
                 kind: 'registrar',
                 clientId,
                 body: payload,
-                createdAt: Date.now(),
             });
             const synthetic = {
                 status: 'ok',
@@ -4013,23 +4221,25 @@
         checkSetEnd(state.marcador.local, state.marcador.rival);
 
         try {
-            const response = await fetchConReintentos('{% url "stats_app:api_registrar_estadistica" %}', {
+            const offlineYa = navigator.onLine === false;
+            const payloadAjuste = {
+                partido_id: state.partido_id,
+                jugadora_id: null,
+                accion: 'AJUSTE_MARCADOR',
+                calidad: calidad,
+                set_numero: state.set_numero,
+                fase: 'K1',
+                rotacion_num: state.rotacion_num,
+                zona: null
+            };
+            const response = await fetchConReintentos(API_REGISTRAR_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
+                    'X-CSRFToken': CSRF_TOKEN
                 },
-                body: JSON.stringify({
-                    partido_id: state.partido_id,
-                    jugadora_id: null,
-                    accion: 'AJUSTE_MARCADOR',
-                    calidad: calidad,
-                    set_numero: state.set_numero,
-                    fase: 'K1',
-                    rotacion_num: state.rotacion_num,
-                    zona: null
-                })
-            });
+                body: JSON.stringify(payloadAjuste)
+            }, { maxIntentos: offlineYa ? 1 : 4, silencioso: offlineYa });
             const res = await response.json();
             if (res.status !== 'ok') {
                 state.marcador.local = prevLocal;
@@ -4045,11 +4255,32 @@
                 : (side === 'local' ? '➖ Punto local (ajuste)' : '➖ Punto rival (ajuste)'));
             invalidateIndicadoresCache();
         } catch (e) {
-            state.marcador.local = prevLocal;
-            state.marcador.rival = prevRival;
-            updateUIMarcador();
-            persistMarcadorCache();
-            showToast('❌ Error de conexión al ajustar');
+            ocultarToast();
+            // Mantener marcador local y encolar el ajuste
+            const clientId = newPendingClientId('pending');
+            enqueueOfflineOp({
+                kind: 'registrar',
+                clientId,
+                body: {
+                    partido_id: state.partido_id,
+                    jugadora_id: null,
+                    accion: 'AJUSTE_MARCADOR',
+                    calidad: calidad,
+                    set_numero: state.set_numero,
+                    fase: 'K1',
+                    rotacion_num: state.rotacion_num,
+                    zona: null
+                },
+            });
+            try {
+                renderAction({
+                    id: clientId,
+                    dorsal: 'EQ',
+                    accion_texto: buildAccionTextoLocal('AJUSTE_MARCADOR', calidad),
+                }, calidad);
+            } catch (err) { /* ignore */ }
+            showToast('💾 Ajuste guardado sin conexión');
+            updateOfflineBanner();
         }
     }
 
@@ -4925,7 +5156,11 @@
             showToast('ℹ️ El partido ya está finalizado');
             return;
         }
-        if (confirm("¿Estás seguro de que deseas FINALIZAR EL PARTIDO de forma definitiva? Se cerrará el acta en el estado actual y se guardarán las estadísticas.")) {
+        const n = offlineQueueCount();
+        const avisoPendientes = n > 0
+            ? `\n\n⚠️ Hay ${n} acción(es) sin sincronizar. Se intentarán subir antes de cerrar.`
+            : '';
+        if (confirm("¿Estás seguro de que deseas FINALIZAR EL PARTIDO de forma definitiva? Se cerrará el acta en el estado actual y se guardarán las estadísticas." + avisoPendientes)) {
             finalizarPartido();
         }
     }
@@ -4944,12 +5179,14 @@
     }
 
     async function finalizarPartido() {
+        const synced = await ensureOfflineSyncedOrWarn('finalizar el partido');
+        if (!synced) return;
         try {
             const response = await fetchConReintentos(`/api/partido/${state.partido_id}/finalizar/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
+                    'X-CSRFToken': CSRF_TOKEN
                 }
             });
             const res = await response.json();
