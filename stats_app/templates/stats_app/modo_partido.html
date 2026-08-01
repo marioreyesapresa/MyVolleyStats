@@ -111,6 +111,19 @@
         width: 1.1rem;
         background: rgb(59, 130, 246);
     }
+    /* iPad / landscape: respetar notch y bordes seguros en botoneras */
+    #scout-rapido-container,
+    #scout-avanzado-container {
+        padding-left: max(0px, env(safe-area-inset-left));
+        padding-right: max(0px, env(safe-area-inset-right));
+        padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+    }
+    #scout-actions-grid button,
+    #gameplay-grid-container button,
+    .av-slot,
+    .ui-quality-grid button {
+        touch-action: manipulation;
+    }
 </style>
 
 <!-- Tab: Pizarra de Rotación -->
@@ -2151,6 +2164,7 @@
 
         // Guía primera vez (no compite con el aviso de orientación)
         setTimeout(() => maybeShowScoutOnboarding(), 700);
+        try { restoreParonesFromCache(); } catch (e) { /* opcional */ }
     });
 
     // Helper to get url params
@@ -3789,8 +3803,36 @@
     }
 
     function saveOfflineQueue(queue) {
-        localStorage.setItem(offlineQueueKey(), JSON.stringify(queue));
+        try {
+            localStorage.setItem(offlineQueueKey(), JSON.stringify(queue));
+        } catch (e) {
+            console.error('No se pudo guardar la cola offline', e);
+            showToast('⚠️ Almacenamiento lleno: no se pudieron guardar pendientes offline');
+        }
         updateOfflineBanner();
+    }
+
+    function getCsrfTokenLive() {
+        try {
+            const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+            if (m) return decodeURIComponent(m[1]);
+        } catch (e) { /* ignore */ }
+        return CSRF_TOKEN;
+    }
+
+    function makeAuthError(message) {
+        const err = new Error(message || 'Sesión caducada');
+        err.code = 'AUTH';
+        return err;
+    }
+
+    function isAuthError(err) {
+        return !!(err && err.code === 'AUTH');
+    }
+
+    function notifySessionExpired() {
+        ocultarToast();
+        showToast('⚠️ Sesión caducada. Recarga la página e inicia sesión.', { persistente: true });
     }
 
     function offlineQueueCount() {
@@ -4033,7 +4075,7 @@
     async function flushOfflineOp(item) {
         const headers = {
             'Content-Type': 'application/json',
-            'X-CSRFToken': CSRF_TOKEN,
+            'X-CSRFToken': getCsrfTokenLive(),
         };
         const post = async (url, body) => {
             const response = await fetchConReintentos(url, {
@@ -4043,6 +4085,9 @@
             }, { maxIntentos: 3, silencioso: true });
             let data = null;
             try { data = await response.json(); } catch (e) { data = null; }
+            if (response.status === 401 || response.status === 403) {
+                throw makeAuthError('Sesión caducada');
+            }
             if (!response.ok) throw new Error((data && data.mensaje) || `HTTP ${response.status}`);
             if (data && data.status && data.status !== 'ok' && data.status !== 'success') {
                 throw new Error(data.mensaje || data.error || 'Error al sincronizar');
@@ -4140,6 +4185,9 @@
                     saveOfflineQueue(rest);
                     syncedAny = true;
                 } catch (err) {
+                    if (isAuthError(err)) {
+                        notifySessionExpired();
+                    }
                     hardFail = true;
                     updateOfflineBanner();
                     break;
@@ -4200,8 +4248,13 @@
     }
 
     // Register tactical action
+    let registrarInFlight = false;
     async function registrar(accion, calidad, opts) {
         opts = opts || {};
+        if (registrarInFlight) {
+            showToast('⏳ Espera un momento…');
+            return;
+        }
         if (state.partido_finalizado) {
             showToast("⚠️ El partido está finalizado. No se pueden registrar más acciones.");
             return;
@@ -4233,9 +4286,20 @@
             return; 
         }
 
-        // Optimistic UI Score Update
+        registrarInFlight = true;
+
+        // Optimistic UI Score Update (alineado con reporting.py: RED = punto rival)
         const esPuntoNuestro = (calidad === '++') || (accion === 'ERROR_RIVAL');
-        const esPuntoRival = (calidad === '--') || (accion === 'PUNTO_RIVAL');
+        const esPuntoRival = (calidad === '--') || (accion === 'PUNTO_RIVAL') || (accion === 'RED');
+        const prevLocal = state.marcador.local;
+        const prevRival = state.marcador.rival;
+
+        const rollbackMarcadorOptimistic = () => {
+            state.marcador.local = prevLocal;
+            state.marcador.rival = prevRival;
+            updateUIMarcador();
+            persistMarcadorCache();
+        };
 
         if (esPuntoNuestro) {
             state.marcador.local++;
@@ -4250,14 +4314,10 @@
         }
 
         // ── Determine the fase to tag this action with ───────────────────
-        // SAQUE always belongs to K0 (our serve phase)
-        // RECEPCION/ATAQUE after rival serve belong to K1
-        // BLOQUEO/DEFENSA when rival attacks belong to K2
         let faseTag = state.fase_actual;
         if (accion === 'SAQUE')    faseTag = 'K0';
         if (accion === 'RECEPCION' || accion === 'COLOCACION') faseTag = 'K1';
         if (accion === 'BLOQUEO'  || accion === 'DEFENSA')    faseTag = 'K2';
-        // ATAQUE inherits the current phase (K1 if after reception, K2 if after defence)
         
         const payload = {
             partido_id: state.partido_id,
@@ -4272,20 +4332,15 @@
         };
 
         const aplicarTrasRegistro = async (res, { offline }) => {
-            // Registra SIEMPRE la acción en el historial ("Últimas Acciones"),
-            // sin importar la calidad (++, +, =, -, --). Cambios de jugadora
-            // (api_registrar_cambio) y Tiempos Muertos (registrarTimeout) usan
-            // flujos independientes y quedan excluidos intencionadamente.
-            try { pushQuickHistory(res, calidad, accion, jug_id); } catch (e) { /* no bloquear el flujo principal */ }
-            try { renderAction(res, calidad); } catch (e) { /* no bloquear el flujo principal */ }
+            try { pushQuickHistory(res, calidad, accion, jug_id); } catch (e) { /* no bloquear */ }
+            try { renderAction(res, calidad); } catch (e) { /* no bloquear */ }
             hapticFeedback();
             showToast(offline ? '💾 Guardada sin conexión (se sincronizará)' : '✅ Acción registrada');
 
             if (isRapido && state.jugadora_id) {
-                selectJugadora('null'); // clear selection for next touch
+                selectJugadora('null');
             }
             if (!isRapido) {
-                // Wizard Avanzado: tras cada acción, otra jugadora (vuelve a formación).
                 state.jugadora_id = null;
                 state.zona = null;
                 updateAvanzadoSelectedChip();
@@ -4293,7 +4348,6 @@
                 renderAvanzadoCourt();
             }
 
-            // ── Phase-transition logic after each registered action ───
             const esPuntoNuestroLocal = (calidad === '++') || (accion === 'ERROR_RIVAL');
             const esPuntoRivalLocal = (calidad === '--') || (accion === 'PUNTO_RIVAL') || (accion === 'RED');
             const esAccionIntermedia = !esPuntoNuestroLocal && !esPuntoRivalLocal;
@@ -4304,7 +4358,6 @@
             if (esPuntoNuestroLocal) {
                 state.liberoExcluidoPorSaqueCentral = false;
                 if (!state.tenemos_saque) {
-                    // Side-out ganado: rotamos y pasamos a K0
                     state.tenemos_saque = true;
                     state.fase_actual   = 'K0';
                     state.liberoContexto = 'defensa';
@@ -4314,21 +4367,15 @@
                         showToast("🏐 Saque ganado. Recuerda rotar manualmente");
                     }
                 } else {
-                    // Punto con saque propio: mantenemos K0
                     state.fase_actual = 'K0';
                     state.liberoContexto = 'defensa';
                 }
             } else if (esPuntoRivalLocal) {
-                // Side-out perdido o error con saque propio → rival saca → K1
                 state.liberoExcluidoPorSaqueCentral = false;
                 state.tenemos_saque = false;
                 state.fase_actual   = 'K1';
                 state.liberoContexto = 'recepcion';
             } else if (esAccionIntermedia) {
-                // Rally continúa: avanzar fase si aplica
-                // liberoContexto NO cambia en K0→K2 ni K1→K2:
-                // - desde K0: sigue la de defensa
-                // - desde K1: sigue la de recepción (también defiende)
                 if (accion === 'SAQUE' && (calidad === '+' || calidad === '=')) {
                     state.liberoExcluidoPorSaqueCentral = saqueCentralActivo;
                     state.fase_actual = 'K2';
@@ -4350,9 +4397,6 @@
             invalidateIndicadoresCache();
             updateFlashboard({ ligero: true });
             resetVisual();
-            // Refresca las tarjetas de zona: la fila de Volumen Rápido
-            // (Recepción/Defensa) y el bloque de Saque dependen de la
-            // fase y de quién saca, que acaban de cambiar.
             refreshModoCourtUI();
             if (state.modo_scout === 'avanzado') renderBotonerasAcciones();
         };
@@ -4363,19 +4407,32 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': CSRF_TOKEN,
+                    'X-CSRFToken': getCsrfTokenLive(),
                 },
                 body: JSON.stringify(payload),
             }, { maxIntentos: offlineYa ? 1 : 4, silencioso: offlineYa });
 
-            const res = await response.json();
+            let res;
+            try {
+                res = await response.json();
+            } catch (parseErr) {
+                rollbackMarcadorOptimistic();
+                notifySessionExpired();
+                return;
+            }
             if (res.status === 'ok') {
                 await aplicarTrasRegistro(res, { offline: false });
             } else {
-                showToast("❌ Error al registrar");
+                rollbackMarcadorOptimistic();
+                showToast('❌ ' + (res.mensaje || 'Error al registrar'));
             }
         } catch (e) {
             ocultarToast();
+            if (isAuthError(e)) {
+                rollbackMarcadorOptimistic();
+                notifySessionExpired();
+                return;
+            }
             const clientId = newPendingClientId('pending');
             enqueueOfflineOp({
                 kind: 'registrar',
@@ -4390,6 +4447,8 @@
             };
             await aplicarTrasRegistro(synthetic, { offline: true });
             updateOfflineBanner();
+        } finally {
+            registrarInFlight = false;
         }
     }
 
@@ -4486,7 +4545,7 @@
 
         const displayActionText = data.accion_texto || '';
         const esPuntoLocal = (calidad === '++') || (accion === 'ERROR_RIVAL');
-        const esPuntoRival = (calidad === '--') || (accion === 'PUNTO_RIVAL');
+        const esPuntoRival = (calidad === '--') || (accion === 'PUNTO_RIVAL') || (accion === 'RED');
         state.quickHistory.unshift({
             id: data.id,
             score: `${String(state.marcador.local).padStart(2, '0')}-${String(state.marcador.rival).padStart(2, '0')}`,
@@ -4494,7 +4553,9 @@
             actionLabel: displayActionText,
             colorClass: resolveAccionColorClass(calidad, displayActionText),
             esPuntoLocal: esPuntoLocal,
-            esPuntoRival: esPuntoRival
+            esPuntoRival: esPuntoRival,
+            accion: accion,
+            calidad: calidad,
         });
         state.quickHistory = state.quickHistory.slice(0, QUICK_HISTORY_MAX);
         renderQuickHistory();
@@ -4518,16 +4579,37 @@
         `).join('');
     }
 
+    function aplicarRollbackMarcadorTrasBorrar(item) {
+        if (!item) return;
+        if (item.esPuntoLocal && state.marcador.local > 0) state.marcador.local--;
+        if (item.esPuntoRival && state.marcador.rival > 0) state.marcador.rival--;
+        updateUIMarcador();
+        persistMarcadorCache();
+        // Si el set se había cerrado por marcador y ya no lo está, reabrir UI de juego
+        if (state.set_finished && !isSetScoreClosed(state.marcador.local, state.marcador.rival)) {
+            state.set_finished = false;
+            state.set_modal_suppressed = false;
+            unlockGameplayUI();
+        }
+    }
+
     async function eliminarRegistro(id) {
         if (state.prefs.confirmarBorrado && !confirm('¿Eliminar esta acción?')) return;
 
-        // Pendiente offline: quitar de la cola local, sin llamar al servidor.
-        if (String(id).startsWith('pending-')) {
-            removeOfflineOpByClientId(String(id));
+        const histItem = state.quickHistory.find(item => String(item.id) === String(id));
+
+        const finishLocalDelete = () => {
             document.getElementById(`reg-${id}`)?.remove();
             updateCounter();
             state.quickHistory = state.quickHistory.filter(item => String(item.id) !== String(id));
             renderQuickHistory();
+            aplicarRollbackMarcadorTrasBorrar(histItem);
+        };
+
+        // Pendiente offline: quitar de la cola local, sin llamar al servidor.
+        if (String(id).startsWith('pending-')) {
+            removeOfflineOpByClientId(String(id));
+            finishLocalDelete();
             showToast('🗑️ Acción pendiente eliminada');
             return;
         }
@@ -4537,26 +4619,24 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': CSRF_TOKEN,
+                    'X-CSRFToken': getCsrfTokenLive(),
                 },
                 body: JSON.stringify({ id: id }),
             }, { maxIntentos: navigator.onLine === false ? 1 : 4 });
             if ((await r.json()).status === 'ok') {
-                document.getElementById(`reg-${id}`)?.remove();
-                updateCounter();
-                state.quickHistory = state.quickHistory.filter(item => String(item.id) !== String(id));
-                renderQuickHistory();
+                finishLocalDelete();
                 showToast("🗑️ Acción eliminada");
                 invalidateIndicadoresCache();
                 updateFlashboard({ ligero: true });
             }
         } catch(e) {
+            if (isAuthError(e)) {
+                notifySessionExpired();
+                return;
+            }
             // Sin red: encolar el borrado y quitar de la UI local.
-            enqueueOfflineOp({ kind: 'eliminar', id: id, createdAt: Date.now() });
-            document.getElementById(`reg-${id}`)?.remove();
-            updateCounter();
-            state.quickHistory = state.quickHistory.filter(item => String(item.id) !== String(id));
-            renderQuickHistory();
+            enqueueOfflineOp({ kind: 'eliminar', id: id });
+            finishLocalDelete();
             showToast('💾 Borrado guardado sin conexión');
             updateOfflineBanner();
         }
@@ -4749,9 +4829,24 @@
         let intento = 0;
         let avisoMostrado = false;
 
+        // Renovar CSRF de cookie si existe (sesión larga en partido)
+        if (options && options.headers && typeof options.headers === 'object') {
+            options = Object.assign({}, options, {
+                headers: Object.assign({}, options.headers, { 'X-CSRFToken': getCsrfTokenLive() }),
+            });
+        }
+
         while (true) {
             try {
                 const response = await fetch(url, options);
+                if (response.status === 401 || response.status === 403) {
+                    throw makeAuthError(`HTTP ${response.status}`);
+                }
+                const ct = (response.headers.get('content-type') || '').toLowerCase();
+                if (ct.includes('text/html') && (options.method || 'GET').toUpperCase() !== 'GET') {
+                    // Suele ser redirect a login embebido como HTML
+                    throw makeAuthError('Respuesta HTML (sesión)');
+                }
                 if (REINTENTOS_HTTP_TRANSITORIOS.has(response.status) && intento < maxIntentos) {
                     throw new Error(`HTTP transitorio ${response.status}`);
                 }
@@ -4760,6 +4855,10 @@
                 }
                 return response;
             } catch (err) {
+                if (isAuthError(err)) {
+                    ocultarToast();
+                    throw err;
+                }
                 intento++;
                 if (intento > maxIntentos) {
                     ocultarToast();
@@ -4986,7 +5085,15 @@
         toggleModal('modal-fin-set');
     }
 
-    function guardarFinSet() {
+    async function guardarFinSet() {
+        const synced = await ensureOfflineSyncedOrWarn('guardar el set');
+        if (!synced) {
+            // Mantener el modal abierto para no perder el cierre del set
+            const modal = document.getElementById('modal-fin-set');
+            if (modal) modal.classList.remove('hidden');
+            return;
+        }
+
         const duracion = parseInt(document.getElementById('input-set-duracion').value) || 20;
         const setGuardado = state.set_numero;
         const pLocal = state.marcador.local;
@@ -5032,6 +5139,25 @@
     }
 
     // ── Registro de Parones helpers ─────────────────────────────────────────
+    function paronesCacheKey() {
+        return `voley_parones_${state.partido_id}`;
+    }
+
+    function loadParonesCache() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(paronesCacheKey()) || '[]');
+            return Array.isArray(raw) ? raw : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function persistParonesCache(entries) {
+        try {
+            localStorage.setItem(paronesCacheKey(), JSON.stringify(entries || []));
+        } catch (e) { /* quota */ }
+    }
+
     function registrarTimeout() {
         const pL = document.getElementById('score-local')?.innerText || '?';
         const pR = document.getElementById('score-rival')?.innerText || '?';
@@ -5039,7 +5165,8 @@
         showToast('⏸️ T.M. registrado');
     }
 
-    function addParonEntry(texto, marcador, tipo) {
+    function addParonEntry(texto, marcador, tipo, opts) {
+        opts = opts || {};
         const list = document.getElementById('parones-list');
         if (!list) return;
         const empty = document.getElementById('parones-empty');
@@ -5053,11 +5180,35 @@
 
         const entry = document.createElement('div');
         entry.className = `flex justify-between items-center px-3 py-1.5 rounded-lg border ${dot} text-[9px]`;
+        entry.dataset.paronTipo = tipo || 'cambio';
+        entry.dataset.paronTexto = texto;
+        entry.dataset.paronMarcador = marcador;
         entry.innerHTML = `
             <span class="font-bold truncate flex-1">${texto}</span>
             <span class="font-black ml-2 whitespace-nowrap opacity-80">${marcador}</span>
         `;
         list.insertBefore(entry, list.firstChild);
+
+        if (!opts.skipPersist) {
+            const entries = Array.from(list.querySelectorAll('[data-paron-texto]')).map(el => ({
+                texto: el.dataset.paronTexto,
+                marcador: el.dataset.paronMarcador,
+                tipo: el.dataset.paronTipo || 'cambio',
+            }));
+            persistParonesCache(entries);
+        }
+    }
+
+    function restoreParonesFromCache() {
+        const list = document.getElementById('parones-list');
+        if (!list) return;
+        const cached = loadParonesCache();
+        if (!cached.length) return;
+        list.querySelectorAll('[data-paron-texto]').forEach(el => el.remove());
+        // Restaurar en orden inverso al insertBefore (más reciente arriba)
+        [...cached].reverse().forEach(p => {
+            addParonEntry(p.texto, p.marcador, p.tipo, { skipPersist: true });
+        });
     }
 
     function updateUIMarcador() {
@@ -5433,13 +5584,16 @@
             }
         } catch (e) {
             console.error('Error al actualizar indicadores del set:', e);
+            if (!isAuthError(e)) {
+                showToast('⚠️ No se pudieron actualizar los indicadores');
+            }
         }
     }
 
     async function fetchStatsSet(setNum, ligero = false) {
         const r = await fetchConReintentos('{% url "stats_app:api_obtener_stats_set" %}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfTokenLive() },
             body: JSON.stringify({ partido_id: state.partido_id, set_numero: setNum, ligero })
         });
         return r.json();
@@ -5470,6 +5624,8 @@
             }
         } catch(e) {
             console.error("Error al actualizar flashboard: ", e);
+            if (isAuthError(e)) notifySessionExpired();
+            else if (!ligero) showToast('⚠️ Marcador en diferido (sin sync)');
         } finally {
             setMarcadorSyncing(false);
         }

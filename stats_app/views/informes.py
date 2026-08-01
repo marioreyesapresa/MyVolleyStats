@@ -120,6 +120,8 @@ class DescargarResumenPDF(BaseInformePDFView):
             'chart_origen_url': chart_origen_url,
         }
         pdf = render_to_pdf('stats_app/informe_resumen_pdf.html', context)
+        if not pdf:
+            return HttpResponse('No se pudo generar el PDF de resumen.', status=500)
         response = HttpResponse(pdf, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="Resumen_{partido.rival}.pdf"'
         return response

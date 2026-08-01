@@ -72,6 +72,11 @@ class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
     def post(self, request, partido_id):
         try:
             partido = _partido_del_entrenador(request, partido_id)
+            if partido.finalizado:
+                return JsonResponse(
+                    {'error': 'El partido está finalizado. No se puede modificar la alineación.'},
+                    status=400,
+                )
             data, error = _parsear_json(request)
             if error:
                 return error
@@ -141,6 +146,11 @@ class RotarManualAPI(LoginRequiredMixin, View):
     @reintentar_en_error_transitorio()
     def post(self, request, partido_id):
         partido = _partido_del_entrenador(request, partido_id)
+        if partido.finalizado:
+            return JsonResponse(
+                {'error': 'El partido está finalizado. No se pueden rotar jugadoras.'},
+                status=400,
+            )
         data, error = _parsear_json(request)
         if error:
             return error

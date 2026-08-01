@@ -71,6 +71,11 @@ class ListNotasPartidoAPI(LoginRequiredMixin, View):
 class CrearNotaPartidoAPI(LoginRequiredMixin, View):
     def post(self, request, partido_id):
         partido = _partido_del_entrenador(request, partido_id)
+        if partido.finalizado:
+            return JsonResponse(
+                {'status': 'error', 'mensaje': 'El partido está finalizado. Reábrelo para añadir notas.'},
+                status=400,
+            )
         data, err = _parsear_json(request)
         if err:
             return err
@@ -97,6 +102,11 @@ class CrearNotaPartidoAPI(LoginRequiredMixin, View):
 class ActualizarNotaPartidoAPI(LoginRequiredMixin, View):
     def post(self, request, partido_id, nota_id):
         partido = _partido_del_entrenador(request, partido_id)
+        if partido.finalizado:
+            return JsonResponse(
+                {'status': 'error', 'mensaje': 'El partido está finalizado. Reábrelo para editar notas.'},
+                status=400,
+            )
         nota = _nota_del_partido(request, partido, nota_id)
         data, err = _parsear_json(request)
         if err:
@@ -122,6 +132,11 @@ class ActualizarNotaPartidoAPI(LoginRequiredMixin, View):
 class EliminarNotaPartidoAPI(LoginRequiredMixin, View):
     def post(self, request, partido_id, nota_id):
         partido = _partido_del_entrenador(request, partido_id)
+        if partido.finalizado:
+            return JsonResponse(
+                {'status': 'error', 'mensaje': 'El partido está finalizado. Reábrelo para eliminar notas.'},
+                status=400,
+            )
         nota = _nota_del_partido(request, partido, nota_id)
         nota.delete()
         invalidar_cache_informes_partido(partido.pk)

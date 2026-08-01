@@ -2048,3 +2048,134 @@ class AutenticacionYFlujoJugadorasTests(TestCase):
         )
         self.assertContains(response, 'añadida correctamente')
         self.assertContains(response, 'Datos de la Nueva Jugadora')
+
+
+class PartidoFinalizadoBloqueaMutacionesTests(TestCase):
+    """Tras finalizar, las APIs de escritura deben rechazar cambios hasta reabrir."""
+
+    def setUp(self):
+        self.coach, self.equipo, self.jugadora, self.partido = _crear_entrenador_con_partido('coach_fin')
+        self.jugadora_b = Jugadora.objects.create(
+            equipo=self.equipo, nombre='B', apellidos='Bench', dorsal=9, posicion='RECEPTORA',
+        )
+        RotacionSet.objects.create(
+            partido=self.partido, set_numero=1, es_inicial=True,
+            pos1=self.jugadora, pos2=self.jugadora_b, pos3=self.jugadora,
+            pos4=self.jugadora_b, pos5=self.jugadora, pos6=self.jugadora_b,
+        )
+        self.registro = RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadora, tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=1,
+        )
+        self.nota = NotaPartido.objects.create(
+            partido=self.partido, texto='Nota previa', set_numero=1,
+        )
+        self.partido.finalizado = True
+        self.partido.save(update_fields=['finalizado'])
+        self.client.login(username='coach_fin', password='pass12345')
+
+    def test_registrar_accion_rechazada_si_finalizado(self):
+        response = self.client.post(
+            reverse('stats_app:api_registrar_estadistica'),
+            data=json.dumps({
+                'partido_id': self.partido.id, 'jugadora_id': self.jugadora.id,
+                'accion': 'SAQUE', 'calidad': '++', 'fase': 'K0', 'set_numero': 1,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('finalizado', response.json().get('mensaje', '').lower())
+        self.assertEqual(RegistroEstadistica.objects.filter(partido=self.partido).count(), 1)
+
+    def test_eliminar_accion_rechazada_si_finalizado(self):
+        response = self.client.post(
+            reverse('stats_app:api_eliminar_estadistica'),
+            data=json.dumps({'id': self.registro.id}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue(RegistroEstadistica.objects.filter(pk=self.registro.pk).exists())
+
+    def test_registrar_cambio_rechazado_si_finalizado(self):
+        response = self.client.post(
+            reverse('stats_app:api_registrar_cambio'),
+            data=json.dumps({
+                'partido_id': self.partido.id,
+                'sale_id': self.jugadora.id,
+                'entra_id': self.jugadora_b.id,
+                'rotacion_num': 1,
+                'set_numero': 1,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_config_set_rechazada_si_finalizado(self):
+        response = self.client.post(
+            reverse('stats_app:api_actualizar_config_set', args=[self.partido.id]),
+            data=json.dumps({
+                'puntos_por_set': 25, 'puntos_set_decisivo': 15, 'sets_para_ganar': 3,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_rotar_y_guardar_alineacion_rechazados_si_finalizado(self):
+        rot = self.client.post(
+            reverse('stats_app:api_rotar_manual', args=[self.partido.id]),
+            data=json.dumps({'set_numero': 1, 'direccion': 'horario'}),
+            content_type='application/json',
+        )
+        self.assertEqual(rot.status_code, 400)
+
+        alin = self.client.post(
+            reverse('stats_app:api_guardar_rotacion_inicial', args=[self.partido.id]),
+            data=json.dumps({
+                'set_numero': 1,
+                'pos1': self.jugadora.id, 'pos2': self.jugadora_b.id,
+                'pos3': self.jugadora.id, 'pos4': self.jugadora_b.id,
+                'pos5': self.jugadora.id, 'pos6': self.jugadora_b.id,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(alin.status_code, 400)
+
+    def test_notas_rechazadas_si_finalizado(self):
+        crear = self.client.post(
+            reverse('stats_app:api_crear_nota', args=[self.partido.id]),
+            data=json.dumps({'texto': 'Nueva', 'set_numero': 1}),
+            content_type='application/json',
+        )
+        self.assertEqual(crear.status_code, 400)
+
+        actualizar = self.client.post(
+            reverse('stats_app:api_actualizar_nota', args=[self.partido.id, self.nota.id]),
+            data=json.dumps({'texto': 'Editada', 'set_numero': 1}),
+            content_type='application/json',
+        )
+        self.assertEqual(actualizar.status_code, 400)
+
+        eliminar = self.client.post(
+            reverse('stats_app:api_eliminar_nota', args=[self.partido.id, self.nota.id]),
+        )
+        self.assertEqual(eliminar.status_code, 400)
+        self.assertTrue(NotaPartido.objects.filter(pk=self.nota.pk).exists())
+
+    def test_reabrir_permite_registrar_de_nuevo(self):
+        reopen = self.client.post(reverse('stats_app:api_reabrir_partido', args=[self.partido.id]))
+        self.assertEqual(reopen.status_code, 200)
+        response = self.client.post(
+            reverse('stats_app:api_registrar_estadistica'),
+            data=json.dumps({
+                'partido_id': self.partido.id, 'jugadora_id': self.jugadora.id,
+                'accion': 'SAQUE', 'calidad': '+', 'fase': 'K0', 'set_numero': 1,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(RegistroEstadistica.objects.filter(partido=self.partido).count(), 2)
+
+    @patch('stats_app.views.informes.render_to_pdf', return_value=None)
+    def test_pdf_resumen_devuelve_500_si_render_falla(self, _mock_pdf):
+        response = self.client.get(reverse('stats_app:descargar_resumen_pdf', args=[self.partido.pk]))
+        self.assertEqual(response.status_code, 500)

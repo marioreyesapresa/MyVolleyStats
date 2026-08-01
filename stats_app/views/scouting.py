@@ -236,6 +236,12 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
         try:
             partido = _partido_del_entrenador(request, cd['partido_id'])
 
+            if partido.finalizado:
+                return JsonResponse(
+                    {'status': 'error', 'mensaje': 'El partido está finalizado. No se pueden registrar más acciones.'},
+                    status=400,
+                )
+
             rotacion_num = cd.get('rotacion_num') or 1
             error_rango = _validar_rango_zona_modalidad(partido, rotacion_num, 'rotacion_num')
             if error_rango:
@@ -291,6 +297,11 @@ class ActualizarConfigSetAPI(LoginRequiredMixin, View):
     def post(self, request, partido_id):
         try:
             partido = _partido_del_entrenador(request, partido_id)
+            if partido.finalizado:
+                return JsonResponse(
+                    {'status': 'error', 'mensaje': 'El partido está finalizado. No se puede cambiar la configuración del set.'},
+                    status=400,
+                )
             data, error = _parsear_json(request)
             if error:
                 return error
@@ -343,6 +354,11 @@ class EliminarAccionAPI(LoginRequiredMixin, View):
             except Http404:
                 log_intento_acceso_no_autorizado(request, 'RegistroEstadistica', registro_id)
                 raise
+            if registro.partido.finalizado:
+                return JsonResponse(
+                    {'status': 'error', 'mensaje': 'El partido está finalizado. Reábrelo para corregir registros.'},
+                    status=400,
+                )
             registro.delete()
             return JsonResponse({'status': 'ok', 'mensaje': 'Registro eliminado'})
         except Http404:
@@ -371,6 +387,12 @@ def RegistrarCambioAPI(request):
     cd = form.cleaned_data
 
     partido = _partido_del_entrenador(request, cd['partido_id'])
+
+    if partido.finalizado:
+        return JsonResponse(
+            {'status': 'error', 'mensaje': 'El partido está finalizado. No se pueden registrar cambios.'},
+            status=400,
+        )
 
     rotacion_num = cd.get('rotacion_num') or 1
     error_rango = _validar_rango_zona_modalidad(partido, rotacion_num, 'rotacion_num')
