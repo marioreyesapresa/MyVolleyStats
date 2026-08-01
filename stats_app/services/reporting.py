@@ -42,7 +42,7 @@ def _get_match_rows(partido):
     rows = list(
         RegistroEstadistica.objects.filter(partido=partido)
         .order_by('id')
-        .values('id', 'set_numero', 'jugadora_id', 'accion', 'calidad', 'tipo_fase', 'rotacion_num', 'zona')
+        .values('id', 'set_numero', 'jugadora_id', 'accion', 'calidad', 'tipo_fase', 'rotacion_num', 'zona', 'zona_destino')
     )
     partido._reporting_rows_cache = rows
     return rows
@@ -765,6 +765,7 @@ def build_full_report(partido, set_filter='global'):
     for s in sets_nums:
         sd = build_set_report(partido, s)
         sd['zonas'] = zone_performance(partido, s)
+        sd['trazo'] = trazo_analysis(partido, s)
         sd['rotacion'] = rotation_matrix(partido, s)
         sd['racha_maxima'] = calc_racha_maxima(partido, s)
         sd['run_chart'] = build_run_chart(partido, s)
@@ -848,6 +849,149 @@ def zone_performance(partido, set_num):
             'bloqueo_pct': blo_pct,
         })
     return zonas
+
+
+def _max_zona_partido(partido):
+    return 4 if getattr(partido, 'modalidad', None) == 'MINIVOLEY' else 6
+
+
+def _celdas_por_zona(rows, zona_key, max_z):
+    """Cuenta filas por valor de zona_key (1..max_z). Devuelve (celdas, n_total)."""
+    counts = {z: 0 for z in range(1, max_z + 1)}
+    for r in rows:
+        z = r.get(zona_key)
+        if z is None:
+            continue
+        try:
+            z = int(z)
+        except (TypeError, ValueError):
+            continue
+        if 1 <= z <= max_z:
+            counts[z] += 1
+    total = sum(counts.values())
+    celdas = []
+    for z in range(1, max_z + 1):
+        n = counts[z]
+        celdas.append({
+            'zona': z,
+            'n': n,
+            'pct': round(n / total * 100, 1) if total else 0.0,
+        })
+    return celdas, total
+
+
+def _top_zona(celdas):
+    if not celdas:
+        return None
+    best = max(celdas, key=lambda c: c['n'])
+    return best if best['n'] > 0 else None
+
+
+def _bloque_distribucion(celdas, n, total_universo=None):
+    """Bloque listo para plantilla: celdas + cobertura si hay universo (p.ej. todos los aces)."""
+    top = _top_zona(celdas)
+    out = {
+        'celdas': celdas,
+        'n': n,
+        'top_zona': top,
+        'top_label': f"Z{top['zona']} ({top['pct']}%)" if top else None,
+    }
+    if total_universo is not None:
+        con = n
+        sin = max(0, total_universo - con)
+        out['total'] = total_universo
+        out['con_destino'] = con
+        out['sin_destino'] = sin
+        out['cobertura_pct'] = round(con / total_universo * 100, 1) if total_universo else None
+    return out
+
+
+def trazo_analysis(partido, set_num):
+    """Análisis estadístico del Trazo y recepción por zona.
+
+    Fiabilidad:
+    - Destinos de saque/ataque: solo calidad ``++`` con ``zona_destino``
+      (los errores no piden destino en la app).
+    - Recepción: ``zona`` de RECEPCION = dónde nos llega el saque rival.
+    - Flujos ataque: solo puntos con ``zona`` (origen) y ``zona_destino``.
+
+    Perspectiva cancha rival (6×6): fila lejos 1-6-5, cerca 2-3-4
+    (como el sheet de captura). Minivoley: 2×2 → 1-2 / 4-3.
+    """
+    rows = _rows_for(partido, set_num)
+    max_z = _max_zona_partido(partido)
+    # Destino Trazo = campo RIVAL (como el sheet de captura).
+    court_rival = [[1, 2], [4, 3]] if max_z == 4 else [[1, 6, 5], [2, 3, 4]]
+    # Recepción = nuestro campo (misma ordenación que el grid de juego).
+    court_propio = [[3, 2], [4, 1]] if max_z == 4 else [[4, 3, 2], [5, 6, 1]]
+
+    def court_from(celdas, court_rows):
+        lookup = {c['zona']: c for c in celdas}
+        return [
+            [lookup.get(z, {'zona': z, 'n': 0, 'pct': 0.0}) for z in row]
+            for row in court_rows
+        ]
+
+    aces = [r for r in rows if r['accion'] == 'SAQUE' and r['calidad'] == '++']
+    aces_dest = [r for r in aces if r.get('zona_destino')]
+    saque_celdas, saque_n = _celdas_por_zona(aces_dest, 'zona_destino', max_z)
+    saque = _bloque_distribucion(saque_celdas, saque_n, total_universo=len(aces))
+    saque['court'] = court_from(saque_celdas, court_rival)
+
+    kills = [r for r in rows if r['accion'] == 'ATAQUE' and r['calidad'] == '++']
+    kills_dest = [r for r in kills if r.get('zona_destino')]
+    atq_celdas, atq_n = _celdas_por_zona(kills_dest, 'zona_destino', max_z)
+    ataque = _bloque_distribucion(atq_celdas, atq_n, total_universo=len(kills))
+    ataque['court'] = court_from(atq_celdas, court_rival)
+
+    recepciones = [r for r in rows if r['accion'] == 'RECEPCION' and r.get('zona')]
+    rec_celdas, rec_n = _celdas_por_zona(recepciones, 'zona', max_z)
+    recepcion = _bloque_distribucion(rec_celdas, rec_n)
+    recepcion['court'] = court_from(rec_celdas, court_propio)
+    todas_rec = [r for r in rows if r['accion'] == 'RECEPCION']
+    recepcion['total'] = len(todas_rec)
+    recepcion['con_zona'] = rec_n
+    recepcion['sin_zona'] = max(0, len(todas_rec) - rec_n)
+    recepcion['cobertura_pct'] = (
+        round(rec_n / len(todas_rec) * 100, 1) if todas_rec else None
+    )
+
+    flows = defaultdict(int)
+    for r in kills_dest:
+        o, d = r.get('zona'), r.get('zona_destino')
+        if o is None or d is None:
+            continue
+        try:
+            o, d = int(o), int(d)
+        except (TypeError, ValueError):
+            continue
+        if 1 <= o <= max_z and 1 <= d <= max_z:
+            flows[(o, d)] += 1
+    flujos = [
+        {
+            'origen': o,
+            'destino': d,
+            'n': n,
+            'pct': round(n / atq_n * 100, 1) if atq_n else 0.0,
+            'label': f'Z{o} → Z{d}',
+        }
+        for (o, d), n in sorted(flows.items(), key=lambda x: (-x[1], x[0][0], x[0][1]))
+    ]
+
+    return {
+        'max_zona': max_z,
+        'es_minivoley': max_z == 4,
+        'court_rival': court_rival,
+        'court_propio': court_propio,
+        'saque': saque,
+        'ataque': ataque,
+        'recepcion': recepcion,
+        'flujos_ataque': flujos[:10],
+        'flujos_ataque_n': sum(f['n'] for f in flujos),
+        'tiene_trazo': saque_n > 0 or atq_n > 0,
+        'tiene_recepcion': rec_n > 0,
+        'tiene_datos': saque_n > 0 or atq_n > 0 or rec_n > 0,
+    }
 
 
 def _lado_del_punto_row(r):

@@ -462,6 +462,118 @@
         </div>
     </div>
 
+    {% if set_data.trazo and set_data.trazo.tiene_datos %}
+    <div class="report-sheet rounded-2xl overflow-hidden shadow-2xl border border-slate-700 mt-6">
+        <div class="set-title">Direcciones (Trazo) — Set {{ set_data.set_num }}</div>
+        <p class="text-[10px] text-slate-600 px-3 py-2 border-b border-slate-300 bg-slate-50">
+            Destinos = Ace / punto de ataque con zona rival (vista nuestra).
+            Recepción = nuestro campo = dónde nos sacan.
+            Solo cuentan registros con zona; la cobertura indica cuántos puntos tienen ese dato.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white">
+            <div>
+                <h4 class="text-[10px] font-black uppercase tracking-wider text-emerald-700 mb-1">Aces → destino rival</h4>
+                <p class="text-[10px] text-slate-500 mb-2">
+                    n={{ set_data.trazo.saque.n }}
+                    {% if set_data.trazo.saque.cobertura_pct != None %}
+                    · cobertura {{ set_data.trazo.saque.cobertura_pct }}%
+                    ({{ set_data.trazo.saque.con_destino }}/{{ set_data.trazo.saque.total }})
+                    {% endif %}
+                    {% if set_data.trazo.saque.top_label %} · top {{ set_data.trazo.saque.top_label }}{% endif %}
+                </p>
+                {% if set_data.trazo.saque.n %}
+                <div class="space-y-1">
+                    {% for row in set_data.trazo.saque.court %}
+                    <div class="grid gap-1" style="grid-template-columns: repeat({{ row|length }}, minmax(0, 1fr));">
+                        {% for c in row %}
+                        <div class="rounded-lg border border-slate-200 p-2 text-center {% if c.pct >= 35 %}bg-emerald-100 text-emerald-800{% elif c.pct >= 18 %}bg-amber-50 text-amber-900{% else %}bg-slate-50 text-slate-400{% endif %}">
+                            <div class="text-[9px] font-black uppercase">Z{{ c.zona }}</div>
+                            <div class="text-sm font-black">{{ c.n }}</div>
+                            <div class="text-[10px]">{{ c.pct }}%</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-[10px] text-slate-400 italic">Sin aces con destino.</p>
+                {% endif %}
+            </div>
+            <div>
+                <h4 class="text-[10px] font-black uppercase tracking-wider text-blue-700 mb-1">Ataques → destino rival</h4>
+                <p class="text-[10px] text-slate-500 mb-2">
+                    n={{ set_data.trazo.ataque.n }}
+                    {% if set_data.trazo.ataque.cobertura_pct != None %}
+                    · cobertura {{ set_data.trazo.ataque.cobertura_pct }}%
+                    ({{ set_data.trazo.ataque.con_destino }}/{{ set_data.trazo.ataque.total }})
+                    {% endif %}
+                    {% if set_data.trazo.ataque.top_label %} · top {{ set_data.trazo.ataque.top_label }}{% endif %}
+                </p>
+                {% if set_data.trazo.ataque.n %}
+                <div class="space-y-1">
+                    {% for row in set_data.trazo.ataque.court %}
+                    <div class="grid gap-1" style="grid-template-columns: repeat({{ row|length }}, minmax(0, 1fr));">
+                        {% for c in row %}
+                        <div class="rounded-lg border border-slate-200 p-2 text-center {% if c.pct >= 35 %}bg-emerald-100 text-emerald-800{% elif c.pct >= 18 %}bg-amber-50 text-amber-900{% else %}bg-slate-50 text-slate-400{% endif %}">
+                            <div class="text-[9px] font-black uppercase">Z{{ c.zona }}</div>
+                            <div class="text-sm font-black">{{ c.n }}</div>
+                            <div class="text-[10px]">{{ c.pct }}%</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-[10px] text-slate-400 italic">Sin puntos de ataque con destino.</p>
+                {% endif %}
+            </div>
+            <div>
+                <h4 class="text-[10px] font-black uppercase tracking-wider text-violet-700 mb-1">Recepción (dónde nos sacan)</h4>
+                <p class="text-[10px] text-slate-500 mb-2">
+                    n={{ set_data.trazo.recepcion.n }}
+                    {% if set_data.trazo.recepcion.cobertura_pct != None %}
+                    · cobertura {{ set_data.trazo.recepcion.cobertura_pct }}%
+                    {% endif %}
+                    {% if set_data.trazo.recepcion.top_label %} · top {{ set_data.trazo.recepcion.top_label }}{% endif %}
+                </p>
+                {% if set_data.trazo.recepcion.n %}
+                <div class="space-y-1">
+                    {% for row in set_data.trazo.recepcion.court %}
+                    <div class="grid gap-1" style="grid-template-columns: repeat({{ row|length }}, minmax(0, 1fr));">
+                        {% for c in row %}
+                        <div class="rounded-lg border border-slate-200 p-2 text-center {% if c.pct >= 35 %}bg-emerald-100 text-emerald-800{% elif c.pct >= 18 %}bg-amber-50 text-amber-900{% else %}bg-slate-50 text-slate-400{% endif %}">
+                            <div class="text-[9px] font-black uppercase">Z{{ c.zona }}</div>
+                            <div class="text-sm font-black">{{ c.n }}</div>
+                            <div class="text-[10px]">{{ c.pct }}%</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-[10px] text-slate-400 italic">Sin recepciones con zona.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% if set_data.trazo.flujos_ataque %}
+        <div class="border-t border-slate-300 px-4 py-3 bg-slate-50">
+            <h4 class="text-[10px] font-black uppercase tracking-wider text-slate-600 mb-2">
+                Flujos de ataque (origen → destino) · n={{ set_data.trazo.flujos_ataque_n }}
+            </h4>
+            <div class="flex flex-wrap gap-2">
+                {% for f in set_data.trazo.flujos_ataque %}
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-slate-700">
+                    {{ f.label }}
+                    <span class="text-emerald-600">{{ f.n }}</span>
+                    <span class="text-slate-400 font-normal">{{ f.pct }}%</span>
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Evolución del marcador (run chart) del Set {{ set_data.set_num }} -->
     {% if set_data.run_chart %}
     <div class="bg-[#121824] p-5 rounded-3xl border border-slate-800 print:hidden">

@@ -33,6 +33,7 @@ from .services.reporting import (
     build_set_leaders,
     build_destacados_por_accion,
     build_quick_set_report,
+    trazo_analysis,
     build_set_report,
     build_partido_snapshot,
     calc_racha,
@@ -1346,10 +1347,56 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(len(reporte['detalle_sets']), 1)
         self.assertIsNone(reporte['detalle_total'])
         set_data = reporte['detalle_sets'][0]
-        for clave in ('zonas', 'rotacion', 'racha_maxima', 'run_chart', 'k1_efi', 'k2_efi', 'lideres', 'destacados_por_accion'):
+        for clave in ('zonas', 'trazo', 'rotacion', 'racha_maxima', 'run_chart', 'k1_efi', 'k2_efi', 'lideres', 'destacados_por_accion'):
             self.assertIn(clave, set_data)
         self.assertEqual(len(set_data['zonas']), 6)
         self.assertEqual(len(set_data['rotacion']), 6)
+        self.assertIn('saque', set_data['trazo'])
+        self.assertIn('ataque', set_data['trazo'])
+        self.assertIn('recepcion', set_data['trazo'])
+
+    def test_trazo_analysis_destinos_y_flujos(self):
+        """Solo ++ con zona_destino cuenta; errores y sin destino no contaminan %."""
+        j = self.jugadora
+        # 2 aces a Z5, 1 ace sin destino, 1 error saque (no cuenta)
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K0', accion='SAQUE',
+            calidad='++', set_numero=1, zona=1, zona_destino=5, rotacion_num=1,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K0', accion='SAQUE',
+            calidad='++', set_numero=1, zona=1, zona_destino=5, rotacion_num=1,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K0', accion='SAQUE',
+            calidad='++', set_numero=1, zona=1, zona_destino=None, rotacion_num=1,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K0', accion='SAQUE',
+            calidad='--', set_numero=1, zona=1, zona_destino=1, rotacion_num=1,
+        )
+        # Ataque Z4 → Z1 y recepción en Z6
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K1', accion='ATAQUE',
+            calidad='++', set_numero=1, zona=4, zona_destino=1, rotacion_num=1,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=j, tipo_fase='K1', accion='RECEPCION',
+            calidad='=', set_numero=1, zona=6, rotacion_num=1,
+        )
+
+        trazo = trazo_analysis(self.partido, 1)
+        self.assertTrue(trazo['tiene_datos'])
+        self.assertEqual(trazo['saque']['n'], 2)
+        self.assertEqual(trazo['saque']['total'], 3)  # 3 aces; error no cuenta
+        self.assertEqual(trazo['saque']['sin_destino'], 1)
+        self.assertEqual(trazo['saque']['top_zona']['zona'], 5)
+        self.assertEqual(trazo['ataque']['n'], 1)
+        self.assertEqual(trazo['ataque']['top_zona']['zona'], 1)
+        self.assertEqual(trazo['recepcion']['n'], 1)
+        self.assertEqual(trazo['recepcion']['top_zona']['zona'], 6)
+        self.assertEqual(trazo['flujos_ataque'][0]['label'], 'Z4 → Z1')
+        self.assertEqual(trazo['flujos_ataque'][0]['n'], 1)
 
     def test_build_full_report_incluye_detalle_total_con_varios_sets(self):
         j = Jugadora.objects.create(equipo=self.equipo, nombre='Test', dorsal=7)

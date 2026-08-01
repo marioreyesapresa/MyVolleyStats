@@ -133,6 +133,18 @@
         table.zona-table th { font-size: 6.5px; }
         table.zona-table td { font-size: 8px; }
 
+        table.trazo-wrap { width: 100%; margin: 4px 0 8px; table-layout: fixed; }
+        table.trazo-wrap > tbody > tr > td { border: none; vertical-align: top; padding: 0 4px 0 0; }
+        table.trazo-court { width: 100%; margin-bottom: 2px; }
+        table.trazo-court th { font-size: 6px; background: #f1f5f9; }
+        table.trazo-court td { font-size: 7.5px; padding: 3px 2px; }
+        .trazo-meta { font-size: 6.5px; color: #64748b; margin: 0 0 3px; }
+        .trazo-hot { background-color: #dcfce7; font-weight: bold; color: #166534; }
+        .trazo-mid { background-color: #fef9c3; }
+        .trazo-cold { background-color: #f8fafc; color: #94a3b8; }
+        table.trazo-flows { width: 100%; margin-top: 4px; }
+        table.trazo-flows th, table.trazo-flows td { font-size: 7px; padding: 2px 4px; }
+
         .legend {
             margin-top: 10px;
             font-size: 7px;
@@ -528,6 +540,112 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        {% if set_data.trazo and set_data.trazo.tiene_datos %}
+        <div class="section-title">Direcciones (Trazo) — Set {{ set_data.set_num }}</div>
+        <p style="font-size:7px;color:#64748b;margin:0 0 4px;">
+            Destinos = solo Ace / punto de ataque con zona rival (vista nuestra: lejos 1-6-5 · cerca 2-3-4).
+            Recepción = nuestro campo (4-3-2 / 5-6-1) = dónde nos sacan. % sobre el total con dato.
+            Cobertura = % de puntos/recepciones con zona anotada.
+        </p>
+        <table class="trazo-wrap">
+            <tr>
+                <td style="width:33%;">
+                    <div class="trazo-meta"><strong>Aces → destino rival</strong>
+                        · n={{ set_data.trazo.saque.n }}
+                        {% if set_data.trazo.saque.cobertura_pct != None %}
+                        · cobertura {{ set_data.trazo.saque.cobertura_pct }}% ({{ set_data.trazo.saque.con_destino }}/{{ set_data.trazo.saque.total }})
+                        {% endif %}
+                        {% if set_data.trazo.saque.top_label %} · top {{ set_data.trazo.saque.top_label }}{% endif %}
+                    </div>
+                    {% if set_data.trazo.saque.n %}
+                    <table class="trazo-court">
+                        {% for row in set_data.trazo.saque.court %}
+                        <tr>
+                            {% for c in row %}
+                            <td class="{% if c.pct >= 35 %}trazo-hot{% elif c.pct >= 18 %}trazo-mid{% else %}trazo-cold{% endif %}">
+                                Z{{ c.zona }}<br>{{ c.n }} · {{ c.pct }}%
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% else %}
+                    <p class="trazo-meta">Sin aces con destino en este set.</p>
+                    {% endif %}
+                </td>
+                <td style="width:33%;">
+                    <div class="trazo-meta"><strong>Ataques → destino rival</strong>
+                        · n={{ set_data.trazo.ataque.n }}
+                        {% if set_data.trazo.ataque.cobertura_pct != None %}
+                        · cobertura {{ set_data.trazo.ataque.cobertura_pct }}% ({{ set_data.trazo.ataque.con_destino }}/{{ set_data.trazo.ataque.total }})
+                        {% endif %}
+                        {% if set_data.trazo.ataque.top_label %} · top {{ set_data.trazo.ataque.top_label }}{% endif %}
+                    </div>
+                    {% if set_data.trazo.ataque.n %}
+                    <table class="trazo-court">
+                        {% for row in set_data.trazo.ataque.court %}
+                        <tr>
+                            {% for c in row %}
+                            <td class="{% if c.pct >= 35 %}trazo-hot{% elif c.pct >= 18 %}trazo-mid{% else %}trazo-cold{% endif %}">
+                                Z{{ c.zona }}<br>{{ c.n }} · {{ c.pct }}%
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% else %}
+                    <p class="trazo-meta">Sin puntos de ataque con destino en este set.</p>
+                    {% endif %}
+                </td>
+                <td style="width:34%;">
+                    <div class="trazo-meta"><strong>Recepción (dónde nos sacan)</strong>
+                        · n={{ set_data.trazo.recepcion.n }}
+                        {% if set_data.trazo.recepcion.cobertura_pct != None %}
+                        · cobertura {{ set_data.trazo.recepcion.cobertura_pct }}%
+                        {% endif %}
+                        {% if set_data.trazo.recepcion.top_label %} · top {{ set_data.trazo.recepcion.top_label }}{% endif %}
+                    </div>
+                    {% if set_data.trazo.recepcion.n %}
+                    <table class="trazo-court">
+                        {% for row in set_data.trazo.recepcion.court %}
+                        <tr>
+                            {% for c in row %}
+                            <td class="{% if c.pct >= 35 %}trazo-hot{% elif c.pct >= 18 %}trazo-mid{% else %}trazo-cold{% endif %}">
+                                Z{{ c.zona }}<br>{{ c.n }} · {{ c.pct }}%
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% else %}
+                    <p class="trazo-meta">Sin recepciones con zona en este set.</p>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+        {% if set_data.trazo.flujos_ataque %}
+        <p class="trazo-meta" style="margin-top:2px;"><strong>Flujos de ataque</strong> (origen → destino rival), top {{ set_data.trazo.flujos_ataque|length }} · n={{ set_data.trazo.flujos_ataque_n }}</p>
+        <table class="detail trazo-flows zona-table">
+            <thead>
+                <tr>
+                    <th class="left">Flujo</th>
+                    <th>n</th>
+                    <th>%</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in set_data.trazo.flujos_ataque %}
+                <tr class="{% if forloop.counter|divisibleby:2 %}row-even{% else %}row-odd{% endif %}">
+                    <td class="left">{{ f.label }}</td>
+                    <td>{{ f.n }}</td>
+                    <td>{{ f.pct }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% endif %}
 
         <div class="section-title">Eficacia por Rotación — Set {{ set_data.set_num }}</div>
         <p style="font-size:7px;color:#64748b;margin:0 0 4px;">K1 = % rallies ganados al recibir. K2 = % rallies ganados al sacar. Distinto de los complejos K1/K2 del encabezado.</p>
