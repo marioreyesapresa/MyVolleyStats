@@ -471,59 +471,80 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- Selección Jugadora: debajo del marcador, a todo lo ancho, para verla completa -->
-                <div class="mt-6 pt-6 border-t border-slate-800/80 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Selección Jugadora</h3>
-                        <button onclick="toggleModal('modal-config')" class="lg:hidden text-slate-400 hover:text-white transition-all flex items-center space-x-1" title="Ajustes Set">
-                            <i data-lucide="settings" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                    <div id="active-roster-container" class="flex flex-wrap gap-2 pb-2 py-1">
-                        <!-- Dynamically populated from JS -->
-                    </div>
-                </div>
             </div>
 
-            <!-- Stat Registration Panel -->
-            <div class="bg-[#121824] rounded-3xl p-6 md:p-8 border border-slate-800 shadow-xl space-y-6">
-                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
-                    <div class="flex items-center space-x-3">
-                        <h3 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Acciones Técnicas</h3>
-                        <div class="flex items-center space-x-2">
-                            <!-- Badge Fase K0/K1/K2 -->
+            <!-- Avanzado wizard: 1) formación  2) calidades (vuelve a 1 tras registrar) -->
+            <div id="avanzado-step-roster" class="space-y-4">
+                <div class="bg-[#121824] rounded-3xl p-4 md:p-6 border border-slate-800 shadow-xl space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-300 uppercase tracking-[0.15em]">1 · Elegí jugadora</h3>
+                            <p class="text-[10px] text-slate-500 font-bold mt-0.5">Tocá el hueco en pista (o líbero / EQ)</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
                             <div id="fase-badge" class="flex items-center space-x-1.5 px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all duration-300
                                  bg-blue-500/10 border-blue-500/30 text-blue-400">
                                 <span id="fase-dot" class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
                                 <span id="fase-label">K1 — Recepción</span>
                             </div>
-                            <!-- Badge Rotación R1-R6 -->
                             <div id="rot-badge" class="flex items-center space-x-1 px-2.5 py-1 rounded-lg border
                                  bg-slate-800/60 border-slate-700 text-slate-300 text-[9px] font-black uppercase tracking-widest">
                                 <i data-lucide="rotate-cw" class="w-2.5 h-2.5 text-slate-400"></i>
                                 <span id="rot-label">R1</span>
                             </div>
+                            <button onclick="eliminarUltimo()" class="px-3 py-2 min-h-[2.5rem] bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[10px] font-black rounded-xl active:scale-95 transition-all flex items-center uppercase tracking-widest hover:bg-rose-500/20">
+                                <i data-lucide="undo-2" class="w-3.5 h-3.5 mr-1.5"></i> Deshacer
+                            </button>
                         </div>
                     </div>
-                    <button onclick="eliminarUltimo()" class="px-4 py-2 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-black rounded-xl active:scale-95 transition-all flex items-center uppercase tracking-widest hover:bg-rose-500/20 shadow-md">
-                        <i data-lucide="undo-2" class="w-4 h-4 mr-2"></i> Deshacer
-                    </button>
+                    <p id="avanzado-form-hint" class="text-[9px] font-bold text-amber-400/80 uppercase tracking-wider hidden"></p>
+                    <div id="avanzado-court-grid" class="avanzado-field-grid max-w-3xl mx-auto"></div>
+                    <div id="avanzado-libero-bar" class="grid grid-cols-2 gap-2 max-w-3xl mx-auto"></div>
+                    <div class="flex flex-wrap gap-2 pt-1 border-t border-slate-800/80 max-w-3xl mx-auto">
+                        <button type="button" onclick="selectAvanzadoSlot(null, null)"
+                                class="av-slot-eq flex-1 min-h-[3.5rem] flex items-center justify-center gap-2 px-3 py-2 rounded-2xl border-2 border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-black text-xs uppercase tracking-wider active:scale-95 transition-all"
+                                id="btn-header-null">
+                            <span>EQ</span>
+                            <span class="text-[9px] font-bold text-emerald-500/80 normal-case tracking-tight">Equipo</span>
+                        </button>
+                        <button type="button" onclick="toggleModal('modal-config')" class="lg:hidden px-3 py-2 rounded-2xl border border-slate-700 text-slate-400" title="Ajustes Set">
+                            <i data-lucide="settings" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div id="active-roster-container" class="hidden" aria-hidden="true"></div>
+                    <div id="avanzado-selected-chip" class="hidden" aria-hidden="true"></div>
                 </div>
 
-                <!-- Actions grid -->
-                <div id="scout-actions-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
-                    <!-- Populated dynamically by renderBotonerasAcciones() -->
+                <div class="grid grid-cols-2 gap-3 max-w-3xl mx-auto">
+                    <button onclick="registrar('ERROR_RIVAL', '')" class="py-5 min-h-[3.5rem] bg-orange-950/20 hover:bg-orange-900/20 border-2 border-orange-800/40 text-orange-400 font-black rounded-2xl active:scale-95 transition-all text-xs md:text-sm uppercase tracking-widest flex items-center justify-center shadow-lg">
+                        <i data-lucide="award" class="w-5 h-5 mr-2"></i> Error Rival
+                    </button>
+                    <button onclick="registrar('PUNTO_RIVAL', '')" class="py-5 min-h-[3.5rem] bg-rose-950/20 hover:bg-rose-900/20 border-2 border-rose-800/30 text-rose-400 font-black rounded-2xl active:scale-95 transition-all text-xs md:text-sm uppercase tracking-widest flex items-center justify-center shadow-lg">
+                        <i data-lucide="zap-off" class="w-5 h-5 mr-2"></i> Punto Rival
+                    </button>
                 </div>
+            </div>
 
-                <!-- Opponent buttons (Red & Orange) -->
-                <div id="scout-opponent-grid" class="grid grid-cols-2 gap-6 border-t border-slate-800/60 pt-6 transition-all duration-300">
-                    <button onclick="registrar('ERROR_RIVAL', '')" class="py-5 md:py-6 bg-orange-950/20 hover:bg-orange-900/20 border-2 border-orange-850 text-orange-400 font-black rounded-2xl active:scale-95 transition-all text-xs md:text-sm uppercase tracking-widest flex items-center justify-center shadow-lg">
-                        <i data-lucide="award" class="w-5 h-5 mr-3"></i> Error Rival
-                    </button>
-                    <button onclick="registrar('PUNTO_RIVAL', '')" class="py-5 md:py-6 bg-rose-950/20 hover:bg-rose-900/20 border-2 border-rose-800/30 text-rose-400 font-black rounded-2xl active:scale-95 transition-all text-xs md:text-sm uppercase tracking-widest flex items-center justify-center shadow-lg">
-                        <i data-lucide="zap-off" class="w-5 h-5 mr-3"></i> Punto Rival
-                    </button>
+            <div id="avanzado-step-acciones" class="hidden">
+                <div class="av-acciones-panel bg-[#121824] rounded-2xl p-3 md:p-5 border border-slate-800 shadow-xl">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 gap-2 flex-wrap flex-shrink-0">
+                        <div class="min-w-0">
+                            <p class="text-[9px] font-black text-slate-500 uppercase tracking-wider">2 · Acción</p>
+                            <h3 id="avanzado-accion-title" class="text-base md:text-lg font-black text-emerald-300 uppercase tracking-wide truncate">—</h3>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <button type="button" onclick="volverAvanzadoAFormacion()"
+                                    class="px-4 py-2.5 min-h-[2.75rem] border border-slate-600 text-slate-200 text-xs font-black rounded-xl active:scale-95 transition-all uppercase tracking-wider">
+                                ← Cambiar
+                            </button>
+                            <button onclick="eliminarUltimo()" class="px-4 py-2.5 min-h-[2.75rem] bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-black rounded-xl active:scale-95 transition-all flex items-center uppercase tracking-widest hover:bg-rose-500/20">
+                                <i data-lucide="undo-2" class="w-4 h-4 mr-2"></i> Deshacer
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="scout-actions-grid" class="scout-actions-grid-avanzado transition-all duration-300"></div>
+                    <div id="scout-opponent-grid" class="hidden" aria-hidden="true"></div>
                 </div>
             </div>
         </div>
@@ -621,6 +642,131 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        /* Modo Avanzado híbrido — cancha de selección (iPad-first) */
+        .avanzado-field-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+        .avanzado-field-grid--mini {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .av-slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 5.75rem;
+            padding: 0.65rem 0.4rem;
+            border-radius: 1.1rem;
+            border: 2px solid #1e293b;
+            background: #090d16;
+            color: #fff;
+            transition: transform 0.1s, border-color 0.15s, background-color 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .av-slot:active { transform: scale(0.96); }
+        .av-slot--libero {
+            border-color: rgba(245, 158, 11, 0.45);
+            background: rgba(245, 158, 11, 0.12);
+            color: #fbbf24;
+        }
+        .av-slot--selected {
+            border-color: #10b981 !important;
+            background: rgba(16, 185, 129, 0.18) !important;
+            color: #34d399 !important;
+            box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.35);
+        }
+        .av-slot--empty {
+            border-style: dashed;
+            color: #475569;
+        }
+        @media (min-width: 768px) {
+            .av-slot { min-height: 6.5rem; }
+            .av-slot .text-lg { font-size: 1.5rem; }
+        }
+        /* Acciones Avanzado: ancho, compacto en altura (2 filas × 3) */
+        #scout-avanzado-container .av-acciones-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+            width: 100%;
+            max-width: none;
+        }
+        #scout-avanzado-container #scout-actions-grid.scout-actions-grid-avanzado {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.55rem;
+            width: 100%;
+        }
+        @media (min-width: 768px) {
+            #scout-avanzado-container #scout-actions-grid.scout-actions-grid-avanzado {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 0.65rem;
+            }
+        }
+        /* Calidades en 1 fila baja y ancha */
+        #scout-avanzado-container .ui-quality-grid {
+            display: grid;
+            gap: 0.4rem;
+            width: 100%;
+        }
+        #scout-avanzado-container .ui-quality-grid--4 {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        #scout-avanzado-container .ui-quality-grid--5 {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+        #scout-avanzado-container .ui-quality-grid button {
+            min-height: 2.75rem;
+            height: auto;
+            font-size: 1.05rem;
+            padding: 0.55rem 0.2rem;
+            border-radius: 0.7rem;
+            touch-action: manipulation;
+        }
+        @media (min-width: 768px) {
+            #scout-avanzado-container .ui-quality-grid button {
+                min-height: 3.15rem;
+                font-size: 1.15rem;
+                padding: 0.65rem 0.25rem;
+            }
+        }
+        @media (min-width: 1024px) {
+            #scout-avanzado-container .ui-quality-grid button {
+                min-height: 3.4rem;
+                font-size: 1.25rem;
+            }
+        }
+        #scout-avanzado-container .av-accion-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 0.55rem 0.65rem;
+            border-radius: 0.9rem;
+            gap: 0.4rem;
+            width: 100%;
+            min-height: 0;
+        }
+        #scout-avanzado-container .av-accion-card--primaria {
+            border-color: rgba(59, 130, 246, 0.55);
+            background: rgba(30, 58, 138, 0.22);
+            box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.18);
+        }
+        #scout-avanzado-container .av-accion-card--secundaria {
+            opacity: 0.95;
+        }
+        /* RED a ancho completo, barra baja */
+        #scout-avanzado-container .av-accion-card--red {
+            grid-column: 1 / -1;
+        }
+        #scout-avanzado-container .av-accion-card--red .ui-quality-grid button,
+        #scout-avanzado-container .av-accion-card--red button {
+            min-height: 2.85rem;
+            font-size: 0.95rem;
+            padding: 0.55rem 0.5rem;
         }
     </style>
     <div id="scout-rapido-container" class="hidden w-full space-y-2">
@@ -971,7 +1117,7 @@
             <label class="flex items-center justify-between cursor-pointer gap-4">
                 <span class="text-xs font-bold text-slate-300">Líbero sustituye central zaguera</span>
                 <div class="relative flex-shrink-0">
-                    <input type="checkbox" id="toggle-libero-sustituye" class="sr-only peer" onchange="togglePref('liberoSustituyeCentral', 'voley_pref_libero_sustituye_central', this.checked); if (state.modo_scout === 'rapido') renderGameplayGrid();">
+                    <input type="checkbox" id="toggle-libero-sustituye" class="sr-only peer" onchange="togglePref('liberoSustituyeCentral', 'voley_pref_libero_sustituye_central', this.checked); refreshModoCourtUI();">
                     <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
                     <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
                 </div>
@@ -1929,11 +2075,8 @@
         try { sessionStorage.removeItem(scoutReturnStorageKey()); } catch (e) { /* noop */ }
         switchTab('scout');
         switchRapidoTab(state.modo_scout === 'rapido' ? 'gameplay' : 'avjuego');
-        if (state.modo_scout === 'rapido') {
-            renderGameplayGrid();
-        } else {
-            renderBotonerasAcciones();
-        }
+        refreshModoCourtUI();
+        if (state.modo_scout === 'avanzado') renderBotonerasAcciones();
         showToast('↩️ Scout en vivo');
     }
 
@@ -2313,128 +2456,244 @@
             // Roster is locked and banner is displayed
             return;
         }
-        const container = document.getElementById('active-roster-container');
-        container.innerHTML = '';
-        
-        if (state.rotation) {
-            // Draw Z1 to Z6 players in rotation order
-            const maxZones = (MODALIDAD.toUpperCase() === 'MINIVOLEY' ? 4 : 6);
-            for (let i = 1; i <= maxZones; i++) {
-                const player = state.rotation[`pos${i}`];
-                if (player) {
-                    const pj = allJugadoras.find(x => x.id == player.id);
-                    const nombre = pj ? pj.nombre : 'Jugadora';
-                    const html = `
-                        <button onclick="selectJugadora('${player.id}')" 
-                                class="btn-jug flex-none flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-[#161b26] border-2 border-slate-800 rounded-2xl hover:border-slate-700 active:scale-95 transition-all text-white shadow-md animate-fade-in" 
-                                id="btn-header-${player.id}">
-                            <span class="text-lg md:text-xl font-black">#${player.dorsal}</span>
-                            <span class="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-tight max-w-[56px] md:max-w-[72px] truncate">${nombre}</span>
-                        </button>
-                    `;
-                    container.insertAdjacentHTML('beforeend', html);
-                } else {
-                    const html = `
-                        <div class="flex-none flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-[#090d16] border-2 border-dashed border-slate-800 rounded-2xl text-slate-600">
-                            <span class="text-lg md:text-xl font-black text-slate-500">Z${i}</span>
-                            <span class="text-[8px] font-bold uppercase tracking-tight text-slate-500">Vacío</span>
-                        </div>
-                    `;
-                    container.insertAdjacentHTML('beforeend', html);
-                }
-            }
-            if (PERMITE_LIBERO) {
-                [1, 2].forEach(n => {
-                    const lib = state.rotation[`libero${n}`];
-                    if (lib) {
-                        const pj = allJugadoras.find(x => x.id == lib.id);
-                        const nombre = pj ? pj.nombre : `Líbero ${n}`;
-                        const html = `
-                            <button onclick="selectJugadora('${lib.id}')" 
-                                    class="btn-jug flex-none flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-amber-500 border-2 border-amber-400 rounded-2xl hover:bg-amber-600 active:scale-95 transition-all text-slate-950 shadow-md animate-fade-in" 
-                                    id="btn-header-${lib.id}">
-                                <span class="text-lg md:text-xl font-black">#${lib.dorsal}</span>
-                                <span class="text-[8px] md:text-[9px] font-bold text-slate-900 uppercase tracking-tight max-w-[56px] md:max-w-[72px] truncate">${nombre}</span>
-                            </button>
-                        `;
-                        container.insertAdjacentHTML('beforeend', html);
-                    }
-                });
-            }
-        } else {
-            container.innerHTML = `
-                <div class="flex-1 min-w-0 flex flex-col md:flex-row md:items-center md:justify-between bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 gap-3 shadow-lg animate-fade-in">
-                    <div class="flex items-center space-x-3 text-amber-500">
-                        <i data-lucide="shield-alert" class="w-5 h-5 flex-shrink-0"></i>
-                        <span class="text-xs font-black uppercase tracking-wider">Alineación no configurada para este set.</span>
-                    </div>
-                    <button onclick="switchTab('rotacion')" 
-                            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all uppercase tracking-widest flex items-center justify-center gap-1.5 self-start md:self-auto">
-                        <i data-lucide="layout" class="w-3.5 h-3.5"></i>
-                        Pizarra de Rotación
-                    </button>
-                </div>
-            `;
-            if (window.lucide) lucide.createIcons();
-        }
-        
-        if (state.rotation) {
-            container.insertAdjacentHTML('beforeend', `
-                <div class="h-12 w-px bg-slate-800 mx-2 flex-none self-center animate-fade-in"></div>
-                <button onclick="selectJugadora('null')" 
-                        class="btn-jug flex-none flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-[#1e293b] border-2 border-slate-800 rounded-2xl hover:border-slate-700 active:scale-95 transition-all text-emerald-400 shadow-md animate-fade-in" 
-                        id="btn-header-null">
-                    <span class="text-lg md:text-xl font-black">EQ</span>
-                    <span class="text-[8px] md:text-[9px] font-bold text-emerald-500/80 uppercase tracking-tight">Equipo</span>
-                </button>
-            `);
-        }
-        
+
         if (state.jugadora_id) {
             selectJugadora(state.jugadora_id);
         } else {
             selectJugadora('null');
         }
         updateRotBadge();
+        refreshModoCourtUI();
+    }
+
+    function refreshModoCourtUI() {
         if (state.modo_scout === 'rapido') {
             renderGameplayGrid();
+        } else {
+            renderAvanzadoCourt();
         }
+    }
+
+    function showAvanzadoStep(step) {
+        const roster = document.getElementById('avanzado-step-roster');
+        const acciones = document.getElementById('avanzado-step-acciones');
+        if (!roster || !acciones) return;
+        const goAcciones = step === 'acciones';
+        roster.classList.toggle('hidden', goAcciones);
+        acciones.classList.toggle('hidden', !goAcciones);
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function updateAvanzadoAccionTitle() {
+        const el = document.getElementById('avanzado-accion-title');
+        if (!el) return;
+        if (!state.jugadora_id) {
+            el.textContent = 'EQ · Equipo';
+            return;
+        }
+        const pj = allJugadoras.find(x => String(x.id) === String(state.jugadora_id));
+        const dorsal = pj ? pj.dorsal : '?';
+        const nombre = pj ? pj.nombre : 'Jugadora';
+        const z = state.zona != null ? ` · Z${state.zona}` : '';
+        el.textContent = `#${dorsal} ${nombre}${z}`;
+    }
+
+    function volverAvanzadoAFormacion() {
+        state.jugadora_id = null;
+        state.zona = null;
+        updateAvanzadoSelectedChip();
+        renderBotonerasAcciones();
+        renderAvanzadoCourt();
+        showAvanzadoStep('roster');
+    }
+
+    /**
+     * Selección en Modo Avanzado: jugadora + zona → pantalla de calidades.
+     * Tras registrar se vuelve a formación (otra jugadora en el siguiente toque).
+     */
+    function selectAvanzadoSlot(jugadoraId, visualZone) {
+        if (visualZone == null || visualZone === '') {
+            state.zona = null;
+        } else {
+            state.zona = parseInt(visualZone, 10);
+        }
+        const id = (jugadoraId == null || jugadoraId === '' || jugadoraId === 'null')
+            ? 'null'
+            : String(jugadoraId);
+        selectJugadora(id);
+        updateAvanzadoAccionTitle();
+        renderBotonerasAcciones();
+        showAvanzadoStep('acciones');
+        if (id !== 'null') {
+            const pj = allJugadoras.find(x => String(x.id) === id);
+            const dorsal = pj ? pj.dorsal : '?';
+            const nombre = pj ? pj.nombre : 'Jugadora';
+            const zLabel = state.zona != null ? ` · Z${state.zona}` : '';
+            showToast(`🎯 #${dorsal} ${nombre}${zLabel}`);
+        } else {
+            showToast('🎯 EQ · Equipo');
+        }
+    }
+
+    function updateAvanzadoSelectedChip() {
+        const chip = document.getElementById('avanzado-selected-chip');
+        if (!chip) return;
+        if (!state.jugadora_id) {
+            chip.textContent = 'EQ · Equipo';
+            chip.className = 'px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider';
+            return;
+        }
+        const pj = allJugadoras.find(x => String(x.id) === String(state.jugadora_id));
+        const dorsal = pj ? pj.dorsal : '?';
+        const nombre = pj ? pj.nombre : 'Jugadora';
+        const z = state.zona != null ? ` · Z${state.zona}` : '';
+        chip.textContent = `#${dorsal} ${nombre}${z}`;
+        chip.className = 'px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/15 text-[10px] font-black text-emerald-300 uppercase tracking-wider max-w-[14rem] truncate';
+    }
+
+    function renderAvanzadoCourt() {
+        const grid = document.getElementById('avanzado-court-grid');
+        const liberoBar = document.getElementById('avanzado-libero-bar');
+        const hintEl = document.getElementById('avanzado-form-hint');
+        if (!grid) return;
+
+        if (!state.rotation) {
+            grid.innerHTML = `
+                <div class="col-span-full bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-center space-y-2">
+                    <p class="text-xs font-black uppercase tracking-wider text-amber-400">Alineación no configurada</p>
+                    <button onclick="switchTab('rotacion')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-xl uppercase tracking-widest">
+                        Pizarra de Rotación
+                    </button>
+                </div>`;
+            if (liberoBar) liberoBar.innerHTML = '';
+            if (hintEl) {
+                hintEl.classList.add('hidden');
+                hintEl.textContent = '';
+            }
+            updateAvanzadoSelectedChip();
+            return;
+        }
+
+        const isMini = MODALIDAD.toUpperCase() === 'MINIVOLEY';
+        const { slots } = getDisplaySlots();
+        const selectedId = state.jugadora_id ? String(state.jugadora_id) : null;
+        const onCourtIds = new Set();
+
+        // Si la jugadora sigue en cancha tras cambio de fase, zona = hueco actual.
+        if (selectedId) {
+            let foundZone = null;
+            Object.keys(slots).forEach(z => {
+                const p = slots[z] && slots[z].player;
+                if (p && String(p.id) === selectedId) foundZone = parseInt(z, 10);
+            });
+            if (foundZone != null) state.zona = foundZone;
+        }
+
+        const cellHtml = (z) => {
+            const slot = slots[z] || {};
+            const player = slot.player;
+            if (player) onCourtIds.add(String(player.id));
+            const isSel = player && selectedId === String(player.id);
+            const roleLabel = slot.roleLabel ? String(slot.roleLabel) : '';
+            if (!player) {
+                return `<div class="av-slot av-slot--empty">
+                    <span class="text-[10px] font-black text-slate-600">Z${z}</span>
+                    <span class="text-[9px] font-bold text-slate-600">Vacío</span>
+                </div>`;
+            }
+            const pj = allJugadoras.find(x => String(x.id) === String(player.id));
+            const nombre = pj ? pj.nombre : (slot.isLibero ? 'Líbero' : 'Jugadora');
+            const liberoCls = slot.isLibero ? ' av-slot--libero' : '';
+            const selCls = isSel ? ' av-slot--selected' : '';
+            const roleBadge = roleLabel
+                ? `<span class="mt-0.5 text-[8px] font-black uppercase tracking-wider opacity-80">${roleLabel}</span>`
+                : '';
+            return `<button type="button" class="av-slot${liberoCls}${selCls}"
+                        onclick="selectAvanzadoSlot('${player.id}', ${z})"
+                        id="av-slot-z${z}">
+                    <span class="text-[9px] font-black text-slate-500 uppercase">Z${z}</span>
+                    <span class="text-lg md:text-xl font-black leading-none">#${player.dorsal}</span>
+                    <span class="text-[9px] font-bold uppercase tracking-tight max-w-full truncate px-0.5">${nombre}</span>
+                    ${roleBadge}
+                </button>`;
+        };
+
+        if (isMini) {
+            grid.className = 'avanzado-field-grid avanzado-field-grid--mini';
+            grid.innerHTML = [3, 2, 4, 1].map(cellHtml).join('');
+        } else {
+            grid.className = 'avanzado-field-grid';
+            grid.innerHTML = [4, 3, 2, 5, 6, 1].map(cellHtml).join('');
+        }
+
+        const sis = state.prefs.sistemaTactico || '5-1';
+        if (hintEl) {
+            if (!isMini && ['5-1', '4-2', '6-2'].includes(sis)
+                && (state.fase_actual === 'K1' || state.fase_actual === 'K2')) {
+                hintEl.classList.remove('hidden');
+                hintEl.textContent = state.fase_actual === 'K1'
+                    ? (sis === '4-2'
+                        ? 'K1 4-2 · O recibe · Co delantera coloca'
+                        : sis === '6-2'
+                            ? 'K1 6-2 · Co zaguera · R solo 1/5/6'
+                            : 'Formación recepción (K1) · zona = posición en pista')
+                    : 'Formación defensa (K2) · R4/R6 · C3 · L5 · Co/O en 2·1';
+            } else {
+                hintEl.classList.add('hidden');
+                hintEl.textContent = '';
+            }
+        }
+
+        if (liberoBar) {
+            if (!PERMITE_LIBERO || isMini) {
+                liberoBar.innerHTML = '';
+            } else {
+                const bits = [];
+                [1, 2].forEach(n => {
+                    const lib = state.rotation[`libero${n}`];
+                    if (!lib || onCourtIds.has(String(lib.id))) return;
+                    const pj = allJugadoras.find(x => String(x.id) === String(lib.id));
+                    const nombre = pj ? pj.nombre : `L${n}`;
+                    const isSel = selectedId === String(lib.id);
+                    bits.push(`<button type="button" class="av-slot av-slot--libero${isSel ? ' av-slot--selected' : ''} w-full"
+                        onclick="selectAvanzadoSlot('${lib.id}', null)" id="av-slot-l${n}">
+                        <span class="text-[9px] font-black uppercase">L${n}</span>
+                        <span class="text-lg font-black leading-none">#${lib.dorsal}</span>
+                        <span class="text-[9px] font-bold uppercase truncate max-w-full px-0.5">${nombre}</span>
+                    </button>`);
+                });
+                // Si solo hay un líbero fuera, que no quede una celda vacía rara
+                if (bits.length === 1) {
+                    liberoBar.className = 'grid grid-cols-1 gap-2';
+                } else {
+                    liberoBar.className = 'grid grid-cols-2 gap-2';
+                }
+                liberoBar.innerHTML = bits.join('');
+            }
+        }
+
+        // Resaltar EQ
+        const eqBtn = document.getElementById('btn-header-null');
+        if (eqBtn) {
+            if (!state.jugadora_id) {
+                eqBtn.classList.add('ring-2', 'ring-emerald-400');
+            } else {
+                eqBtn.classList.remove('ring-2', 'ring-emerald-400');
+            }
+        }
+
+        updateAvanzadoSelectedChip();
     }
 
     function selectJugadora(id) {
         state.jugadora_id = (id === 'null' || id === null) ? null : id;
-        
-        const liberoIds = [];
-        if (state.rotation) {
-            if (state.rotation.libero1) liberoIds.push(String(state.rotation.libero1.id));
-            if (state.rotation.libero2) liberoIds.push(String(state.rotation.libero2.id));
+
+        // EQ sin cancha → sin zona origen.
+        if (!state.jugadora_id) {
+            state.zona = null;
         }
 
-        document.querySelectorAll('.btn-jug').forEach(b => {
-            const btnId = b.id.replace('btn-header-', '');
-            
-            if (btnId === 'null') {
-                b.style.borderColor = '#1e293b';
-                b.style.color = '#34d399';
-                b.style.backgroundColor = '#1e293b';
-            } else if (liberoIds.includes(btnId)) {
-                b.style.borderColor = '#f59e0b';
-                b.style.color = '#0f172a';
-                b.style.backgroundColor = '#f59e0b';
-            } else {
-                b.style.borderColor = '#1e293b';
-                b.style.color = '#ffffff';
-                b.style.backgroundColor = '#161b26';
-            }
-        });
-        
-        let activeId = id === null ? 'null' : id;
-        let el = document.getElementById(`btn-header-${activeId}`);
-        if(el) {
-            el.style.borderColor = '#10b981';
-            el.style.color = '#10b981';
-            el.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
-        }
+        updateAvanzadoSelectedChip();
         renderBotonerasAcciones();
     }
 
@@ -2991,7 +3250,7 @@
         updateUIHeader();
         drawCourtTempLineup();
         drawBenchPlayers();
-        if (state.modo_scout === 'rapido') renderGameplayGrid();
+        refreshModoCourtUI();
         
         try {
             // 4. Persistir la rotación en el servidor
@@ -3075,7 +3334,7 @@
         updateUIHeader();
         drawCourtTempLineup();
         drawBenchPlayers();
-        if (state.modo_scout === 'rapido') renderGameplayGrid();
+        refreshModoCourtUI();
         
         try {
             // 4. Persistir en el servidor
@@ -3184,12 +3443,12 @@
         if (['ERROR_RIVAL', 'PUNTO_RIVAL'].includes(accion)) {
             jug_id = null;
         }
-        // La zona es un dato transitorio de un único toque en el grid del
-        // Modo Rápido: se lee y se limpia de inmediato para que no se filtre
-        // por error a la siguiente acción (p.ej. un botón de +Punto/-Punto
-        // que no pasa por registrarGameplay).
+        // La zona es un dato de un toque en cancha.
+        // En Rápido se limpia tras registrar (un toque = una acción).
+        // En Avanzado se mantiene pegada a la selección (misma jugadora/zona
+        // para varias calidades seguidas hasta cambiar de hueco).
         const zonaActual = state.zona || null;
-        state.zona = null;
+        if (isRapido) state.zona = null;
         const zonaDestinoActual = state.zona_destino || null;
         state.zona_destino = null;
         if (!isRapido && !jug_id && !['ERROR_RIVAL', 'PUNTO_RIVAL'].includes(accion)) { 
@@ -3257,6 +3516,14 @@
                 if (isRapido && state.jugadora_id) {
                     selectJugadora('null'); // clear selection for next touch
                 }
+                if (!isRapido) {
+                    // Wizard Avanzado: tras cada acción, otra jugadora (vuelve a formación).
+                    state.jugadora_id = null;
+                    state.zona = null;
+                    updateAvanzadoSelectedChip();
+                    showAvanzadoStep('roster');
+                    renderAvanzadoCourt();
+                }
 
                 // ── Phase-transition logic after each registered action ───
                 const esPuntoNuestro    = (calidad === '++') || (accion === 'ERROR_RIVAL');
@@ -3318,7 +3585,8 @@
                 // Refresca las tarjetas de zona: la fila de Volumen Rápido
                 // (Recepción/Defensa) y el bloque de Saque dependen de la
                 // fase y de quién saca, que acaban de cambiar.
-                if (state.modo_scout === 'rapido') renderGameplayGrid();
+                refreshModoCourtUI();
+                if (state.modo_scout === 'avanzado') renderBotonerasAcciones();
             } else {
                 showToast("❌ Error al registrar");
             }
@@ -4380,11 +4648,11 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        // 3. Render beautiful banner inside / above the active-roster-container
+        // 3. Banner de partido finalizado (visible en la columna de formación)
+        const courtGrid = document.getElementById('avanzado-court-grid');
         const rosterContainer = document.getElementById('active-roster-container');
-        if (rosterContainer) {
-            rosterContainer.innerHTML = `
-                <div class="flex-1 min-w-0 flex flex-col md:flex-row md:items-center md:justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 gap-3 shadow-lg animate-fade-in text-emerald-400">
+        const bannerHtml = `
+                <div class="col-span-full flex flex-col md:flex-row md:items-center md:justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 gap-3 shadow-lg animate-fade-in text-emerald-400">
                     <div class="flex items-center space-x-3">
                         <i data-lucide="trophy" class="w-5 h-5 flex-shrink-0"></i>
                         <div>
@@ -4398,8 +4666,13 @@
                     </div>
                 </div>
             `;
-            if (window.lucide) lucide.createIcons();
+        if (courtGrid) {
+            courtGrid.innerHTML = bannerHtml;
+        } else if (rosterContainer) {
+            rosterContainer.classList.remove('hidden');
+            rosterContainer.innerHTML = bannerHtml;
         }
+        if (window.lucide) lucide.createIcons();
     }
 
     function unlockScoutInterface() {
@@ -4556,6 +4829,11 @@
         const grid = document.getElementById('scout-actions-grid');
         if (!grid) return;
         grid.innerHTML = '';
+        if (state.modo_scout === 'avanzado') {
+            grid.className = 'scout-actions-grid-avanzado transition-all duration-300';
+        } else {
+            grid.className = 'grid grid-cols-1 gap-4 transition-all duration-300';
+        }
 
         const modo = state.modo_scout;
 
@@ -4693,19 +4971,41 @@
             }
             if (window.lucide) lucide.createIcons();
         } else {
-            Object.entries(ACCIONES_CONFIG).forEach(([accionKey, config]) => {
+            const fase = state.fase_actual || 'K1';
+            const ordenPorFase = {
+                K0: ['SAQUE', 'ATAQUE', 'BLOQUEO', 'DEFENSA', 'COLOCACION', 'RECEPCION', 'RED'],
+                K1: ['RECEPCION', 'COLOCACION', 'ATAQUE', 'DEFENSA', 'BLOQUEO', 'SAQUE', 'RED'],
+                K2: ['DEFENSA', 'BLOQUEO', 'ATAQUE', 'COLOCACION', 'RECEPCION', 'SAQUE', 'RED'],
+            };
+            const primariaPorFase = { K0: 'SAQUE', K1: 'RECEPCION', K2: 'DEFENSA' };
+            const orden = ordenPorFase[fase] || ordenPorFase.K1;
+            const primaria = primariaPorFase[fase] || 'RECEPCION';
+
+            orden.forEach((accionKey) => {
+                const config = ACCIONES_CONFIG[accionKey];
+                if (!config) return;
+
+                const esPrimaria = accionKey === primaria;
                 const card = document.createElement('div');
-                card.className = accionKey === 'RED'
-                    ? 'bg-[#090d16] p-6 rounded-3xl border-2 border-rose-800/60 space-y-4 shadow-inner flex flex-col justify-between'
-                    : 'bg-[#090d16] p-6 rounded-3xl border border-slate-800/80 space-y-4 shadow-inner flex flex-col justify-between';
-                
+                if (accionKey === 'RED') {
+                    card.className = 'av-accion-card av-accion-card--red bg-[#090d16] border-2 border-rose-800/60 space-y-2 shadow-inner flex flex-col justify-between';
+                } else if (esPrimaria) {
+                    card.className = 'av-accion-card av-accion-card--primaria bg-[#090d16] border space-y-2 shadow-inner flex flex-col justify-between';
+                } else {
+                    card.className = 'av-accion-card av-accion-card--secundaria bg-[#090d16] border border-slate-800/80 space-y-2 shadow-inner flex flex-col justify-between';
+                }
+
                 const labelSpan = document.createElement('span');
-                labelSpan.className = 'text-xs font-black text-slate-400 uppercase tracking-widest block';
-                labelSpan.innerText = accionKey === 'RED' ? '🥅 ' + config.label : config.label;
+                labelSpan.className = esPrimaria
+                    ? 'text-[11px] font-black text-blue-300 uppercase tracking-widest block'
+                    : 'text-[10px] font-black text-slate-400 uppercase tracking-widest block';
+                labelSpan.innerText = accionKey === 'RED'
+                    ? '🥅 ' + config.label
+                    : (esPrimaria ? '★ ' + config.label : config.label);
                 card.appendChild(labelSpan);
 
                 const buttonsContainer = document.createElement('div');
-                
+
                 if (accionKey === 'RED') {
                     buttonsContainer.className = 'grid grid-cols-1';
                 } else if (accionKey === 'SAQUE') {
@@ -4716,7 +5016,7 @@
 
                 config.avanzado.forEach(btn => {
                     const button = document.createElement('button');
-                    button.className = `py-4 sm:py-5 font-black text-sm sm:text-lg rounded-xl active:scale-95 transition-all shadow-md min-w-0 ${btn.class}`;
+                    button.className = `font-black rounded-xl active:scale-95 transition-all shadow-md min-w-0 ${btn.class}`;
                     button.title = btn.title;
                     button.innerText = btn.label;
                     button.onclick = () => registrar(accionKey, btn.calidad);
@@ -4772,6 +5072,8 @@
             if (containerRapido) containerRapido.classList.add('hidden');
             
             switchRapidoTab('avjuego');
+            renderAvanzadoCourt();
+            showAvanzadoStep('roster');
         }
 
         showToast(`⚡ Modo de scout cambiado a: ${modo === 'rapido' ? 'RÁPIDO' : 'AVANZADO'}`);
@@ -4812,6 +5114,8 @@
         }
         if (tabName === 'avjuego') {
             renderBotonerasAcciones();
+            renderAvanzadoCourt();
+            showAvanzadoStep(state.jugadora_id ? 'acciones' : 'roster');
         }
         if (tabName === 'adjust') {
             renderAjustesPrefs();
@@ -4875,8 +5179,8 @@
         syncSistemaTacticoButtons();
         syncColocadoraActivaSelect();
         syncRotacionConColocadora({ silent: true });
-        if (state.modo_scout === 'rapido') renderGameplayGrid();
-        else renderBotonerasAcciones();
+        refreshModoCourtUI();
+        renderBotonerasAcciones();
         showToast(`Sistema ${sistema}`);
     }
 
@@ -4905,7 +5209,7 @@
             localStorage.setItem('voley_pref_libero_defensa', n);
         }
         syncLiberoFaseButtons();
-        if (state.modo_scout === 'rapido') renderGameplayGrid();
+        refreshModoCourtUI();
         showToast(`Líbero ${fase === 'recepcion' ? 'K1' : 'K2'}: L${n}`);
     }
 
@@ -5030,8 +5334,8 @@
             const name = p ? `#${p.dorsal} ${p.nombre}` : 'Co';
             showToast(rAhora !== rAntes ? `Co activa: ${name} · R${rAhora}` : `Co activa: ${name}`);
         }
-        if (state.modo_scout === 'rapido') renderGameplayGrid();
-        else renderBotonerasAcciones();
+        refreshModoCourtUI();
+        renderBotonerasAcciones();
     }
 
     function setColocadoraPar(which, id) {
@@ -5056,8 +5360,8 @@
         showToast(rAhora !== rAntes
             ? `Par Co actualizado · R${rAhora}`
             : `Colocadora ${which} actualizada`);
-        if (state.modo_scout === 'rapido') renderGameplayGrid();
-        else renderBotonerasAcciones();
+        refreshModoCourtUI();
+        renderBotonerasAcciones();
     }
 
     /**
