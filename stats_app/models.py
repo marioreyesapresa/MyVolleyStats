@@ -146,6 +146,12 @@ class RegistroEstadistica(models.Model):
                    "Rápido. Nulo para acciones sin zona propia (Colocación, líbero, "
                    "Modo Avanzado, puntos de rival, etc.).",
     )
+    zona_destino = models.PositiveSmallIntegerField(
+        blank=True, null=True, verbose_name="Zona destino",
+        help_text="Zona del campo rival (1-6, numeración FIVB) hacia la que fue "
+                   "el saque o ataque. Nulo si no se registró destino (preferencia "
+                   "apagada, Sin destino, u otras acciones).",
+    )
     fecha_registro = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

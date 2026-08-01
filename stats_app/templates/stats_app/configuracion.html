@@ -89,6 +89,18 @@
                 <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
             </div>
         </label>
+
+        <label class="flex items-center justify-between cursor-pointer gap-4">
+            <div class="min-w-0">
+                <span class="text-sm font-bold text-slate-200 block">Pedir destino en saque / ataque</span>
+                <p class="text-[10px] text-slate-500 mt-0.5">Modo Trazo: tras Ace, error de saque o punto/error de ataque eliges zona rival (6 zonas).</p>
+            </div>
+            <div class="relative flex-shrink-0">
+                <input type="checkbox" id="cfg-pedir-destino-trazo" class="sr-only peer" onchange="setAppPref('voley_pref_pedir_destino_trazo', this.checked)">
+                <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+            </div>
+        </label>
     </section>
 
     <!-- Sistema táctico (Modo Rápido) -->
@@ -275,6 +287,8 @@
         document.getElementById('cfg-auto-rotacion').checked = getBoolPref('voley_pref_auto_rotacion', true);
         document.getElementById('cfg-vibracion').checked = getBoolPref('voley_pref_vibracion', true);
         document.getElementById('cfg-confirmar').checked = getBoolPref('voley_pref_confirmar_borrado', true);
+        const cfgTrazo = document.getElementById('cfg-pedir-destino-trazo');
+        if (cfgTrazo) cfgTrazo.checked = getBoolPref('voley_pref_pedir_destino_trazo', true);
 
         const scoutDefault = localStorage.getItem('voley_modo_scout_default') || 'rapido';
         syncScoutDefaultButtons(scoutDefault);

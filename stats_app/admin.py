@@ -22,7 +22,7 @@ class PartidoAdmin(admin.ModelAdmin):
 
 @admin.register(RegistroEstadistica)
 class RegistroEstadisticaAdmin(admin.ModelAdmin):
-    list_display = ('partido', 'jugadora', 'set_numero', 'accion', 'calidad', 'rotacion_num')
+    list_display = ('partido', 'jugadora', 'set_numero', 'accion', 'calidad', 'rotacion_num', 'zona', 'zona_destino')
     list_filter = ('partido', 'set_numero', 'accion', 'rotacion_num')
 
 @admin.register(RotacionSet)

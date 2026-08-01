@@ -1746,6 +1746,39 @@ class ValidacionRangoDeNegocioTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_registrar_accion_guarda_zona_destino(self):
+        """Modo Trazo: saque/ataque pueden guardar zona rival (destino)."""
+        response = self.client.post(
+            reverse('stats_app:api_registrar_estadistica'),
+            data=json.dumps({
+                'partido_id': self.partido.id,
+                'jugadora_id': self.jugadora.id,
+                'accion': 'SAQUE',
+                'calidad': '++',
+                'set_numero': 1,
+                'fase': 'K0',
+                'rotacion_num': 1,
+                'zona': 1,
+                'zona_destino': 5,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        reg = RegistroEstadistica.objects.get(id=response.json()['id'])
+        self.assertEqual(reg.zona, 1)
+        self.assertEqual(reg.zona_destino, 5)
+
+    def test_registrar_accion_rechaza_zona_destino_fuera_de_rango(self):
+        response = self.client.post(
+            reverse('stats_app:api_registrar_estadistica'),
+            data=json.dumps({
+                'partido_id': self.partido.id, 'accion': 'ATAQUE', 'calidad': '++',
+                'zona_destino': 9,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+
     def test_registrar_accion_en_minivoley_rechaza_rotacion_num_mayor_que_cuatro(self):
         """Zonas de minivoley: 1-4. rotacion_num=5 o 6 pasa el límite genérico
         del formulario (máx. universal 6) pero no el reglamento real de esta

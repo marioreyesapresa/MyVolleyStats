@@ -190,6 +190,7 @@ class RegistrarAccionForm(FormConValidacionDeModalidad):
     set_numero = IdField(required=False, initial=1, max_value=MAX_SET_NUMERO)
     rotacion_num = IdField(required=False, max_value=MAX_ROTACION_VOLEY, initial=1)
     zona = IdField(required=False, max_value=MAX_ROTACION_VOLEY)
+    zona_destino = IdField(required=False, max_value=MAX_ROTACION_VOLEY)
 
 
 class RegistrarCambioForm(FormConValidacionDeModalidad):

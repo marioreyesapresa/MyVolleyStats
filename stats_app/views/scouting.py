@@ -245,6 +245,11 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
             if error_zona:
                 return error_zona
 
+            zona_destino = cd.get('zona_destino')
+            error_destino = _validar_rango_zona_modalidad(partido, zona_destino, 'zona_destino')
+            if error_destino:
+                return error_destino
+
             jugadora_id = cd.get('jugadora_id')
             jugadora = _jugadora_del_equipo(request, jugadora_id, partido.equipo) if jugadora_id else None
 
@@ -257,6 +262,7 @@ class RegistrarAccionAPI(LoginRequiredMixin, View):
                 set_numero=cd.get('set_numero') or 1,
                 rotacion_num=rotacion_num,
                 zona=zona,
+                zona_destino=zona_destino,
             )
 
             total_set = RegistroEstadistica.objects.filter(partido=partido, set_numero=registro.set_numero).count()

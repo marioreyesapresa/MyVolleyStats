@@ -935,6 +935,18 @@
                     <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
                 </div>
             </label>
+
+            <label class="flex items-center justify-between cursor-pointer gap-4">
+                <div class="min-w-0">
+                    <span class="text-xs font-bold text-slate-300 block">Pedir destino en saque / ataque</span>
+                    <span class="text-[9px] text-slate-500 font-bold">Modo Trazo: tras Ace, error de saque o punto/error de ataque</span>
+                </div>
+                <div class="relative flex-shrink-0">
+                    <input type="checkbox" id="toggle-pedir-destino-trazo" class="sr-only peer" onchange="togglePref('pedirDestinoTrazo', 'voley_pref_pedir_destino_trazo', this.checked)">
+                    <div class="w-11 h-6 bg-slate-700 rounded-full peer-checked:bg-emerald-600 transition-all"></div>
+                    <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-all peer-checked:translate-x-5"></div>
+                </div>
+            </label>
         </div>
 
         <!-- Sistema táctico (layout dinámico K1/K2) -->
@@ -1579,6 +1591,39 @@
     </div>
 </div>
 
+<!-- Modo Trazo: destino saque/ataque (campo rival, nuestra perspectiva) -->
+<div id="modal-trazo-destino" class="fixed inset-0 z-[160] bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4"
+     role="dialog" aria-modal="true" aria-labelledby="trazo-destino-title">
+    <div class="bg-[#121824] border border-slate-700 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div class="px-5 pt-5 pb-3 border-b border-slate-800 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h2 id="trazo-destino-title" class="text-base font-black uppercase tracking-wider text-white">¿Destino?</h2>
+                <p id="trazo-destino-subtitle" class="text-[10px] text-slate-500 font-bold mt-1 leading-snug">
+                    Campo rival · como lo ves tú (su 5 = esquina derecha)
+                </p>
+            </div>
+            <button type="button" onclick="cancelarTrazoDestino()" class="text-slate-400 hover:text-white flex-shrink-0 p-1" aria-label="Cancelar">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="p-5 space-y-4">
+            <div id="trazo-destino-grid" class="grid gap-2">
+                <!-- Rellenado por JS según modalidad -->
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="confirmarTrazoDestino(null)"
+                        class="py-3.5 rounded-2xl bg-[#1e293b] border border-slate-700 hover:bg-slate-700 text-slate-200 font-black text-[11px] uppercase tracking-wider transition-all active:scale-95">
+                    Sin destino
+                </button>
+                <button type="button" onclick="cancelarTrazoDestino()"
+                        class="py-3.5 rounded-2xl bg-rose-950/40 border border-rose-800/40 hover:bg-rose-900/40 text-rose-300 font-black text-[11px] uppercase tracking-wider transition-all active:scale-95">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Custom Floating Toast -->
 <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 opacity-0 transform -translate-y-10 bg-slate-900 border border-slate-800 text-white font-black py-4 px-8 rounded-2xl shadow-2xl pointer-events-none flex items-center space-x-3 transition-all z-[200]">
     <i data-lucide="info" class="w-6 h-6 text-emerald-400"></i>
@@ -1634,8 +1679,11 @@
             sistemaTactico: '5-1',    // '5-1' | '4-2' | '6-2' | '6-0'
             liberoSustituyeCentral: true,
             liberoRecepcion: '1',     // L1 o L2 en K1
-            liberoDefensa: '1'        // L1 o L2 en K2 (reservado)
+            liberoDefensa: '1',       // L1 o L2 en K2 (reservado)
+            pedirDestinoTrazo: true,  // sheet destino en saque/ataque ++/--
         },
+        zona: null,
+        zona_destino: null,
         // ── Reglas del set (editable desde Ajustes) ─────────────────────
         reglas: {
             puntosPorSet: {{ partido.puntos_por_set }},
@@ -1692,6 +1740,7 @@
         state.prefs.vibracion        = getBool('voley_pref_vibracion', true);
         state.prefs.confirmarBorrado = getBool('voley_pref_confirmar_borrado', true);
         state.prefs.liberoSustituyeCentral = getBool('voley_pref_libero_sustituye_central', true);
+        state.prefs.pedirDestinoTrazo = getBool('voley_pref_pedir_destino_trazo', true);
 
         const sistema = localStorage.getItem('voley_pref_sistema_tactico') || '5-1';
         state.prefs.sistemaTactico = ['5-1', '4-2', '6-2', '6-0'].includes(sistema) ? sistema : '5-1';
@@ -3000,14 +3049,102 @@
         } catch (e) { /* silent */ }
     }
 
+    // ── Modo Trazo: destino saque/ataque ───────────────────────────────────
+    // Preferencia ON → tras SAQUE/ATAQUE ++/-- se pide zona rival (FIVB).
+    // Vista del sheet: nuestra perspectiva mirando al rival (su 5 = dcha.).
+    let pendingTrazo = null; // { accion, calidad }
+
+    function needsTrazoDestino(accion, calidad) {
+        return (accion === 'SAQUE' || accion === 'ATAQUE')
+            && (calidad === '++' || calidad === '--');
+    }
+
+    function trazoDestinoZoneButton(z) {
+        return `<button type="button" onclick="confirmarTrazoDestino(${z})"
+            class="aspect-[4/3] rounded-2xl bg-emerald-600/15 border border-emerald-500/40 hover:bg-emerald-600 hover:border-emerald-400 text-emerald-200 hover:text-white font-black text-lg md:text-xl transition-all active:scale-95 shadow-md flex flex-col items-center justify-center gap-0.5">
+            <span class="text-[9px] uppercase tracking-wider opacity-70">Zona</span>
+            <span>${z}</span>
+        </button>`;
+    }
+
+    function openTrazoDestinoSheet(accion, calidad) {
+        pendingTrazo = { accion, calidad };
+        const modal = document.getElementById('modal-trazo-destino');
+        const title = document.getElementById('trazo-destino-title');
+        const grid = document.getElementById('trazo-destino-grid');
+        if (!modal || !grid) {
+            // Fallback: registrar sin destino
+            state.zona_destino = null;
+            registrar(accion, calidad, { skipTrazo: true });
+            return;
+        }
+        const labelAccion = accion === 'SAQUE'
+            ? (calidad === '++' ? 'Ace · destino del saque' : 'Error saque · ¿hacia dónde iba?')
+            : (calidad === '++' ? 'Punto ataque · destino' : 'Error ataque · ¿hacia dónde iba?');
+        if (title) title.textContent = labelAccion;
+
+        const isMini = MODALIDAD.toUpperCase() === 'MINIVOLEY';
+        if (isMini) {
+            // Minivoley: 4 zonas en 2×2
+            grid.className = 'grid grid-cols-2 gap-2';
+            grid.innerHTML = [1, 2, 4, 3].map(trazoDestinoZoneButton).join('');
+        } else {
+            // Campo rival visto desde nosotros: lejos 1-6-5 · cerca 2-3-4
+            grid.className = 'grid grid-cols-3 gap-2';
+            const far = [1, 6, 5].map(trazoDestinoZoneButton).join('');
+            const near = [2, 3, 4].map(trazoDestinoZoneButton).join('');
+            grid.innerHTML = `
+                <div class="col-span-3 text-[8px] font-black text-slate-500 uppercase tracking-widest text-center">Fondo rival</div>
+                ${far}
+                <div class="col-span-3 text-[8px] font-black text-slate-500 uppercase tracking-widest text-center pt-1">Red</div>
+                ${near}
+            `;
+        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function closeTrazoDestinoSheet() {
+        const modal = document.getElementById('modal-trazo-destino');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    function confirmarTrazoDestino(zonaDestino) {
+        if (!pendingTrazo) return;
+        const { accion, calidad } = pendingTrazo;
+        pendingTrazo = null;
+        state.zona_destino = (zonaDestino == null || zonaDestino === '') ? null : parseInt(zonaDestino, 10);
+        closeTrazoDestinoSheet();
+        registrar(accion, calidad, { skipTrazo: true });
+    }
+
+    function cancelarTrazoDestino() {
+        pendingTrazo = null;
+        // No registrar: limpiar zona pendiente del toque en el grid
+        state.zona = null;
+        state.zona_destino = null;
+        closeTrazoDestinoSheet();
+        showToast('⛔ Registro cancelado');
+    }
+
     // Register tactical action
-    async function registrar(accion, calidad) {
+    async function registrar(accion, calidad, opts) {
+        opts = opts || {};
         if (state.partido_finalizado) {
             showToast("⚠️ El partido está finalizado. No se pueden registrar más acciones.");
             return;
         }
         if (state.set_finished) {
             showToast("⚠️ Set finalizado. Pasa al siguiente set para continuar registrando.");
+            return;
+        }
+        // Modo Trazo: pedir destino antes de registrar (sin tocar marcador aún)
+        if (!opts.skipTrazo && state.prefs.pedirDestinoTrazo && needsTrazoDestino(accion, calidad)) {
+            openTrazoDestinoSheet(accion, calidad);
             return;
         }
         const isRapido = (state.modo_scout === 'rapido');
@@ -3021,6 +3158,8 @@
         // que no pasa por registrarGameplay).
         const zonaActual = state.zona || null;
         state.zona = null;
+        const zonaDestinoActual = state.zona_destino || null;
+        state.zona_destino = null;
         if (!isRapido && !jug_id && !['ERROR_RIVAL', 'PUNTO_RIVAL'].includes(accion)) { 
             showToast("⚠️ SELECCIONA JUGADORA"); 
             return; 
@@ -3067,7 +3206,8 @@
                     set_numero: state.set_numero, 
                     fase: faseTag,
                     rotacion_num: state.rotacion_num,
-                    zona: zonaActual
+                    zona: zonaActual,
+                    zona_destino: zonaDestinoActual
                 }) 
             });
             
@@ -4573,10 +4713,12 @@
         const toggleVibracion = document.getElementById('toggle-vibracion');
         const toggleConfirmar = document.getElementById('toggle-confirmar-borrado');
         const toggleLiberoSust = document.getElementById('toggle-libero-sustituye');
+        const toggleTrazo = document.getElementById('toggle-pedir-destino-trazo');
         if (toggleAutoRot) toggleAutoRot.checked = state.prefs.autoRotacion;
         if (toggleVibracion) toggleVibracion.checked = state.prefs.vibracion;
         if (toggleConfirmar) toggleConfirmar.checked = state.prefs.confirmarBorrado;
         if (toggleLiberoSust) toggleLiberoSust.checked = state.prefs.liberoSustituyeCentral;
+        if (toggleTrazo) toggleTrazo.checked = state.prefs.pedirDestinoTrazo;
 
         syncSistemaTacticoButtons();
         syncLiberoFaseButtons();
