@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path, include
@@ -6,8 +7,10 @@ from stats_app.views.auth import RegistroEntrenadorView
 from stats_app.views.pwa import service_worker_view
 from stats_app.forms import LoginForm
 
+_admin_path = f"{getattr(settings, 'DJANGO_ADMIN_URL', 'admin').strip('/')}/"
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path(_admin_path, admin.site.urls),
     # Servido explícitamente en la raíz (no en /static/) para que el scope
     # por defecto del Service Worker sea "/" y pueda controlar toda la app.
     # Ver stats_app/views/pwa.py para el porqué.

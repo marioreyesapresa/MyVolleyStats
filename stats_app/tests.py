@@ -2179,3 +2179,46 @@ class PartidoFinalizadoBloqueaMutacionesTests(TestCase):
     def test_pdf_resumen_devuelve_500_si_render_falla(self, _mock_pdf):
         response = self.client.get(reverse('stats_app:descargar_resumen_pdf', args=[self.partido.pk]))
         self.assertEqual(response.status_code, 500)
+
+
+class BlindajePerimetroTests(TestCase):
+    """CSP, registro cerrado, rate limit de reset, telemetría de cliente y admin path."""
+
+    def setUp(self):
+        self.coach, self.equipo, self.jugadora, self.partido = _crear_entrenador_con_partido('coach_perimetro')
+        self.client.login(username='coach_perimetro', password='pass12345')
+
+    def test_respuestas_incluyen_cabeceras_de_seguridad(self):
+        response = self.client.get(reverse('stats_app:dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("default-src 'self'", response.get('Content-Security-Policy', ''))
+        self.assertEqual(response.get('Referrer-Policy'), 'strict-origin-when-cross-origin')
+        self.assertIn('camera=()', response.get('Permissions-Policy', ''))
+
+    @override_settings(ALLOW_PUBLIC_REGISTRATION=False)
+    def test_registro_publico_desactivado_da_404(self):
+        anon = Client()
+        response = anon.get(reverse('register'))
+        self.assertEqual(response.status_code, 404)
+
+    def test_password_reset_esta_en_rate_limit_rules(self):
+        patterns = [p for p, _, _ in settings.RATE_LIMIT_RULES]
+        self.assertTrue(any('password_reset' in p for p in patterns))
+
+    def test_client_error_api_registra_y_responde_ok(self):
+        response = self.client.post(
+            reverse('stats_app:api_client_error'),
+            data=json.dumps({
+                'mensaje': 'boom test',
+                'origen': 'test',
+                'partido_id': self.partido.id,
+                'stack': 'Error: boom',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ok')
+
+    @override_settings(DJANGO_ADMIN_URL='mvs-test-admin')
+    def test_admin_url_setting_configurable(self):
+        self.assertEqual(settings.DJANGO_ADMIN_URL, 'mvs-test-admin')

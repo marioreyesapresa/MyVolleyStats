@@ -145,77 +145,85 @@ class GuardarAlineacionInicialAPI(LoginRequiredMixin, View):
 class RotarManualAPI(LoginRequiredMixin, View):
     @reintentar_en_error_transitorio()
     def post(self, request, partido_id):
-        partido = _partido_del_entrenador(request, partido_id)
-        if partido.finalizado:
-            return JsonResponse(
-                {'error': 'El partido está finalizado. No se pueden rotar jugadoras.'},
-                status=400,
+        try:
+            partido = _partido_del_entrenador(request, partido_id)
+            if partido.finalizado:
+                return JsonResponse(
+                    {'error': 'El partido está finalizado. No se pueden rotar jugadoras.'},
+                    status=400,
+                )
+            data, error = _parsear_json(request)
+            if error:
+                return error
+
+            form = RotarManualForm(data)
+            if not form.is_valid():
+                return _form_invalido(form)
+            cd = form.cleaned_data
+
+            set_n = cd.get('set_numero') or 1
+            direccion = cd.get('direccion') or 'horario'
+            modalidad = partido.modalidad
+            
+            actual = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=False).order_by('-id').first()
+            if not actual:
+                actual = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=True).first()
+            
+            if not actual: return JsonResponse({'error': 'No hay rotación'}, status=404)
+            
+            p1, p2, p3, p4, p5, p6 = actual.pos1_id, actual.pos2_id, actual.pos3_id, actual.pos4_id, actual.pos5_id, actual.pos6_id
+            
+            if modalidad == 'MINIVOLEY':
+                if direccion == 'horario':
+                    # Sentido horario en rombo: [Zona 1 -> Zona 4 -> Zona 3 -> Zona 2 -> Zona 1]
+                    # El jugador de Zona 4 pasa a Zona 3, el de 3 a 2, el de 2 a 1 para sacar, y el de 1 a 4.
+                    new_p4 = p1   # Z1 -> Z4
+                    new_p3 = p4   # Z4 -> Z3
+                    new_p2 = p3   # Z3 -> Z2
+                    new_p1 = p2   # Z2 -> Z1
+                else:
+                    # Sentido antihorario (deshacer): [Zona 1 -> Zona 2 -> Zona 3 -> Zona 4 -> Zona 1]
+                    new_p1 = p4   # Z4 -> Z1
+                    new_p4 = p3   # Z3 -> Z4
+                    new_p3 = p2   # Z2 -> Z3
+                    new_p2 = p1   # Z1 -> Z2
+                new_p5 = None
+                new_p6 = None
+            else:
+                if direccion == 'horario':
+                    # Rotación reglamentaria FIVB (sentido horario):
+                    # Zona1 → Zona6 → Zona5 → Zona4 → Zona3 → Zona2 → Zona1
+                    # Cada jugadora ocupa la zona de número inferior:
+                    new_p6 = p1   # quien estaba en Z1 pasa a Z6
+                    new_p5 = p6   # quien estaba en Z6 pasa a Z5
+                    new_p4 = p5   # quien estaba en Z5 pasa a Z4
+                    new_p3 = p4   # quien estaba en Z4 pasa a Z3
+                    new_p2 = p3   # quien estaba en Z3 pasa a Z2
+                    new_p1 = p2   # quien estaba en Z2 pasa a Z1
+                else:
+                    # Rotación inversa (antihoraria / deshacer):
+                    # Zona1 → Zona2 → Zona3 → Zona4 → Zona5 → Zona6 → Zona1
+                    new_p2 = p1
+                    new_p3 = p2
+                    new_p4 = p3
+                    new_p5 = p4
+                    new_p6 = p5
+                    new_p1 = p6
+
+            RotacionSet.objects.create(
+                partido=partido, set_numero=set_n, es_inicial=False,
+                pos1_id=new_p1, pos2_id=new_p2, pos3_id=new_p3, pos4_id=new_p4, pos5_id=new_p5, pos6_id=new_p6,
+                libero1_id=actual.libero1_id, libero2_id=actual.libero2_id
             )
-        data, error = _parsear_json(request)
-        if error:
-            return error
-
-        form = RotarManualForm(data)
-        if not form.is_valid():
-            return _form_invalido(form)
-        cd = form.cleaned_data
-
-        set_n = cd.get('set_numero') or 1
-        direccion = cd.get('direccion') or 'horario'
-        modalidad = partido.modalidad
-        
-        actual = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=False).order_by('-id').first()
-        if not actual:
-            actual = RotacionSet.objects.filter(partido=partido, set_numero=set_n, es_inicial=True).first()
-        
-        if not actual: return JsonResponse({'error': 'No hay rotación'}, status=404)
-        
-        p1, p2, p3, p4, p5, p6 = actual.pos1_id, actual.pos2_id, actual.pos3_id, actual.pos4_id, actual.pos5_id, actual.pos6_id
-        
-        if modalidad == 'MINIVOLEY':
-            if direccion == 'horario':
-                # Sentido horario en rombo: [Zona 1 -> Zona 4 -> Zona 3 -> Zona 2 -> Zona 1]
-                # El jugador de Zona 4 pasa a Zona 3, el de 3 a 2, el de 2 a 1 para sacar, y el de 1 a 4.
-                new_p4 = p1   # Z1 -> Z4
-                new_p3 = p4   # Z4 -> Z3
-                new_p2 = p3   # Z3 -> Z2
-                new_p1 = p2   # Z2 -> Z1
-            else:
-                # Sentido antihorario (deshacer): [Zona 1 -> Zona 2 -> Zona 3 -> Zona 4 -> Zona 1]
-                new_p1 = p4   # Z4 -> Z1
-                new_p4 = p3   # Z3 -> Z4
-                new_p3 = p2   # Z2 -> Z3
-                new_p2 = p1   # Z1 -> Z2
-            new_p5 = None
-            new_p6 = None
-        else:
-            if direccion == 'horario':
-                # Rotación reglamentaria FIVB (sentido horario):
-                # Zona1 → Zona6 → Zona5 → Zona4 → Zona3 → Zona2 → Zona1
-                # Cada jugadora ocupa la zona de número inferior:
-                new_p6 = p1   # quien estaba en Z1 pasa a Z6
-                new_p5 = p6   # quien estaba en Z6 pasa a Z5
-                new_p4 = p5   # quien estaba en Z5 pasa a Z4
-                new_p3 = p4   # quien estaba en Z4 pasa a Z3
-                new_p2 = p3   # quien estaba en Z3 pasa a Z2
-                new_p1 = p2   # quien estaba en Z2 pasa a Z1
-            else:
-                # Rotación inversa (antihoraria / deshacer):
-                # Zona1 → Zona2 → Zona3 → Zona4 → Zona5 → Zona6 → Zona1
-                new_p2 = p1
-                new_p3 = p2
-                new_p4 = p3
-                new_p5 = p4
-                new_p6 = p5
-                new_p1 = p6
-
-        RotacionSet.objects.create(
-            partido=partido, set_numero=set_n, es_inicial=False,
-            pos1_id=new_p1, pos2_id=new_p2, pos3_id=new_p3, pos4_id=new_p4, pos5_id=new_p5, pos6_id=new_p6,
-            libero1_id=actual.libero1_id, libero2_id=actual.libero2_id
-        )
-        
-        return JsonResponse({'status': 'ok'})
+            
+            return JsonResponse({'status': 'ok'})
+        except Http404:
+            raise
+        except (OperationalError, InterfaceError):
+            raise
+        except Exception as e:
+            logger.exception('Error inesperado en RotarManualAPI')
+            return JsonResponse({'error': ocultar_detalle_interno(e)}, status=400)
 
 class ActualizarPosicionJugadoraAPI(LoginRequiredMixin, View):
     @reintentar_en_error_transitorio()

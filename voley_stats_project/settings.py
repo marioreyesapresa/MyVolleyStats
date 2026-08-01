@@ -53,6 +53,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'stats_app.security.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'voley_stats_project.urls'
@@ -140,35 +141,53 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Caché — usada como almacén del Rate Limiting (stats_app.security)
+# Caché — almacén del Rate Limiting (stats_app.security)
 #
-# LocMemCache vive en la memoria del propio proceso/contenedor: no requiere
-# Redis/Memcached externo. Limitación conocida y aceptada: en Cloud Run con
-# min-instances > 1 o autoescalado el contador NO se comparte entre réplicas,
-# por lo que el límite real es "N peticiones/minuto por IP y por instancia".
-# Sigue siendo una mitigación eficaz contra fuerza bruta y scripts de abuso
-# que golpean una URL pública descubierta, sin añadir infraestructura nueva.
+# En Postgres (producción / Neon) usamos DatabaseCache para compartir contadores
+# entre réplicas de Cloud Run. En SQLite/dev/tests: LocMem (rápido, sin tabla).
+# createcachetable se ejecuta en docker-entrypoint.sh al arrancar.
 # ─────────────────────────────────────────────────────────────────────────────
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'rate-limit-cache',
+if _ES_POSTGRES and not DEBUG and 'test' not in sys.argv:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'django_cache_table',
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'rate-limit-cache',
+        }
+    }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Rate Limiting — límites lógicos por IP (ver stats_app/security.py)
 # Formato: (patrón de ruta, máx. peticiones, ventana en segundos)
+# La primera regla que haga match gana: poner rutas concretas antes de /api/.
 # ─────────────────────────────────────────────────────────────────────────────
 RATE_LIMIT_RULES = [
-    # Login / registro: protección de fuerza bruta sobre credenciales.
     (r'^/accounts/login/', 10, 60),
     (r'^/accounts/register/', 10, 60),
-    # APIs de scouting en vivo: alto volumen legítimo (clicks rápidos del
-    # entrenador + reintentos automáticos del frontend), pero acotado para
-    # frenar un abuso automatizado/DoS si se descubre la URL de Cloud Run.
+    (r'^/accounts/password_reset/', 5, 60),
+    (r'^/accounts/reset/', 10, 60),
+    (r'^/api/client-error/', 30, 60),
+    # APIs de scouting en vivo: alto volumen legítimo (clicks + reintentos).
     (r'^/api/', 240, 60),
 ]
+
+# Registro público de entrenadores. En producción conviene False y crear
+# cuentas vía createsuperuser / admin.
+ALLOW_PUBLIC_REGISTRATION = config('ALLOW_PUBLIC_REGISTRATION', default=True, cast=bool)
+
+# Ruta del panel Django Admin (sin barras). En producción usar path no adivinable.
+DJANGO_ADMIN_URL = config('DJANGO_ADMIN_URL', default='admin').strip().strip('/') or 'admin'
+
+# Sentry (opcional). Si SENTRY_DSN está vacío, no se inicializa nada.
+SENTRY_DSN = config('SENTRY_DSN', default='').strip()
+SENTRY_ENVIRONMENT = config('SENTRY_ENVIRONMENT', default='production' if not DEBUG else 'development')
+SENTRY_TRACES_SAMPLE_RATE = config('SENTRY_TRACES_SAMPLE_RATE', default=0.0, cast=float)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Internacionalización
@@ -266,7 +285,12 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
     SESSION_COOKIE_HTTPONLY = True
-    CSRF_COOKIE_HTTPONLY = True
+    # False: el Scout lee `csrftoken` vía JS (sesiones largas / refresh).
+    # Mitigado con CSP + SameSite. Django recomienda esto para AJAX.
+    CSRF_COOKIE_HTTPONLY = False
+
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
 
     # HSTS: fuerza HTTPS en el navegador durante 1 año una vez visitado.
     SECURE_HSTS_SECONDS = 31536000
@@ -274,6 +298,22 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
 
     X_FRAME_OPTIONS = 'DENY'
+
+# CSP pragmática (inline del Scout + CDNs actuales). SecurityHeadersMiddleware.
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "base-uri 'self'; "
+    "object-src 'none'; "
+    "frame-ancestors 'none'; "
+    "form-action 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com data:; "
+    "img-src 'self' data: blob: https://quickchart.io; "
+    "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io; "
+    "worker-src 'self'; "
+    "manifest-src 'self'"
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Limpieza de cabeceras / no fuga de información técnica
@@ -314,6 +354,9 @@ LOGGING = {
         'django.server': {
             'format': '[DJANGO] %(asctime)s %(levelname)s %(name)s: %(message)s',
         },
+        'cliente': {
+            'format': '[CLIENT] %(asctime)s %(levelname)s %(name)s: %(message)s',
+        },
     },
     'handlers': {
         'console_seguridad': {
@@ -324,6 +367,10 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'django.server',
         },
+        'console_cliente': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'cliente',
+        },
         'mail_admins': {
             'level': 'ERROR',
             'class': 'django.utils.log.AdminEmailHandler',
@@ -333,6 +380,11 @@ LOGGING = {
     'loggers': {
         'stats_app.security': {
             'handlers': ['console_seguridad'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'stats_app.client_errors': {
+            'handlers': ['console_cliente'],
             'level': 'WARNING',
             'propagate': False,
         },
@@ -358,3 +410,19 @@ LOGGING = {
 # ─────────────────────────────────────────────────────────────────────────────
 if 'test' in sys.argv:
     PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
+
+# Sentry (errores de servidor). Opcional: sin DSN no hace nada.
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[DjangoIntegration()],
+            environment=SENTRY_ENVIRONMENT,
+            traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+            send_default_pii=False,
+        )
+    except ImportError:
+        pass

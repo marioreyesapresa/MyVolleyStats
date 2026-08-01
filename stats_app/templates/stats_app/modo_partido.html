@@ -2110,6 +2110,7 @@
 
         updateOfflineBanner();
         ensureOfflineSyncGuards();
+        ensureClientErrorReporting();
         try {
             const cachedNotas = loadNotasCache();
             if (cachedNotas.length) notasPartido = cachedNotas;
@@ -3784,6 +3785,7 @@
     const API_ACTUALIZAR_NOTA_TMPL = '{% url "stats_app:api_actualizar_nota" partido.id 0 %}';
     const API_ELIMINAR_NOTA_TMPL = '{% url "stats_app:api_eliminar_nota" partido.id 0 %}';
     const API_CONFIG_SET_URL = '{% url "stats_app:api_actualizar_config_set" partido.id %}';
+    const API_CLIENT_ERROR_URL = '{% url "stats_app:api_client_error" %}';
     const API_GET_ROTACION_URL = '{% url "stats_app:api_get_rotacion" partido.id %}';
     const CSRF_TOKEN = '{{ csrf_token }}';
     let offlineFlushInProgress = false;
@@ -3828,6 +3830,16 @@
 
     function isAuthError(err) {
         return !!(err && err.code === 'AUTH');
+    }
+
+    function makeBusinessError(message) {
+        const err = new Error(message || 'Operación no permitida');
+        err.code = 'BUSINESS';
+        return err;
+    }
+
+    function isBusinessError(err) {
+        return !!(err && err.code === 'BUSINESS');
     }
 
     function notifySessionExpired() {
@@ -4088,9 +4100,12 @@
             if (response.status === 401 || response.status === 403) {
                 throw makeAuthError('Sesión caducada');
             }
+            if (response.status === 400) {
+                throw makeBusinessError((data && (data.mensaje || data.error)) || 'Operación rechazada');
+            }
             if (!response.ok) throw new Error((data && data.mensaje) || `HTTP ${response.status}`);
             if (data && data.status && data.status !== 'ok' && data.status !== 'success') {
-                throw new Error(data.mensaje || data.error || 'Error al sincronizar');
+                throw makeBusinessError(data.mensaje || data.error || 'Error al sincronizar');
             }
             return data;
         };
@@ -4187,6 +4202,17 @@
                 } catch (err) {
                     if (isAuthError(err)) {
                         notifySessionExpired();
+                        hardFail = true;
+                        updateOfflineBanner();
+                        break;
+                    }
+                    if (isBusinessError(err)) {
+                        // finalizado / validación: descartar ítem (no es fallo de red)
+                        const rest = loadOfflineQueue();
+                        rest.shift();
+                        saveOfflineQueue(rest);
+                        showToast('⚠️ ' + (err.message || 'Pendiente descartado (ya no aplica)'));
+                        continue;
                     }
                     hardFail = true;
                     updateOfflineBanner();
@@ -4225,6 +4251,46 @@
                 flushOfflineQueue();
             }
         }, 20000);
+    }
+
+    let clientErrorReportingBound = false;
+    function reportClientError(payload) {
+        try {
+            const body = Object.assign({
+                partido_id: state.partido_id,
+                ruta: window.location.pathname,
+            }, payload || {});
+            // fire-and-forget; no bloquear el scout
+            fetch(API_CLIENT_ERROR_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfTokenLive(),
+                },
+                body: JSON.stringify(body),
+                keepalive: true,
+            }).catch(() => {});
+        } catch (e) { /* ignore */ }
+    }
+
+    function ensureClientErrorReporting() {
+        if (clientErrorReportingBound) return;
+        clientErrorReportingBound = true;
+        window.addEventListener('error', (ev) => {
+            reportClientError({
+                mensaje: (ev && ev.message) || 'Error JS',
+                origen: (ev && ev.filename) ? `${ev.filename}:${ev.lineno || 0}` : 'window.error',
+                stack: (ev && ev.error && ev.error.stack) || '',
+            });
+        });
+        window.addEventListener('unhandledrejection', (ev) => {
+            const reason = ev && ev.reason;
+            reportClientError({
+                mensaje: (reason && reason.message) || String(reason || 'Promise rejection'),
+                origen: 'unhandledrejection',
+                stack: (reason && reason.stack) || '',
+            });
+        });
     }
 
     async function ensureOfflineSyncedOrWarn(contexto) {

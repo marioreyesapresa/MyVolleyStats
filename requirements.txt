@@ -27,6 +27,7 @@ xhtml2pdf==0.2.17
 python-decouple==3.8
 PyYAML==6.0.3
 requests==2.34.2
+sentry-sdk==2.32.0
 
 # ── Dependencias transitivas fijadas ─────────────────────────────────────────
 asgiref==3.11.1

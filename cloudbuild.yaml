@@ -10,6 +10,16 @@
 # No va en el repo ni en --set-env-vars. Ver README sección producción.
 
 steps:
+  # 0. Tests + check --deploy (bloquea el deploy si fallan)
+  - name: python:3.12-slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        pip install -r requirements.txt -q
+        SECRET_KEY=ci-check-not-a-real-secret-key-32chars DJANGO_DEBUG=False ALLOWED_HOSTS=.run.app,localhost CSRF_TRUSTED_ORIGINS=https://example.com python manage.py check --deploy
+        SECRET_KEY=ci-test-not-a-real-secret-key-32chars DJANGO_DEBUG=True python manage.py test stats_app --verbosity=1
+
   # 1. Construir imagen Docker
   - name: gcr.io/cloud-builders/docker
     args:
@@ -40,7 +50,7 @@ steps:
       - --allow-unauthenticated
       - --memory=512Mi
       - --timeout=60
-      - --set-env-vars=DJANGO_DEBUG=False,ALLOWED_HOSTS=${_ALLOWED_HOSTS},CSRF_TRUSTED_ORIGINS=${_CSRF_ORIGINS},${_EMAIL_ENV}
+      - --set-env-vars=DJANGO_DEBUG=False,ALLOWED_HOSTS=${_ALLOWED_HOSTS},CSRF_TRUSTED_ORIGINS=${_CSRF_ORIGINS},ALLOW_PUBLIC_REGISTRATION=False,DJANGO_ADMIN_URL=mvs-gestion-k7p2,${_EMAIL_ENV}
       - --set-secrets=SECRET_KEY=voley-secret-key:latest,DATABASE_URL=voley-database-url:latest,EMAIL_HOST_PASSWORD=voley-email-password:latest
       - --quiet
 

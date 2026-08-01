@@ -1,10 +1,10 @@
 #!/bin/sh
 set -e
 
-# Aplicar migraciones pendientes antes de arrancar gunicorn. En Cloud Run cada
-# despliegue puede traer cambios de esquema (p.ej. nuevas columnas) y sin
-# este paso la app falla con 500 al consultar modelos actualizados.
+# Migraciones + tabla de caché (rate limit compartido entre réplicas).
+# createcachetable es idempotente si la tabla ya existe.
 python manage.py migrate --noinput
+python manage.py createcachetable 2>/dev/null || true
 
 exec gunicorn voley_stats_project.wsgi:application \
     --bind "0.0.0.0:${PORT:-8080}" \

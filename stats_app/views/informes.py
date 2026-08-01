@@ -1,4 +1,5 @@
 import json
+import logging
 from io import BytesIO
 from urllib.parse import quote
 from django.shortcuts import get_object_or_404
@@ -14,6 +15,9 @@ from ..services.reporting import build_full_report, build_quick_report, build_ad
 from ..security import log_intento_acceso_no_autorizado
 from ..context_processors import APP_NAME, APP_TAGLINE
 from ..services.manual_images import build_manual_capturas_context, manual_logo_uri
+from ..db_utils import reintentar_en_error_transitorio
+
+logger = logging.getLogger('stats_app.security')
 
 
 def _partido_del_entrenador(request, pk):
@@ -26,11 +30,12 @@ def _partido_del_entrenador(request, pk):
 
 def render_to_pdf(template_src, context_dict={}):
     template = get_template(template_src)
-    html  = template.render(context_dict)
+    html = template.render(context_dict)
     result = BytesIO()
     pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
     if not pdf.err:
         return result.getvalue()
+    logger.warning('pisa falló al generar PDF desde %s', template_src)
     return None
 
 class BaseInformePDFView(LoginRequiredMixin, View):
@@ -89,6 +94,7 @@ class BaseInformePDFView(LoginRequiredMixin, View):
         return jugadoras_stats
 
 class DescargarResumenPDF(BaseInformePDFView):
+    @reintentar_en_error_transitorio()
     def get(self, request, pk):
         partido = _partido_del_entrenador(request, pk)
         set_n = request.GET.get('set', 'global')
@@ -105,7 +111,7 @@ class DescargarResumenPDF(BaseInformePDFView):
         chart_config = {
             'type': 'doughnut',
             'data': {
-                'labels': ['Mérito', 'Err.Rival'],
+                'labels': ['Merito', 'Err.Rival'],
                 'datasets': [{'data': [merito, err_rival], 'backgroundColor': ['#10b981', '#3b82f6']}],
             },
             'options': {'plugins': {'legend': {'position': 'bottom'}}},
@@ -121,6 +127,12 @@ class DescargarResumenPDF(BaseInformePDFView):
         }
         pdf = render_to_pdf('stats_app/informe_resumen_pdf.html', context)
         if not pdf:
+            # QuickChart/red caída: reintentar sin imagen externa.
+            logger.warning('PDF resumen falló con chart; reintentando sin QuickChart partido=%s', pk)
+            context['chart_origen_url'] = None
+            pdf = render_to_pdf('stats_app/informe_resumen_pdf.html', context)
+        if not pdf:
+            logger.error('No se pudo generar PDF de resumen partido=%s', pk)
             return HttpResponse('No se pudo generar el PDF de resumen.', status=500)
         response = HttpResponse(pdf, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="Resumen_{partido.rival}.pdf"'

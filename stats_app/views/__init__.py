@@ -11,6 +11,7 @@ from .informes import (
     DescargarResumenPDF, DescargarInformeCompletoPDF, DescargarInformeAvanzadoPDF,
     DescargarManualUsuarioPDF,
 )
+from .telemetry import ClientErrorAPI
 from .administracion import (
     ConfiguracionView, DashboardView,
     EquipoCreateView, EquipoUpdateView, EquipoDeleteView, EquipoListView,

@@ -17,7 +17,37 @@ env:
   SERVICE: my-volley-stats
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Django check --deploy
+        env:
+          SECRET_KEY: ci-check-not-a-real-secret-key-32chars
+          DJANGO_DEBUG: 'False'
+          ALLOWED_HOSTS: .run.app,localhost
+          CSRF_TRUSTED_ORIGINS: https://example.com
+        run: python manage.py check --deploy
+
+      - name: Run tests
+        env:
+          SECRET_KEY: ci-test-not-a-real-secret-key-32chars
+          DJANGO_DEBUG: 'True'
+        run: python manage.py test stats_app --verbosity=1
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -44,5 +74,5 @@ jobs:
             --allow-unauthenticated
             --memory=512Mi
             --timeout=60
-            --set-env-vars=DJANGO_DEBUG=False,ALLOWED_HOSTS=my-volley-stats-127334410815.europe-west1.run.app,CSRF_TRUSTED_ORIGINS=https://my-volley-stats-127334410815.europe-west1.run.app,EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend,EMAIL_HOST=smtp.gmail.com,EMAIL_PORT=587,EMAIL_HOST_USER=myvolleystats@gmail.com,EMAIL_USE_TLS=True,DEFAULT_FROM_EMAIL=myvolleystats@gmail.com,ADMIN_NOTIFY_EMAIL=myvolleystats@gmail.com
+            --set-env-vars=DJANGO_DEBUG=False,ALLOWED_HOSTS=my-volley-stats-127334410815.europe-west1.run.app,CSRF_TRUSTED_ORIGINS=https://my-volley-stats-127334410815.europe-west1.run.app,ALLOW_PUBLIC_REGISTRATION=False,DJANGO_ADMIN_URL=mvs-gestion-k7p2,EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend,EMAIL_HOST=smtp.gmail.com,EMAIL_PORT=587,EMAIL_HOST_USER=myvolleystats@gmail.com,EMAIL_USE_TLS=True,DEFAULT_FROM_EMAIL=myvolleystats@gmail.com,ADMIN_NOTIFY_EMAIL=myvolleystats@gmail.com
             --set-secrets=SECRET_KEY=voley-secret-key:latest,DATABASE_URL=voley-database-url:latest,EMAIL_HOST_PASSWORD=voley-email-password:latest

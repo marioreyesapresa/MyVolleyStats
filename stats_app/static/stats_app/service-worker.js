@@ -9,10 +9,11 @@
  *   usa cola offline propia en modo_partido.html.
  */
 
-const SW_VERSION = 'myvolleystats-sw-v2';
+const SW_VERSION = 'myvolleystats-sw-v3';
 const STATIC_CACHE = `${SW_VERSION}-static`;
 
 function esAssetEstatico(url) {
+    if (url.origin !== self.location.origin) return false;
     return url.pathname.startsWith('/static/')
         || url.pathname === '/service-worker.js';
 }

@@ -49,12 +49,13 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Abre **http://127.0.0.1:8000** e inicia sesión. No hay registro público; los accesos se crean con `createsuperuser` o desde `/admin/`.
+Abre **http://127.0.0.1:8000** e inicia sesión. En local el registro público está activo por defecto (`ALLOW_PUBLIC_REGISTRATION=True`). En producción se desactiva y las cuentas se crean con `createsuperuser` o desde el panel admin (ruta configurable con `DJANGO_ADMIN_URL`).
 
 ### Tests
 
 ```bash
 python manage.py test stats_app
+python manage.py check --deploy   # con DJANGO_DEBUG=False y SECRET_KEY reales de prueba
 ```
 
 ---
@@ -70,6 +71,10 @@ Variables principales (detalle en `.env.example`):
 | `ALLOWED_HOSTS` | Hosts permitidos, separados por coma |
 | `CSRF_TRUSTED_ORIGINS` | Orígenes HTTPS para CSRF (producción) |
 | `DATABASE_URL` | Vacío → SQLite local; en producción → PostgreSQL (Neon) |
+| `ALLOW_PUBLIC_REGISTRATION` | Registro público de entrenadores |
+| `DJANGO_ADMIN_URL` | Path del admin (p.ej. `mvs-gestion-k7p2`) |
+| `ADMIN_NOTIFY_EMAIL` | Destinatario de alertas 500 |
+| `SENTRY_DSN` | Opcional: telemetría de errores (Sentry) |
 
 ---
 
@@ -100,7 +105,7 @@ stats_app/
 
 ## Producción
 
-Rama **`main`** despliega automáticamente a Cloud Run (GitHub Actions). Base de datos en **Neon** (PostgreSQL). Imagen Docker con Gunicorn; migraciones aplicadas en el arranque del contenedor.
+Rama **`main`** despliega automáticamente a Cloud Run (GitHub Actions). El workflow ejecuta `manage.py test` y `check --deploy` **antes** de desplegar. Base de datos en **Neon** (PostgreSQL). Imagen Docker con Gunicorn; migraciones y `createcachetable` al arrancar el contenedor.
 
 Flujo recomendado: desarrollo en `develop` → merge a `main` cuando esté listo para producción.
 

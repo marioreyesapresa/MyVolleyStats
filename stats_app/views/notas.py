@@ -1,14 +1,19 @@
 import json
+import logging
 
 from django.http import JsonResponse, Http404
 from django.utils import timezone
 from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import OperationalError, InterfaceError
 
 from ..forms import NotaPartidoForm
 from ..models import NotaPartido, Partido, Jugadora
-from ..security import log_intento_acceso_no_autorizado
+from ..security import log_intento_acceso_no_autorizado, ocultar_detalle_interno
 from ..services.informes_cache import invalidar_cache_informes_partido
+from ..db_utils import reintentar_en_error_transitorio
+
+logger = logging.getLogger('stats_app.security')
 
 
 def _partido_del_entrenador(request, partido_id):
@@ -59,6 +64,7 @@ def _nota_a_dict(nota):
 
 
 class ListNotasPartidoAPI(LoginRequiredMixin, View):
+    @reintentar_en_error_transitorio()
     def get(self, request, partido_id):
         partido = _partido_del_entrenador(request, partido_id)
         notas = NotaPartido.objects.filter(partido=partido).select_related('jugadora')
@@ -69,75 +75,102 @@ class ListNotasPartidoAPI(LoginRequiredMixin, View):
 
 
 class CrearNotaPartidoAPI(LoginRequiredMixin, View):
+    @reintentar_en_error_transitorio()
     def post(self, request, partido_id):
-        partido = _partido_del_entrenador(request, partido_id)
-        if partido.finalizado:
-            return JsonResponse(
-                {'status': 'error', 'mensaje': 'El partido está finalizado. Reábrelo para añadir notas.'},
-                status=400,
+        try:
+            partido = _partido_del_entrenador(request, partido_id)
+            if partido.finalizado:
+                return JsonResponse(
+                    {'status': 'error', 'mensaje': 'El partido está finalizado. Reábrelo para añadir notas.'},
+                    status=400,
+                )
+            data, err = _parsear_json(request)
+            if err:
+                return err
+
+            form = NotaPartidoForm(data)
+            if not form.is_valid():
+                return JsonResponse({'status': 'error', 'mensaje': form.errors.as_text()}, status=400)
+
+            cd = form.cleaned_data
+            jugadora = None
+            if cd.get('jugadora_id'):
+                jugadora = _jugadora_del_equipo(request, cd['jugadora_id'], partido.equipo)
+
+            nota = NotaPartido.objects.create(
+                partido=partido,
+                jugadora=jugadora,
+                set_numero=cd.get('set_numero') or 1,
+                texto=cd['texto'].strip(),
             )
-        data, err = _parsear_json(request)
-        if err:
-            return err
-
-        form = NotaPartidoForm(data)
-        if not form.is_valid():
-            return JsonResponse({'status': 'error', 'mensaje': form.errors.as_text()}, status=400)
-
-        cd = form.cleaned_data
-        jugadora = None
-        if cd.get('jugadora_id'):
-            jugadora = _jugadora_del_equipo(request, cd['jugadora_id'], partido.equipo)
-
-        nota = NotaPartido.objects.create(
-            partido=partido,
-            jugadora=jugadora,
-            set_numero=cd.get('set_numero') or 1,
-            texto=cd['texto'].strip(),
-        )
-        invalidar_cache_informes_partido(partido.pk)
-        return JsonResponse({'status': 'ok', 'nota': _nota_a_dict(nota)})
+            invalidar_cache_informes_partido(partido.pk)
+            return JsonResponse({'status': 'ok', 'nota': _nota_a_dict(nota)})
+        except Http404:
+            raise
+        except (OperationalError, InterfaceError):
+            raise
+        except Exception as e:
+            logger.exception('Error inesperado en CrearNotaPartidoAPI')
+            return JsonResponse({'status': 'error', 'mensaje': ocultar_detalle_interno(e)}, status=400)
 
 
 class ActualizarNotaPartidoAPI(LoginRequiredMixin, View):
+    @reintentar_en_error_transitorio()
     def post(self, request, partido_id, nota_id):
-        partido = _partido_del_entrenador(request, partido_id)
-        if partido.finalizado:
-            return JsonResponse(
-                {'status': 'error', 'mensaje': 'El partido está finalizado. Reábrelo para editar notas.'},
-                status=400,
-            )
-        nota = _nota_del_partido(request, partido, nota_id)
-        data, err = _parsear_json(request)
-        if err:
-            return err
+        try:
+            partido = _partido_del_entrenador(request, partido_id)
+            if partido.finalizado:
+                return JsonResponse(
+                    {'status': 'error', 'mensaje': 'El partido está finalizado. Reábrelo para editar notas.'},
+                    status=400,
+                )
+            nota = _nota_del_partido(request, partido, nota_id)
+            data, err = _parsear_json(request)
+            if err:
+                return err
 
-        form = NotaPartidoForm(data)
-        if not form.is_valid():
-            return JsonResponse({'status': 'error', 'mensaje': form.errors.as_text()}, status=400)
+            form = NotaPartidoForm(data)
+            if not form.is_valid():
+                return JsonResponse({'status': 'error', 'mensaje': form.errors.as_text()}, status=400)
 
-        cd = form.cleaned_data
-        jugadora = None
-        if cd.get('jugadora_id'):
-            jugadora = _jugadora_del_equipo(request, cd['jugadora_id'], partido.equipo)
+            cd = form.cleaned_data
+            jugadora = None
+            if cd.get('jugadora_id'):
+                jugadora = _jugadora_del_equipo(request, cd['jugadora_id'], partido.equipo)
 
-        nota.jugadora = jugadora
-        nota.set_numero = cd.get('set_numero') or nota.set_numero
-        nota.texto = cd['texto'].strip()
-        nota.save(update_fields=['jugadora', 'set_numero', 'texto', 'actualizado_en'])
-        invalidar_cache_informes_partido(partido.pk)
-        return JsonResponse({'status': 'ok', 'nota': _nota_a_dict(nota)})
+            nota.jugadora = jugadora
+            nota.set_numero = cd.get('set_numero') or nota.set_numero
+            nota.texto = cd['texto'].strip()
+            nota.save(update_fields=['jugadora', 'set_numero', 'texto', 'actualizado_en'])
+            invalidar_cache_informes_partido(partido.pk)
+            return JsonResponse({'status': 'ok', 'nota': _nota_a_dict(nota)})
+        except Http404:
+            raise
+        except (OperationalError, InterfaceError):
+            raise
+        except Exception as e:
+            logger.exception('Error inesperado en ActualizarNotaPartidoAPI')
+            return JsonResponse({'status': 'error', 'mensaje': ocultar_detalle_interno(e)}, status=400)
 
 
 class EliminarNotaPartidoAPI(LoginRequiredMixin, View):
+    @reintentar_en_error_transitorio()
     def post(self, request, partido_id, nota_id):
-        partido = _partido_del_entrenador(request, partido_id)
-        if partido.finalizado:
-            return JsonResponse(
-                {'status': 'error', 'mensaje': 'El partido está finalizado. Reábrelo para eliminar notas.'},
-                status=400,
-            )
-        nota = _nota_del_partido(request, partido, nota_id)
-        nota.delete()
-        invalidar_cache_informes_partido(partido.pk)
-        return JsonResponse({'status': 'ok'})
+        try:
+            partido = _partido_del_entrenador(request, partido_id)
+            if partido.finalizado:
+                return JsonResponse(
+                    {'status': 'error', 'mensaje': 'El partido está finalizado. Reábrelo para eliminar notas.'},
+                    status=400,
+                )
+            nota = _nota_del_partido(request, partido, nota_id)
+            nota.delete()
+            invalidar_cache_informes_partido(partido.pk)
+            return JsonResponse({'status': 'ok'})
+        except Http404:
+            raise
+        except (OperationalError, InterfaceError):
+            raise
+        except Exception as e:
+            logger.exception('Error inesperado en EliminarNotaPartidoAPI')
+            return JsonResponse({'status': 'error', 'mensaje': ocultar_detalle_interno(e)}, status=400)

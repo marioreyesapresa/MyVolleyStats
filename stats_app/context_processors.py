@@ -8,9 +8,11 @@ APP_ICON_VERSION = '2'
 
 
 def branding(request):
+    from django.conf import settings
     return {
         'APP_NAME': APP_NAME,
         'APP_TAGLINE': APP_TAGLINE,
         'APP_FULL_TAGLINE': APP_FULL_TAGLINE,
         'APP_ICON_VERSION': APP_ICON_VERSION,
+        'ALLOW_PUBLIC_REGISTRATION': getattr(settings, 'ALLOW_PUBLIC_REGISTRATION', True),
     }

@@ -10,9 +10,8 @@ Mitiga varios escenarios de OWASP Top 10:
     - A05 Security Misconfiguration: fuga de detalles internos del stack
       (versión de Django, tracebacks) en respuestas de error.
 
-Implementación deliberadamente simple (sin dependencias externas ni Redis):
-usa el framework de caché de Django (LocMemCache, ver settings.CACHES) como
-contador de ventana fija por IP + ruta.
+Usa el framework de caché de Django (DatabaseCache en Postgres / LocMem en
+dev, ver settings.CACHES) como contador de ventana fija por IP + ruta.
 
 Todo evento de bloqueo (429) o acceso IDOR detectado (404 forzado) se
 registra vía `logging` con la IP real del cliente para poder configurar
@@ -25,8 +24,10 @@ import time
 from django.conf import settings
 from django.core.cache import cache
 from django.http import JsonResponse
+from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger('stats_app.security')
+client_logger = logging.getLogger('stats_app.client_errors')
 
 
 def get_client_ip(request):
@@ -166,3 +167,38 @@ class RateLimitMiddleware:
         if bucket['count'] > limit:
             return False, remaining_ttl
         return True, remaining_ttl
+
+
+class SecurityHeadersMiddleware(MiddlewareMixin):
+    """Cabeceras de endurecimiento del navegador (CSP, Referrer, Permissions).
+
+    CSP pragmática: permite el JS/CSS inline del Scout y los CDNs ya usados
+    (Tailwind, Lucide, Google Fonts). Cierra object/base/frame y limita
+    connect/img a orígenes necesarios (API propia, QuickChart, Sentry).
+    """
+
+    def process_response(self, request, response):
+        response.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        response.setdefault(
+            'Permissions-Policy',
+            'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+        )
+        response.setdefault('Cross-Origin-Opener-Policy', 'same-origin')
+
+        if getattr(settings, 'CONTENT_SECURITY_POLICY', None):
+            response.setdefault('Content-Security-Policy', settings.CONTENT_SECURITY_POLICY)
+        return response
+
+
+def log_client_error(request, payload):
+    """Registra un error JS del Scout sin filtrar datos sensibles en la respuesta."""
+    usuario = getattr(request.user, 'username', None) or 'anónimo'
+    mensaje = str(payload.get('mensaje') or payload.get('message') or '')[:500]
+    origen = str(payload.get('origen') or payload.get('source') or '')[:300]
+    stack = str(payload.get('stack') or '')[:2000]
+    ruta = str(payload.get('ruta') or payload.get('path') or request.path)[:300]
+    partido_id = payload.get('partido_id')
+    client_logger.warning(
+        'Error cliente: usuario=%s ip=%s partido=%s ruta=%s origen=%s mensaje=%s stack=%s',
+        usuario, get_client_ip(request), partido_id, ruta, origen, mensaje, stack,
+    )

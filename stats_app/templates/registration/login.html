@@ -57,8 +57,12 @@
             </form>
 
             <p class="text-center text-slate-400 text-sm mt-8">
+                {% if ALLOW_PUBLIC_REGISTRATION %}
                 ¿Primera vez aquí?
                 <a href="{% url 'register' %}" class="text-emerald-400 hover:text-emerald-300 font-semibold">Crear cuenta</a>
+                {% else %}
+                Acceso solo por invitación. Contacta con el administrador del club.
+                {% endif %}
             </p>
             
             <p class="text-center text-slate-500 text-xs mt-6">

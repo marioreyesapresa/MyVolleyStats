@@ -47,4 +47,5 @@ urlpatterns = [
     path('api/partido/<int:partido_id>/notas/crear/', views.CrearNotaPartidoAPI.as_view(), name='api_crear_nota'),
     path('api/partido/<int:partido_id>/notas/<int:nota_id>/actualizar/', views.ActualizarNotaPartidoAPI.as_view(), name='api_actualizar_nota'),
     path('api/partido/<int:partido_id>/notas/<int:nota_id>/eliminar/', views.EliminarNotaPartidoAPI.as_view(), name='api_eliminar_nota'),
+    path('api/client-error/', views.ClientErrorAPI.as_view(), name='api_client_error'),
 ]
