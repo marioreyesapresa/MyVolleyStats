@@ -174,6 +174,7 @@ class RegistroEntrenadorTests(TestCase):
             'email': 'nuevo@example.com',
             'password1': 'ContraseñaSegura123!',
             'password2': 'ContraseñaSegura123!',
+            'acepto_legal': 'on',
         })
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('stats_app:dashboard'))
@@ -186,9 +187,34 @@ class RegistroEntrenadorTests(TestCase):
             'email': 'dup@example.com',
             'password1': 'ContraseñaSegura123!',
             'password2': 'ContraseñaSegura123!',
+            'acepto_legal': 'on',
         })
         self.assertEqual(response.status_code, 200)
         self.assertFalse(User.objects.filter(username='otro').exists())
+
+    def test_registro_exige_aceptacion_legal(self):
+        response = self.client.post(reverse('register'), {
+            'username': 'sin_aceptar',
+            'email': 'sin@example.com',
+            'password1': 'ContraseñaSegura123!',
+            'password2': 'ContraseñaSegura123!',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(username='sin_aceptar').exists())
+
+
+class PaginasLegalesTests(TestCase):
+    """Política de privacidad y términos son públicos."""
+
+    def test_privacidad_accesible_sin_login(self):
+        response = self.client.get(reverse('privacidad'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Política de Privacidad')
+
+    def test_terminos_accesible_sin_login(self):
+        response = self.client.get(reverse('terminos'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Términos de Servicio')
 
 
 # ═════════════════════════════════════════════════════════════════════════════

@@ -15,4 +15,5 @@ def branding(request):
         'APP_FULL_TAGLINE': APP_FULL_TAGLINE,
         'APP_ICON_VERSION': APP_ICON_VERSION,
         'ALLOW_PUBLIC_REGISTRATION': getattr(settings, 'ALLOW_PUBLIC_REGISTRATION', True),
+        'CONTACT_EMAIL': getattr(settings, 'CONTACT_EMAIL', 'myvolleystats@gmail.com'),
     }

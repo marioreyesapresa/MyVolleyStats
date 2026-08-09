@@ -3,7 +3,11 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path, include
 
-from stats_app.views.auth import RegistroEntrenadorView
+from stats_app.views.auth import (
+    PoliticaPrivacidadView,
+    RegistroEntrenadorView,
+    TerminosServicioView,
+)
 from stats_app.views.pwa import service_worker_view
 from stats_app.forms import LoginForm
 
@@ -15,6 +19,8 @@ urlpatterns = [
     # por defecto del Service Worker sea "/" y pueda controlar toda la app.
     # Ver stats_app/views/pwa.py para el porqué.
     path('service-worker.js', service_worker_view, name='service_worker'),
+    path('legal/privacidad/', PoliticaPrivacidadView.as_view(), name='privacidad'),
+    path('legal/terminos/', TerminosServicioView.as_view(), name='terminos'),
     path('accounts/register/', RegistroEntrenadorView.as_view(), name='register'),
     path(
         'accounts/login/',

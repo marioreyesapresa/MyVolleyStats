@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crear cuenta | {{ APP_NAME }}</title>
     {% include 'partials/pwa_meta.html' %}
-    <script src="https://cdn.tailwindcss.com"></script>
+    {% include 'partials/tailwind.html' %}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
@@ -32,19 +32,36 @@
                 {% csrf_token %}
 
                 {% for field in form %}
-                <div>
-                    <label for="{{ field.id_for_label }}" class="block text-xs font-black text-slate-400 uppercase mb-2 ml-1 tracking-wider">
-                        {{ field.label }}
-                    </label>
-                    {{ field }}
-                    {% if field.help_text %}
-                    <p class="text-slate-500 text-xs mt-1.5 ml-1">{{ field.help_text|safe }}</p>
+                    {% if field.name != 'acepto_legal' %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-xs font-black text-slate-400 uppercase mb-2 ml-1 tracking-wider">
+                            {{ field.label }}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <p class="text-slate-500 text-xs mt-1.5 ml-1">{{ field.help_text|safe }}</p>
+                        {% endif %}
+                        {% for error in field.errors %}
+                        <p class="text-rose-400 text-xs mt-1.5 ml-1">{{ error }}</p>
+                        {% endfor %}
+                    </div>
                     {% endif %}
-                    {% for error in field.errors %}
+                {% endfor %}
+
+                <div class="pt-1">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        {{ form.acepto_legal }}
+                        <span class="text-xs text-slate-400 leading-relaxed">
+                            He leído y acepto la
+                            <a href="{% url 'privacidad' %}" target="_blank" rel="noopener" class="text-emerald-400 hover:text-emerald-300 font-semibold">Política de Privacidad</a>
+                            y los
+                            <a href="{% url 'terminos' %}" target="_blank" rel="noopener" class="text-emerald-400 hover:text-emerald-300 font-semibold">Términos de Servicio</a>.
+                        </span>
+                    </label>
+                    {% for error in form.acepto_legal.errors %}
                     <p class="text-rose-400 text-xs mt-1.5 ml-1">{{ error }}</p>
                     {% endfor %}
                 </div>
-                {% endfor %}
 
                 <button type="submit" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-lg active:scale-[0.98] transition-transform text-sm uppercase tracking-widest mt-2">
                     Crear cuenta
@@ -59,6 +76,7 @@
             <p class="text-center text-slate-500 text-xs mt-6">
                 © 2026 {{ APP_FULL_TAGLINE }}
             </p>
+            {% include 'partials/legal_links.html' %}
         </div>
     </div>
 

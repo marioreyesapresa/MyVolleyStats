@@ -4,7 +4,7 @@ from django.contrib.auth import login
 from django.http import Http404
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView
+from django.views.generic import CreateView, TemplateView
 
 from ..forms import RegistroEntrenadorForm
 
@@ -29,6 +29,14 @@ class RegistroEntrenadorView(CreateView):
             backend='stats_app.backends.EmailOrUsernameBackend',
         )
         return response
+
+
+class PoliticaPrivacidadView(TemplateView):
+    template_name = 'legal/privacidad.html'
+
+
+class TerminosServicioView(TemplateView):
+    template_name = 'legal/terminos.html'
 
 
 def csrf_failure(request, reason=''):

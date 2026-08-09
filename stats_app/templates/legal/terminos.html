@@ -1,0 +1,87 @@
+{% extends 'legal/base_legal.html' %}
+
+{% block title %}Términos de Servicio{% endblock %}
+{% block heading %}Términos de Servicio{% endblock %}
+{% block subtitle %}Última actualización: agosto 2026. Condiciones de uso de {{ APP_NAME }}.{% endblock %}
+
+{% block content %}
+<p>
+    Estos Términos de Servicio regulan el acceso y uso de
+    <strong class="text-slate-200">{{ APP_NAME }}</strong>, la aplicación web de estadísticas
+    y scouting de voleibol. Al crear una cuenta o usar el servicio, aceptas estas condiciones.
+</p>
+
+<h2>1. Descripción del servicio</h2>
+<p>
+    {{ APP_NAME }} permite a entrenadores y usuarios autorizados gestionar equipos, plantillas,
+    partidos, estadísticas de scouting e informes. El servicio se ofrece «tal cual» y puede
+    evolucionar (nuevas funciones, cambios de interfaz o mantenimiento).
+</p>
+
+<h2>2. Cuentas y acceso</h2>
+<ul>
+    <li>Debes proporcionar información veraz y mantener la confidencialidad de tu contraseña.</li>
+    <li>Eres responsable de la actividad realizada desde tu cuenta.</li>
+    <li>El acceso puede estar restringido por invitación o desactivación del registro público.</li>
+    <li>Podemos suspender o cancelar cuentas que incumplan estos términos, abusen del servicio o pongan en riesgo la seguridad de la plataforma u otros usuarios.</li>
+</ul>
+
+<h2>3. Uso aceptable</h2>
+<p>Te comprometes a no:</p>
+<ul>
+    <li>Intentar acceder a datos de otras cuentas o vulnerar la seguridad del sistema.</li>
+    <li>Automatizar peticiones de forma abusiva (scraping masivo, fuerza bruta, denegación de servicio).</li>
+    <li>Usar el servicio para fines ilícitos o para alojar contenido ilegal, ofensivo o que vulnere derechos de terceros.</li>
+    <li>Introducir malware o interferir con el funcionamiento normal de la aplicación.</li>
+</ul>
+
+<h2>4. Datos introducidos por el usuario</h2>
+<p>
+    Los equipos, jugadoras/jugadores, partidos y estadísticas que introduzcas son tu responsabilidad.
+    Garantizas que tienes legitimidad para tratar esos datos (p. ej. como entrenador o responsable del club)
+    y que no introduces información personal de menores u otras personas sin la base legal adecuada.
+    El tratamiento de datos personales se detalla en la
+    <a href="{% url 'privacidad' %}">Política de Privacidad</a>.
+</p>
+
+<h2>5. Propiedad intelectual</h2>
+<p>
+    La aplicación, su diseño, código y marca {{ APP_NAME }} pertenecen a sus titulares.
+    Conservas los derechos sobre los datos deportivos que introduces; nos concedes una licencia
+    limitada para alojarlos y procesarlos únicamente para prestarte el servicio.
+</p>
+
+<h2>6. Disponibilidad y limitación de responsabilidad</h2>
+<p>
+    Nos esforzamos por mantener el servicio disponible y seguro, pero no garantizamos un
+    funcionamiento ininterrumpido ni libre de errores. En la medida permitida por la ley aplicable,
+    no seremos responsables de daños indirectos, pérdida de datos por causas ajenas razonables,
+    o decisiones deportivas tomadas basándose en las estadísticas de la app.
+    Nada en estos términos limita derechos imperativos de consumidores cuando corresponda.
+</p>
+
+<h2>7. Terminación</h2>
+<p>
+    Puedes dejar de usar el servicio en cualquier momento. Para solicitar el borrado de tu cuenta
+    y datos asociados, contacta en
+    <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.
+    Tras la baja, podremos conservar información el tiempo mínimo legalmente necesario.
+</p>
+
+<h2>8. Modificaciones</h2>
+<p>
+    Podemos actualizar estos Términos. La versión vigente se publicará en esta página con su fecha
+    de actualización. Si el cambio es sustancial y el registro está abierto, podremos pedirte
+    aceptación adicional al iniciar sesión o registrarte.
+</p>
+
+<h2>9. Contacto y ley aplicable</h2>
+<p>
+    Para cuestiones sobre estos Términos:
+    <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.
+</p>
+<p>
+    Salvo norma imperativa en contrario, estos Términos se interpretan conforme a la legislación española
+    y, para conflictos entre profesionales, los tribunales competentes serán los de España.
+</p>
+{% endblock %}

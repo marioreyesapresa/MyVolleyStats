@@ -43,6 +43,13 @@ class RegistroEntrenadorForm(UserCreationForm):
             'placeholder': 'tu@email.com',
         }),
     )
+    acepto_legal = forms.BooleanField(
+        required=True,
+        label='Acepto la Política de Privacidad y los Términos de Servicio',
+        error_messages={
+            'required': 'Debes aceptar la Política de Privacidad y los Términos de Servicio.',
+        },
+    )
 
     class Meta:
         model = User
@@ -64,6 +71,9 @@ class RegistroEntrenadorForm(UserCreationForm):
         self.fields['password2'].widget.attrs.update({'class': field_class})
         self.fields['password1'].label = 'Contraseña'
         self.fields['password2'].label = 'Confirmar contraseña'
+        self.fields['acepto_legal'].widget.attrs.update({
+            'class': 'mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-900 text-emerald-600 focus:ring-emerald-500/50',
+        })
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()

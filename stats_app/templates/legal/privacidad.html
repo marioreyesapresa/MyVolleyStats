@@ -1,0 +1,102 @@
+{% extends 'legal/base_legal.html' %}
+
+{% block title %}Política de Privacidad{% endblock %}
+{% block heading %}Política de Privacidad{% endblock %}
+{% block subtitle %}Última actualización: agosto 2026. Información sobre el tratamiento de datos personales en {{ APP_NAME }}.{% endblock %}
+
+{% block content %}
+<p>
+    Esta Política de Privacidad describe cómo <strong class="text-slate-200">{{ APP_NAME }}</strong>
+    («nosotros», «el servicio») trata los datos personales de las personas que utilizan la aplicación
+    de estadísticas y scouting de voleibol.
+</p>
+
+<h2>1. Responsable del tratamiento</h2>
+<p>
+    El responsable del tratamiento de los datos es el operador de {{ APP_NAME }}.
+    Para ejercer derechos o consultas relacionadas con privacidad:
+    <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.
+</p>
+
+<h2>2. Datos que recogemos</h2>
+<p>Podemos tratar las siguientes categorías de datos:</p>
+<ul>
+    <li><strong class="text-slate-300">Cuenta de usuario:</strong> nombre de usuario, correo electrónico y contraseña (almacenada de forma cifrada/hasheada; nunca en texto claro).</li>
+    <li><strong class="text-slate-300">Datos deportivos introducidos por el usuario:</strong> equipos, nombres y apellidos de jugadoras/jugadores, dorsales, posiciones, partidos, estadísticas y notas de scouting.</li>
+    <li><strong class="text-slate-300">Datos técnicos necesarios:</strong> cookies de sesión y de protección CSRF, registros de error o seguridad (por ejemplo, intentos de acceso anómalos) y, en su caso, dirección IP asociada a límites de uso.</li>
+</ul>
+<p>
+    No pedimos datos de pago a través de la app. No utilizamos Google Analytics ni otros rastreadores publicitarios.
+</p>
+
+<h2>3. Finalidad y base legal</h2>
+<ul>
+    <li><strong class="text-slate-300">Prestar el servicio</strong> (crear cuenta, guardar equipos, scouting, informes): ejecución del contrato / relación de uso (art. 6.1.b RGPD).</li>
+    <li><strong class="text-slate-300">Seguridad y prevención de abuso</strong> (límites de peticiones, detección de errores): interés legítimo (art. 6.1.f RGPD).</li>
+    <li><strong class="text-slate-300">Comunicaciones de cuenta</strong> (p. ej. restablecimiento de contraseña): ejecución del contrato / medidas precontractuales.</li>
+</ul>
+
+<h2>4. Quién introduce datos de terceras personas</h2>
+<p>
+    Si un entrenador u operador introduce nombres u otros datos de jugadoras/jugadores,
+    lo hace bajo su propia responsabilidad y debe disponer de una base legítima para ello
+    (por ejemplo, relación con el club o consentimiento). {{ APP_NAME }} actúa como herramienta
+    de gestión de esa información dentro de cada cuenta aislada.
+</p>
+
+<h2>5. Conservación</h2>
+<p>
+    Conservamos los datos mientras la cuenta permanezca activa y sea necesario para prestar el servicio.
+    Puedes solicitar la eliminación de tu cuenta y de los datos asociados contactando en
+    <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.
+    Podremos conservar cierta información el tiempo mínimo exigido por obligaciones legales o de seguridad.
+</p>
+
+<h2>6. Destinatarios y encargados</h2>
+<p>
+    Los datos se alojan en infraestructura de proveedores cloud (hosting de aplicación y base de datos)
+    situados, en la medida de lo posible, en la Unión Europea o con garantías adecuadas.
+    No vendemos datos personales a terceros ni los cedemos con fines publicitarios.
+</p>
+
+<h2>7. Cookies</h2>
+<p>
+    Utilizamos únicamente cookies <strong class="text-slate-300">técnicamente necesarias</strong>:
+</p>
+<ul>
+    <li>Cookie de sesión de autenticación (para mantenerte conectado).</li>
+    <li>Cookie CSRF (para proteger formularios frente a ataques).</li>
+</ul>
+<p>
+    No se emplean cookies de analítica, publicidad o redes sociales. Por ello no mostramos un banner
+    de consentimiento de cookies de marketing.
+</p>
+
+<h2>8. Tus derechos</h2>
+<p>Conforme al RGPD, puedes solicitar:</p>
+<ul>
+    <li>Acceso, rectificación o supresión de tus datos.</li>
+    <li>Limitación u oposición al tratamiento, cuando proceda.</li>
+    <li>Portabilidad de los datos que nos hayas facilitado, cuando aplique.</li>
+    <li>Reclamación ante la autoridad de control (en España, la AEPD: <a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>).</li>
+</ul>
+<p>
+    Para ejercer estos derechos, escribe a
+    <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>
+    indicando el asunto «Privacidad» y datos suficientes para identificar tu cuenta.
+</p>
+
+<h2>9. Seguridad</h2>
+<p>
+    Aplicamos medidas razonables (autenticación, aislamiento de datos por cuenta, cifrado de contraseñas,
+    HTTPS en producción, límites de uso) para proteger la información. Ningún sistema es 100&nbsp;% seguro;
+    si detectas un incidente, contáctanos de inmediato.
+</p>
+
+<h2>10. Cambios</h2>
+<p>
+    Podemos actualizar esta política. La fecha de «última actualización» al inicio de la página
+    indicará la versión vigente. El uso continuado del servicio tras un cambio relevante implica
+    que has podido conocer la nueva versión publicada aquí.
+</p>
+{% endblock %}

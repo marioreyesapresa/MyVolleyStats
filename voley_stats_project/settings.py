@@ -258,12 +258,15 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@myvolleystats
 
 # Alertas automáticas por correo ante errores 500 en producción.
 # Configura ADMIN_NOTIFY_EMAIL (p.ej. myvolleystats@gmail.com) en Cloud Run.
-_admin_notify = config('ADMIN_NOTIFY_EMAIL', default='').strip()
-if _admin_notify:
-    ADMINS = [('MyVolleyStats Admin', _admin_notify)]
+ADMIN_NOTIFY_EMAIL = config('ADMIN_NOTIFY_EMAIL', default='').strip()
+if ADMIN_NOTIFY_EMAIL:
+    ADMINS = [('MyVolleyStats Admin', ADMIN_NOTIFY_EMAIL)]
     SERVER_EMAIL = DEFAULT_FROM_EMAIL
 else:
     ADMINS = []
+
+# Correo de contacto mostrado en Política de Privacidad / Términos.
+CONTACT_EMAIL = ADMIN_NOTIFY_EMAIL or DEFAULT_FROM_EMAIL or 'myvolleystats@gmail.com'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -300,18 +303,19 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
 
 # CSP pragmática (inline del Scout + CDNs actuales). SecurityHeadersMiddleware.
+# Tailwind se sirve desde /static/ (script-src 'self'). blob: por si algún vendor usa workers.
 CONTENT_SECURITY_POLICY = (
     "default-src 'self'; "
     "base-uri 'self'; "
     "object-src 'none'; "
     "frame-ancestors 'none'; "
     "form-action 'self'; "
-    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; "
+    "script-src 'self' 'unsafe-inline' https://unpkg.com; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com data:; "
     "img-src 'self' data: blob: https://quickchart.io; "
     "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io; "
-    "worker-src 'self'; "
+    "worker-src 'self' blob:; "
     "manifest-src 'self'"
 )
 
