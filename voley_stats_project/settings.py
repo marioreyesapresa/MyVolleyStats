@@ -302,15 +302,15 @@ if not DEBUG:
 
     X_FRAME_OPTIONS = 'DENY'
 
-# CSP pragmática (inline del Scout + CDNs actuales). SecurityHeadersMiddleware.
-# Tailwind se sirve desde /static/ (script-src 'self'). blob: por si algún vendor usa workers.
+# CSP pragmática (inline del Scout). SecurityHeadersMiddleware.
+# Tailwind y Lucide se sirven desde /static/ (script-src 'self'). blob: por si algún vendor usa workers.
 CONTENT_SECURITY_POLICY = (
     "default-src 'self'; "
     "base-uri 'self'; "
     "object-src 'none'; "
     "frame-ancestors 'none'; "
     "form-action 'self'; "
-    "script-src 'self' 'unsafe-inline' https://unpkg.com; "
+    "script-src 'self' 'unsafe-inline'; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com data:; "
     "img-src 'self' data: blob: https://quickchart.io; "

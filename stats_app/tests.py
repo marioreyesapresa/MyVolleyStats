@@ -1722,6 +1722,11 @@ class CrudAdministracionTests(TestCase):
     def test_configuracion_view_renderiza(self):
         response = self.client.get(reverse('stats_app:configuracion'))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Ayuda y legal')
+        self.assertContains(response, reverse('stats_app:descargar_manual_usuario'))
+        self.assertContains(response, 'stats_app/vendor/lucide.min.js')
+        dashboard = self.client.get(reverse('stats_app:dashboard'))
+        self.assertNotContains(dashboard, 'Manual de usuario')
 
     def test_editar_equipo_propio(self):
         response = self.client.post(reverse('stats_app:equipo_editar', args=[self.equipo.pk]), data={
@@ -2218,6 +2223,7 @@ class BlindajePerimetroTests(TestCase):
         response = self.client.get(reverse('stats_app:dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertIn("default-src 'self'", response.get('Content-Security-Policy', ''))
+        self.assertNotIn('unpkg.com', response.get('Content-Security-Policy', ''))
         self.assertEqual(response.get('Referrer-Policy'), 'strict-origin-when-cross-origin')
         self.assertIn('camera=()', response.get('Permissions-Policy', ''))
 

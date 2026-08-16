@@ -13,7 +13,21 @@
         })();
     </script>
     {% include 'partials/tailwind.html' %}
-    <script src="https://unpkg.com/lucide@latest"></script>
+    {# Lucide vendored: @latest v1 rompe createIcons() sin {icons} y falla sin red en el pabellón. #}
+    <script src="{% static 'stats_app/vendor/lucide.min.js' %}?v=1.31.0"></script>
+    <script>
+        (function () {
+            if (!window.lucide || typeof lucide.createIcons !== 'function') return;
+            var original = lucide.createIcons.bind(lucide);
+            lucide.createIcons = function (options) {
+                var opts = (options && typeof options === 'object') ? Object.assign({}, options) : {};
+                if (!opts.icons || !Object.keys(opts.icons).length) {
+                    opts.icons = lucide.icons || lucide;
+                }
+                return original(opts);
+            };
+        })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
         :root, html[data-theme="oscuro"] {
@@ -185,10 +199,6 @@
                     <i data-lucide="settings" class="w-5 h-5 {% if request.resolver_match.view_name == 'stats_app:configuracion' %}text-emerald-400{% else %}text-slate-400{% endif %}"></i>
                     <span class="font-medium text-sm">Configuración</span>
                 </a>
-                <a href="{% url 'stats_app:descargar_manual_usuario' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
-                    <i data-lucide="book-open" class="w-5 h-5 text-slate-400"></i>
-                    <span class="font-medium text-sm">Manual de usuario</span>
-                </a>
                 {% if partido %}
                 <div class="h-px bg-slate-800/50 my-3"></div>
                 <p class="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 px-3 pb-1">Scouting Partido</p>
@@ -244,10 +254,6 @@
                 <i data-lucide="settings" class="w-5 h-5 {% if request.resolver_match.view_name == 'stats_app:configuracion' %}text-emerald-400{% else %}text-slate-400{% endif %}"></i>
                 <span class="font-medium text-sm">Configuración</span>
             </a>
-            <a href="{% url 'stats_app:descargar_manual_usuario' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all text-slate-400">
-                <i data-lucide="book-open" class="w-5 h-5 text-slate-400"></i>
-                <span class="font-medium text-sm">Manual de usuario</span>
-            </a>
             
             {% if partido %}
             <div class="h-px bg-slate-900 my-4 mx-2"></div>
@@ -296,7 +302,7 @@
         <!-- Topbar -->
         <header class="bg-[#090d16] border-b border-slate-800/80 px-6 py-4 flex items-center justify-between shadow-md">
             <div class="flex items-center gap-3 min-w-0">
-                <button class="sidebar-toggle-trigger hidden md:flex items-center justify-center w-9 h-9 rounded-lg border border-slate-800 bg-[#121824] text-slate-300 hover:text-white hover:border-slate-700 transition-all active:scale-95 flex-shrink-0" title="Mostrar/Ocultar menú">
+                <button type="button" class="sidebar-toggle-trigger hidden md:flex items-center justify-center w-9 h-9 rounded-lg border border-slate-800 bg-[#121824] text-slate-300 hover:text-white hover:border-slate-700 transition-all active:scale-95 flex-shrink-0" title="Mostrar/Ocultar menú" aria-label="Mostrar u ocultar menú">
                     <i data-lucide="panel-left" class="w-4 h-4"></i>
                 </button>
                 <div class="min-w-0">
