@@ -28,13 +28,20 @@ EQUIPO_NOMBRE = '[DEV] Dashboard Sprint'
 TEMPORADA = '2025/2026'
 
 JUGADORAS = [
+    (2, 'Carmen', 'León', 'LIBERO'),
+    (3, 'Sofía', 'Herrero', 'RECEPTORA'),
     (4, 'Laura', 'Gómez', 'RECEPTORA'),
+    (5, 'Lucía', 'Prieto', 'CENTRAL'),
+    (6, 'Clara', 'Molina', 'RECEPTORA'),
     (7, 'Marta', 'Sanz', 'COLOCADORA'),
+    (8, 'Paula', 'Navarro', 'COLOCADORA'),
     (9, 'Irene', 'Vega', 'CENTRAL'),
+    (10, 'Inés', 'Romero', 'RECEPTORA'),
     (11, 'Nuria', 'Gil', 'OPUESTA'),
     (12, 'Sara', 'Ortiz', 'RECEPTORA'),
+    (13, 'Eva', 'Campos', 'LIBERO'),
     (15, 'Alba', 'Reyes', 'CENTRAL'),
-    (2, 'Carmen', 'León', 'LIBERO'),
+    (16, 'Elena', 'Castro', 'OPUESTA'),
 ]
 
 

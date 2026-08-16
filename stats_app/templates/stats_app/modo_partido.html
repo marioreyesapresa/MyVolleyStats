@@ -127,21 +127,27 @@
 </style>
 
 <!-- Tab: Pizarra de Rotación -->
-<div id="tab-rotacion-content" class="tab-content hidden w-full max-w-6xl mx-auto space-y-8 -mt-6 md:-mt-8 relative">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- Interactive Rotation Court Card (Col 8) -->
-        <div class="lg:col-span-8 bg-[#121824] rounded-3xl p-6 md:p-8 border border-slate-800 shadow-xl space-y-6 flex flex-col justify-between">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h3 class="text-xl font-black uppercase tracking-wider text-white">Rotación Activa</h3>
+<div id="tab-rotacion-content" class="tab-content hidden w-full max-w-7xl mx-auto space-y-6 -mt-6 md:-mt-8 relative">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Pista (Col 7) -->
+        <div class="lg:col-span-7 bg-card rounded-2xl p-5 md:p-6 border border-slate-800 flex flex-col gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 class="text-lg font-semibold text-white">Pista</h3>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-medium text-slate-400 mr-1">Set</span>
+                    {% for i in "12345" %}
+                    <button type="button" onclick="setSet('{{ forloop.counter }}')"
+                            class="btn-set-choice w-9 h-9 rounded-lg border border-slate-700 bg-elevated text-slate-300 text-sm font-semibold transition-all hover:border-slate-500"
+                            data-set="{{ forloop.counter }}">{{ forloop.counter }}</button>
+                    {% endfor %}
                 </div>
             </div>
 
             <!-- Court Drawing Container -->
-            <div class="relative bg-blue-950/20 rounded-3xl border border-slate-800 p-6 md:p-8 flex flex-col items-center justify-center min-h-[440px] overflow-hidden">
+            <div class="relative bg-elevated rounded-2xl border border-slate-800 p-4 flex flex-col items-center justify-center overflow-hidden">
                 {% if partido.modalidad == 'MINIVOLEY' %}
                 <!-- Court Graphic for Minivoley (Diamond 4x4) -->
-                <div id="court-grid-view" class="w-full max-w-2xl aspect-[4/3] bg-teal-900/60 rounded-3xl border-4 border-white/90 relative shadow-2xl animate-fade-in">
+                <div id="court-grid-view" class="w-full max-w-2xl aspect-[4/3] bg-elevated rounded-2xl border border-slate-600 relative animate-fade-in">
                     <!-- Diamond lines -->
                     <svg class="absolute inset-0 w-full h-full text-white/40 pointer-events-none" viewBox="0 0 400 300" preserveAspectRatio="none">
                         <polygon points="200,45 340,150 200,255 60,150" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="8,8" />
@@ -153,7 +159,7 @@
                          ondragleave="this.classList.remove('ring-2','ring-blue-400');"
                          ondrop="dropOnZone(event, 3);"
                          class="absolute top-[5%] left-1/2 -translate-x-1/2 w-32 md:w-40 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group rounded-2xl">
-                        <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 3</span>
+                        <span class="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Z3</span>
                         <div class="zone-badge-container mt-3 w-full flex justify-center">
                             <!-- Populated dynamically from JS -->
                         </div>
@@ -165,7 +171,7 @@
                          ondragleave="this.classList.remove('ring-2','ring-blue-400');"
                          ondrop="dropOnZone(event, 2);"
                          class="absolute top-1/2 right-[5%] -translate-y-1/2 w-32 md:w-40 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group rounded-2xl">
-                        <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 2</span>
+                        <span class="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Z2</span>
                         <div class="zone-badge-container mt-3 w-full flex justify-center">
                             <!-- Populated dynamically from JS -->
                         </div>
@@ -177,7 +183,7 @@
                          ondragleave="this.classList.remove('ring-2','ring-blue-400');"
                          ondrop="dropOnZone(event, 4);"
                          class="absolute top-1/2 left-[5%] -translate-y-1/2 w-32 md:w-40 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group rounded-2xl">
-                        <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 4</span>
+                        <span class="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Z4</span>
                         <div class="zone-badge-container mt-3 w-full flex justify-center">
                             <!-- Populated dynamically from JS -->
                         </div>
@@ -189,7 +195,7 @@
                          ondragleave="this.classList.remove('ring-2','ring-blue-400');"
                          ondrop="dropOnZone(event, 1);"
                          class="absolute bottom-[5%] left-1/2 -translate-x-1/2 w-32 md:w-40 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group rounded-2xl">
-                        <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 1 (Saque)</span>
+                        <span class="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Z1</span>
                         <div class="zone-badge-container mt-3 w-full flex justify-center">
                             <!-- Populated dynamically from JS -->
                         </div>
@@ -197,19 +203,19 @@
                 </div>
                 {% else %}
                 <!-- Court Graphic for Voleibol (Grid 6x6) -->
-                <div id="court-grid-view" class="w-full max-w-2xl aspect-[4/3] bg-teal-900/60 rounded-3xl border-4 border-white/90 relative p-2 flex flex-col divide-y-4 divide-white shadow-2xl animate-fade-in">
+                <div id="court-grid-view" class="w-full max-w-2xl aspect-[4/3] bg-elevated rounded-2xl border border-slate-600 relative p-2 flex flex-col divide-y divide-slate-600 animate-fade-in">
                     <!-- Net (Network Line) -->
                     <div class="absolute top-1/2 left-0 right-0 h-1.5 bg-yellow-400 z-10 border-b border-black/20 shadow-md"></div>
                     
                     <!-- Top Half (Attack/Front Row Zone) -->
-                    <div class="flex-1 grid grid-cols-3 divide-x-4 divide-white/60">
+                    <div class="flex-1 grid grid-cols-3 divide-x divide-slate-600">
                         <!-- Zone 4 (Left-Front) -->
                         <div id="zone-4" onclick="selectZonePizarra(4)"
                              ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
                              ondragleave="this.classList.remove('ring-2','ring-blue-400');"
                              ondrop="dropOnZone(event, 4);"
                              class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
-                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 4</span>
+                            <span class="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Z4</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
                             </div>
@@ -220,7 +226,7 @@
                              ondragleave="this.classList.remove('ring-2','ring-blue-400');"
                              ondrop="dropOnZone(event, 3);"
                              class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
-                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 3</span>
+                            <span class="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Z3</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
                             </div>
@@ -231,7 +237,7 @@
                              ondragleave="this.classList.remove('ring-2','ring-blue-400');"
                              ondrop="dropOnZone(event, 2);"
                              class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
-                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 2</span>
+                            <span class="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Z2</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
                             </div>
@@ -239,14 +245,14 @@
                     </div>
                     
                     <!-- Bottom Half (Back Row Zone) -->
-                    <div class="flex-1 grid grid-cols-3 divide-x-4 divide-white/60">
+                    <div class="flex-1 grid grid-cols-3 divide-x divide-slate-600">
                         <!-- Zone 5 (Left-Back) -->
                         <div id="zone-5" onclick="selectZonePizarra(5)"
                              ondragover="event.preventDefault(); this.classList.add('ring-2','ring-blue-400');"
                              ondragleave="this.classList.remove('ring-2','ring-blue-400');"
                              ondrop="dropOnZone(event, 5);"
                              class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
-                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 5</span>
+                            <span class="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Z5</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
                             </div>
@@ -257,7 +263,7 @@
                              ondragleave="this.classList.remove('ring-2','ring-blue-400');"
                              ondrop="dropOnZone(event, 6);"
                              class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
-                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 6</span>
+                            <span class="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Z6</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
                             </div>
@@ -268,7 +274,7 @@
                              ondragleave="this.classList.remove('ring-2','ring-blue-400');"
                              ondrop="dropOnZone(event, 1);"
                              class="relative flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors p-3 text-center group">
-                            <span class="text-[10px] md:text-xs font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Zona 1 (Saque)</span>
+                            <span class="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Z1</span>
                             <div class="zone-badge-container mt-3 w-full flex justify-center">
                                 <!-- Populated dynamically from JS -->
                             </div>
@@ -278,196 +284,179 @@
                 {% endif %}
             </div>
 
-            <!-- Court Controls -->
-            <div class="space-y-3 animate-fade-in">
-                <!-- Row 1: rotation button + config -->
-                <div class="flex space-x-4">
-                    <button onclick="rotar('horario')" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-2xl active:scale-95 transition-all flex items-center justify-center uppercase tracking-widest shadow-lg">
-                        <i data-lucide="rotate-cw" class="w-5 h-5 mr-3"></i> Rotación 🔄
+            <!-- Barra táctil: rotación, R1–R6, saque/recepción, colocadora -->
+            <div class="flex flex-wrap items-center gap-2.5 md:gap-3 mt-4 animate-fade-in">
+                <button type="button" onclick="rotar('horario')"
+                        class="inline-flex items-center justify-center gap-2 h-11 px-4 bg-accent hover:opacity-90 text-white text-sm font-semibold rounded-xl active:scale-95 transition-all">
+                    <i data-lucide="rotate-cw" class="w-4 h-4"></i> Rotación
+                </button>
+                <div class="flex items-center gap-2" id="rot-init-selector">
+                    {% if partido.modalidad == 'MINIVOLEY' %}
+                        {% for r in "1234" %}
+                        <button type="button" onclick="selectRotInit({{ forloop.counter }})"
+                                id="rot-init-btn-{{ forloop.counter }}"
+                                class="rot-init-btn h-11 min-w-[2.75rem] px-3.5 rounded-xl border border-slate-800 bg-[#1a202c] text-slate-400
+                                       font-semibold text-sm transition-all hover:border-blue-500 hover:text-blue-400"
+                                data-r="{{ forloop.counter }}">R{{ forloop.counter }}</button>
+                        {% endfor %}
+                    {% else %}
+                        {% for r in "123456" %}
+                        <button type="button" onclick="selectRotInit({{ forloop.counter }})"
+                                id="rot-init-btn-{{ forloop.counter }}"
+                                class="rot-init-btn h-11 min-w-[2.75rem] px-3.5 rounded-xl border border-slate-800 bg-[#1a202c] text-slate-400
+                                       font-semibold text-sm transition-all hover:border-blue-500 hover:text-blue-400"
+                                data-r="{{ forloop.counter }}">R{{ forloop.counter }}</button>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div id="pizarra-rot-actual" class="h-11 inline-flex items-center px-4 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-400 font-semibold text-sm whitespace-nowrap" title="Rotación en juego">
+                    R1
+                </div>
+                <div class="flex items-center gap-2" id="estado-init-selector">
+                    <button type="button" onclick="selectEstadoInicial('K0')"
+                            id="estado-init-btn-K0"
+                            class="estado-init-btn h-11 px-4 rounded-xl border border-slate-800 bg-[#1a202c] text-slate-400
+                                   font-semibold text-sm transition-all hover:border-emerald-500 hover:text-emerald-400 whitespace-nowrap"
+                            data-estado="K0">
+                        <i data-lucide="zap" class="w-4 h-4 inline mr-1"></i>Saque
                     </button>
-                    <button onclick="toggleModal('modal-config')" class="py-4 px-8 bg-slate-800 hover:bg-slate-700 text-white text-sm font-black rounded-2xl active:scale-95 transition-all flex items-center justify-center uppercase tracking-widest shadow-md">
-                        <i data-lucide="sliders" class="w-5 h-5 mr-2"></i> Config. Set
+                    <button type="button" onclick="selectEstadoInicial('K1')"
+                            id="estado-init-btn-K1"
+                            class="estado-init-btn h-11 px-4 rounded-xl border border-blue-500 bg-blue-600 text-white
+                                   font-semibold text-sm transition-all hover:border-blue-400 whitespace-nowrap"
+                            data-estado="K1">
+                        <i data-lucide="shield" class="w-4 h-4 inline mr-1"></i>Recepción
                     </button>
                 </div>
-                <!-- Row 2: Rotation & Estado selectors -->
-                <div class="flex gap-4 bg-[#0d1117] rounded-2xl p-4 border border-slate-800">
-                    <!-- Rotación Inicial R1-R6 / R1-R4 -->
-                    <div class="flex-1 space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
-                            Rotación Inicial del Set
-                        </label>
-                        <p class="text-[8px] text-slate-500 leading-snug">Solo al guardar el <strong class="text-slate-400">primer sexteto</strong>. No mueve jugadoras durante el partido.</p>
-                        <div class="grid {% if partido.modalidad == 'MINIVOLEY' %}grid-cols-4{% else %}grid-cols-6{% endif %} gap-1" id="rot-init-selector">
-                            {% if partido.modalidad == 'MINIVOLEY' %}
-                                {% for r in "1234" %}
-                                <button onclick="selectRotInit({{ forloop.counter }})"
-                                        id="rot-init-btn-{{ forloop.counter }}"
-                                        class="rot-init-btn py-2.5 rounded-lg border border-slate-800 bg-[#1a202c] text-slate-400
-                                               font-black text-xs transition-all hover:border-blue-500 hover:text-blue-400"
-                                        data-r="{{ forloop.counter }}">R{{ forloop.counter }}</button>
-                                {% endfor %}
-                            {% else %}
-                                {% for r in "123456" %}
-                                <button onclick="selectRotInit({{ forloop.counter }})"
-                                        id="rot-init-btn-{{ forloop.counter }}"
-                                        class="rot-init-btn py-2.5 rounded-lg border border-slate-800 bg-[#1a202c] text-slate-400
-                                               font-black text-xs transition-all hover:border-blue-500 hover:text-blue-400"
-                                        data-r="{{ forloop.counter }}">R{{ forloop.counter }}</button>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="w-px bg-slate-800 self-stretch"></div>
-                    <!-- R actual durante el partido (solo lectura) -->
-                    <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
-                            R en Juego
-                        </label>
-                        <p class="text-[8px] text-slate-500 leading-snug">Cambia al rotar en pista o en el scout.</p>
-                        <div id="pizarra-rot-actual" class="py-2.5 px-4 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-400 font-black text-sm text-center">
-                            R1
-                        </div>
-                    </div>
-                    <div class="w-px bg-slate-800 self-stretch"></div>
-                    <!-- Estado Inicial K0/K1 -->
-                    <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
-                            Estado Inicial
-                        </label>
-                        <div class="grid grid-cols-1 gap-1" id="estado-init-selector">
-                            <button onclick="selectEstadoInicial('K0')"
-                                    id="estado-init-btn-K0"
-                                    class="estado-init-btn py-2.5 px-4 rounded-lg border border-slate-800 bg-[#1a202c] text-slate-400
-                                           font-black text-xs transition-all hover:border-emerald-500 hover:text-emerald-400 whitespace-nowrap"
-                                    data-estado="K0">
-                                <i data-lucide="zap" class="w-3 h-3 inline mr-1"></i>Saque
-                            </button>
-                            <button onclick="selectEstadoInicial('K1')"
-                                    id="estado-init-btn-K1"
-                                    class="estado-init-btn py-2.5 px-4 rounded-lg border border-blue-500 bg-blue-600 text-white
-                                           font-black text-xs transition-all hover:border-blue-400 whitespace-nowrap"
-                                    data-estado="K1">
-                                <i data-lucide="shield" class="w-3 h-3 inline mr-1"></i>Recepción
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <!-- Colocadoras (roles según sistema 5-1 / 4-2 / 6-2) — solo voleibol 6×6 -->
                 {% if partido.modalidad != 'MINIVOLEY' %}
-                <div class="bg-[#0d1117] rounded-2xl p-4 border border-amber-500/30 space-y-2" id="pizarra-colocadoras-box">
-                    <label class="text-[9px] font-black text-amber-400 uppercase tracking-widest block" id="pizarra-colocadoras-label">
-                        Colocadora activa (roles 5-1)
-                    </label>
-                    <p class="text-[8px] text-slate-500 leading-snug" id="pizarra-colocadoras-help">
-                        Quién es la Co en pista para R1/R2/C1/C2/O. Cámbiala en dobles cambios o si una colocadora juega de opuesta.
-                    </p>
-                    <div id="wrap-co-single-pizarra">
+                <div class="inline-flex items-center gap-2" id="pizarra-colocadoras-box">
+                    <label class="sr-only" id="pizarra-colocadoras-label">Colocadora activa (roles 5-1)</label>
+                    <p class="sr-only" id="pizarra-colocadoras-help">Quién es la Co en pista para R1/R2/C1/C2/O.</p>
+                    <div id="wrap-co-single-pizarra" class="inline-flex items-center gap-2">
+                        <span class="text-xs font-semibold text-slate-400">Co</span>
                         <select id="select-colocadora-activa-pizarra" onchange="setColocadoraActiva(this.value)"
-                            class="w-full bg-[#121824] border border-amber-500/40 text-white text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-400">
-                            <option value="">Auto (plantilla)</option>
+                            class="h-11 max-w-[12rem] bg-elevated border border-slate-700 text-white text-sm font-semibold rounded-xl px-3.5 focus:outline-none focus:border-accent"
+                            title="Colocadora activa">
+                            <option value="">Auto</option>
                         </select>
                     </div>
-                    <div id="wrap-co-par-pizarra" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div>
-                            <span class="text-[8px] font-black text-slate-400 uppercase">Colocadora A</span>
-                            <select id="select-colocadora-par-a-pizarra" onchange="setColocadoraPar('A', this.value)"
-                                class="w-full mt-1 bg-[#121824] border border-amber-500/40 text-white text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-400">
-                                <option value="">Auto</option>
-                            </select>
-                        </div>
-                        <div>
-                            <span class="text-[8px] font-black text-slate-400 uppercase">Colocadora B</span>
-                            <select id="select-colocadora-par-b-pizarra" onchange="setColocadoraPar('B', this.value)"
-                                class="w-full mt-1 bg-[#121824] border border-amber-500/40 text-white text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-400">
-                                <option value="">Auto</option>
-                            </select>
-                        </div>
+                    <div id="wrap-co-par-pizarra" class="hidden inline-flex items-center gap-2">
+                        <span class="text-xs font-semibold text-slate-400">Co A</span>
+                        <select id="select-colocadora-par-a-pizarra" onchange="setColocadoraPar('A', this.value)"
+                            class="h-11 max-w-[10rem] bg-elevated border border-slate-700 text-white text-sm font-semibold rounded-xl px-3.5 focus:outline-none focus:border-accent">
+                            <option value="">Auto</option>
+                        </select>
+                        <span class="text-xs font-semibold text-slate-400">Co B</span>
+                        <select id="select-colocadora-par-b-pizarra" onchange="setColocadoraPar('B', this.value)"
+                            class="h-11 max-w-[10rem] bg-elevated border border-slate-700 text-white text-sm font-semibold rounded-xl px-3.5 focus:outline-none focus:border-accent">
+                            <option value="">Auto</option>
+                        </select>
                     </div>
                 </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Bench available panel (Col 4) -->
-        <div id="bench-panel-container" class="lg:col-span-4 bg-[#121824] rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-col justify-between space-y-6 animate-fade-in">
-            <div class="space-y-4 flex-1 flex flex-col justify-between">
-                <div class="space-y-1">
-                    <h3 class="text-lg font-black uppercase tracking-wider text-white">Banquillo Disponible</h3>
-                    <p class="text-slate-400 text-xs leading-normal">
-                        {% if partido.modalidad == 'MINIVOLEY' %}
-                        Pulsa una jugadora del banquillo y luego la zona de la pista (Z1-Z4) para asignarle la posición.
-                        {% else %}
-                        Pulsa una jugadora del banquillo y luego la zona de la pista (Z1-Z6) para asignarle la posición.
-                        {% endif %}
-                    </p>
-                </div>
-                
-                <!-- Grid of available players -->
-                <div id="bench-players-list" class="grid grid-cols-2 gap-2.5 overflow-y-auto pr-1 py-2 scrollbar-hide flex-1">
-                    <!-- Dynamically populated from JS -->
-                </div>
-                {% if permite_libero %}
-                <div class="pt-4 border-t border-slate-800/80 space-y-3">
-                    <span class="text-xs font-black text-slate-400 uppercase tracking-wider block">Líberos Registrados</span>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div id="libero1-container" 
-                             ondrop="dropOnLibero(event, 1)" 
-                             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-amber-500');"
-                             ondragleave="this.classList.remove('ring-2','ring-amber-500');"
-                             onclick="selectLiberoZone(1)"
-                             class="p-4 bg-slate-900/60 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center min-h-[96px] cursor-pointer transition-all relative">
-                            <!-- Populated dynamically -->
-                        </div>
-                        <div id="libero2-container" 
-                             ondrop="dropOnLibero(event, 2)" 
-                             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-amber-500');"
-                             ondragleave="this.classList.remove('ring-2','ring-amber-500');"
-                             onclick="selectLiberoZone(2)"
-                             class="p-4 bg-slate-900/60 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center min-h-[96px] cursor-pointer transition-all relative">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+        <!-- Banquillo y ajustes (Col 5) -->
+        <div id="bench-panel-container" class="lg:col-span-5 bg-card rounded-2xl p-5 md:p-6 border border-slate-800 flex flex-col gap-4">
+            <div class="space-y-1">
+                <h3 class="text-lg font-semibold text-white">Banquillo</h3>
+                <p class="text-slate-400 text-xs leading-normal">
+                    {% if partido.modalidad == 'MINIVOLEY' %}
+                    Pulsa una jugadora y luego la zona (Z1-Z4).
+                    {% else %}
+                    Pulsa una jugadora y luego la zona (Z1-Z6).
+                    {% endif %}
+                </p>
             </div>
-            
-            <div class="pt-4 border-t border-slate-800 space-y-3">
-                <div class="space-y-2">
-                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Plantillas del equipo</p>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button type="button" onclick="cargarPlantilla('TITULAR')" class="py-2.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-[10px] rounded-xl active:scale-95 transition-all uppercase tracking-wider">
-                            Titular
-                        </button>
-                        <button type="button" onclick="cargarPlantilla('ALINEACION_B')" class="py-2.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-[10px] rounded-xl active:scale-95 transition-all uppercase tracking-wider">
-                            Alineación B
-                        </button>
-                        <button type="button" onclick="cargarUltimoSet()" class="py-2.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-[10px] rounded-xl active:scale-95 transition-all uppercase tracking-wider">
-                            Último set
-                        </button>
+
+            <div id="bench-players-list" class="space-y-3">
+                <!-- Dynamically populated from JS -->
+            </div>
+            {% if permite_libero %}
+            <div class="space-y-2">
+                <span class="text-xs font-medium text-slate-400">Líberos</span>
+                <div class="flex gap-2">
+                    <div id="libero1-container"
+                         ondrop="dropOnLibero(event, 1)"
+                         ondragover="event.preventDefault(); this.classList.add('ring-2','ring-amber-500');"
+                         ondragleave="this.classList.remove('ring-2','ring-amber-500');"
+                         onclick="selectLiberoZone(1)"
+                         class="flex-1 relative flex items-center min-h-[2.75rem] px-3.5 py-2.5 bg-elevated border border-dashed border-slate-700 rounded-xl cursor-pointer transition-all">
+                        <!-- Populated dynamically -->
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" onclick="guardarPlantilla('TITULAR')" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-[10px] rounded-xl active:scale-95 transition-all uppercase tracking-wider">
-                            Guardar Titular
-                        </button>
-                        <button type="button" onclick="guardarPlantilla('ALINEACION_B')" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-[10px] rounded-xl active:scale-95 transition-all uppercase tracking-wider">
-                            Guardar B
-                        </button>
+                    <div id="libero2-container"
+                         ondrop="dropOnLibero(event, 2)"
+                         ondragover="event.preventDefault(); this.classList.add('ring-2','ring-amber-500');"
+                         ondragleave="this.classList.remove('ring-2','ring-amber-500');"
+                         onclick="selectLiberoZone(2)"
+                         class="flex-1 relative flex items-center min-h-[2.75rem] px-3.5 py-2.5 bg-elevated border border-dashed border-slate-700 rounded-xl cursor-pointer transition-all">
+                        <!-- Populated dynamically -->
                     </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button onclick="guardarAlineacionLocal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest shadow-lg flex items-center justify-center">
-                        <i data-lucide="save" class="w-4 h-4 mr-2"></i> Guardar Alineación
-                    </button>
-                    <button id="btn-guardar-volver-scout" onclick="guardarAlineacionYVolverAlScout()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest shadow-lg flex items-center justify-center">
-                        <i data-lucide="zap" class="w-4 h-4 mr-2"></i> Guardar y volver al scout
-                    </button>
+            </div>
+            {% endif %}
+
+            <div class="space-y-3 mt-auto">
+                <div class="space-y-3">
+                    <div class="space-y-1.5">
+                        <p class="text-xs font-semibold text-slate-400">Cargar plantilla</p>
+                        <div class="flex gap-1.5">
+                            <button type="button" onclick="cargarPlantilla('TITULAR')"
+                                    class="flex-1 min-w-0 inline-flex flex-col sm:flex-row items-center justify-center gap-1 px-2 py-2.5 bg-elevated border border-slate-700 hover:border-slate-500 text-white font-semibold text-sm rounded-xl leading-tight active:scale-95 transition-all">
+                                <i data-lucide="user" class="w-3.5 h-3.5 text-accent flex-shrink-0"></i>
+                                <span class="truncate">Titular</span>
+                            </button>
+                            <button type="button" onclick="cargarPlantilla('ALINEACION_B')"
+                                    class="flex-1 min-w-0 inline-flex flex-col sm:flex-row items-center justify-center gap-1 px-2 py-2.5 bg-elevated border border-slate-700 hover:border-slate-500 text-white font-semibold text-sm rounded-xl leading-tight active:scale-95 transition-all">
+                                <i data-lucide="users" class="w-3.5 h-3.5 text-accent flex-shrink-0"></i>
+                                <span class="text-center leading-tight">Alineación B</span>
+                            </button>
+                            <button type="button" onclick="cargarUltimoSet()"
+                                    class="flex-1 min-w-0 inline-flex flex-col sm:flex-row items-center justify-center gap-1 px-2 py-2.5 bg-elevated border border-slate-700 hover:border-slate-500 text-white font-semibold text-sm rounded-xl leading-tight active:scale-95 transition-all">
+                                <i data-lucide="history" class="w-3.5 h-3.5 text-accent flex-shrink-0"></i>
+                                <span class="text-center leading-tight">Último set</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <p class="text-xs font-semibold text-slate-400">Guardar plantilla</p>
+                        <div class="flex gap-1.5">
+                            <button type="button" onclick="guardarPlantilla('TITULAR')"
+                                    class="flex-1 inline-flex items-center justify-center gap-1 px-2 py-2 bg-transparent border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-medium text-sm rounded-xl active:scale-95 transition-all">
+                                <i data-lucide="plus" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                                Guardar Titular
+                            </button>
+                            <button type="button" onclick="guardarPlantilla('ALINEACION_B')"
+                                    class="flex-1 inline-flex items-center justify-center gap-1 px-2 py-2 bg-transparent border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-medium text-sm rounded-xl active:scale-95 transition-all">
+                                <i data-lucide="plus" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                                Guardar B
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <button id="btn-volver-scout-solo" onclick="volverAlScoutActivo()" class="hidden w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-black py-3.5 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center">
-                    <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Volver al scout
+                <div class="sticky bottom-3 z-10 space-y-2 bg-card pt-2">
+                <button type="button" onclick="guardarAlineacionLocal()"
+                        class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-accent text-white font-semibold text-base rounded-xl active:scale-95 transition-all">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    Guardar alineación
                 </button>
-                <button onclick="clearTempLineup()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white font-black py-3.5 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center">
-                    <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Limpiar Todo
+                <button type="button" id="btn-guardar-volver-scout" onclick="guardarAlineacionYVolverAlScout()"
+                        class="hidden w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-elevated text-white border border-slate-700 font-semibold text-sm rounded-xl active:scale-95 transition-all hover:border-slate-500">
+                    <i data-lucide="zap" class="w-4 h-4 text-accent"></i>
+                    Guardar y volver al scout
                 </button>
+                <button type="button" id="btn-volver-scout-solo" onclick="volverAlScoutActivo()"
+                        class="hidden w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-elevated text-slate-300 hover:text-white border border-slate-700 font-medium text-sm rounded-xl active:scale-95 transition-all hover:border-slate-500">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    Volver al scout
+                </button>
+                <button type="button" onclick="clearTempLineup()"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-slate-400 hover:text-rose-400 font-medium text-sm rounded-xl active:scale-95 transition-all">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    Limpiar todo
+                </button>
+                </div>
             </div>
         </div>
     </div>
@@ -579,40 +568,40 @@
             </div>
 
             <!-- Avanzado wizard: 1) formación  2) calidades (vuelve a 1 tras registrar) -->
-            <div id="avanzado-step-roster" class="space-y-4">
-                <div class="bg-[#121824] rounded-3xl p-4 md:p-6 border border-slate-800 shadow-xl space-y-4">
+            <div id="avanzado-step-roster" class="space-y-3">
+                <div class="bg-[#121824] rounded-3xl p-4 md:p-6 border border-slate-800 shadow-xl space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                         <div>
-                            <h3 class="text-sm font-black text-slate-300 uppercase tracking-[0.15em]">1 · Elegí jugadora</h3>
-                            <p class="text-[10px] text-slate-500 font-bold mt-0.5">Tocá el hueco en pista (o líbero / EQ)</p>
+                            <h3 class="text-base font-semibold text-white">Elige jugadora</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Pulsa una zona o un líbero</p>
                         </div>
                         <div class="flex items-center gap-2 flex-wrap">
-                            <div id="fase-badge" class="flex items-center space-x-1.5 px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all duration-300
+                            <div id="fase-badge" class="h-11 inline-flex items-center space-x-1.5 px-3.5 rounded-xl border text-xs font-semibold transition-all duration-300
                                  bg-blue-500/10 border-blue-500/30 text-blue-400">
                                 <span id="fase-dot" class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
                                 <span id="fase-label">K1 — Recepción</span>
                             </div>
-                            <div id="rot-badge" class="flex items-center space-x-1 px-2.5 py-1 rounded-lg border
-                                 bg-slate-800/60 border-slate-700 text-slate-300 text-[9px] font-black uppercase tracking-widest">
-                                <i data-lucide="rotate-cw" class="w-2.5 h-2.5 text-slate-400"></i>
+                            <div id="rot-badge" class="h-11 inline-flex items-center space-x-1 px-3.5 rounded-xl border
+                                 bg-slate-800/60 border-slate-700 text-slate-300 text-xs font-semibold">
+                                <i data-lucide="rotate-cw" class="w-3.5 h-3.5 text-slate-400"></i>
                                 <span id="rot-label">R1</span>
                             </div>
-                            <button onclick="eliminarUltimo()" class="px-3 py-2 min-h-[2.5rem] bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[10px] font-black rounded-xl active:scale-95 transition-all flex items-center uppercase tracking-widest hover:bg-rose-500/20">
-                                <i data-lucide="undo-2" class="w-3.5 h-3.5 mr-1.5"></i> Deshacer
+                            <button onclick="eliminarUltimo()" class="h-11 px-4 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-semibold rounded-xl active:scale-95 transition-all inline-flex items-center hover:bg-rose-500/20">
+                                <i data-lucide="undo-2" class="w-4 h-4 mr-1.5"></i> Deshacer
                             </button>
                         </div>
                     </div>
                     <p id="avanzado-form-hint" class="text-[9px] font-bold text-amber-400/80 uppercase tracking-wider hidden"></p>
                     <div id="avanzado-court-grid" class="avanzado-field-grid max-w-3xl mx-auto"></div>
-                    <div id="avanzado-libero-bar" class="grid grid-cols-2 gap-2 max-w-3xl mx-auto"></div>
-                    <div class="flex flex-wrap gap-2 pt-1 border-t border-slate-800/80 max-w-3xl mx-auto">
+                    <div class="flex items-stretch gap-2 max-w-3xl mx-auto">
+                        <div id="avanzado-libero-bar" class="flex-1 grid grid-cols-2 gap-2 min-w-0"></div>
                         <button type="button" onclick="selectAvanzadoSlot(null, null)"
-                                class="av-slot-eq flex-1 min-h-[3.5rem] flex items-center justify-center gap-2 px-3 py-2 rounded-2xl border-2 border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-black text-xs uppercase tracking-wider active:scale-95 transition-all"
-                                id="btn-header-null">
-                            <span>EQ</span>
-                            <span class="text-[9px] font-bold text-emerald-500/80 normal-case tracking-tight">Equipo</span>
+                                class="inline-flex items-center justify-center self-stretch min-h-11 min-w-[6.5rem] px-4 rounded-xl border border-slate-700 bg-elevated text-slate-200 text-sm font-semibold shrink-0 active:scale-95 transition-all hover:border-slate-500"
+                                id="btn-header-null"
+                                title="Registrar una acción de equipo, sin jugadora">
+                            Equipo
                         </button>
-                        <button type="button" onclick="toggleModal('modal-config')" class="lg:hidden px-3 py-2 rounded-2xl border border-slate-700 text-slate-400" title="Ajustes Set">
+                        <button type="button" onclick="toggleModal('modal-config')" class="lg:hidden h-11 px-3 rounded-xl border border-slate-700 text-slate-400" title="Ajustes Set">
                             <i data-lucide="settings" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -762,7 +751,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 5.75rem;
+            min-height: 6.25rem;
             padding: 0.65rem 0.4rem;
             border-radius: 1.1rem;
             border: 2px solid #1e293b;
@@ -789,7 +778,7 @@
             color: #475569;
         }
         @media (min-width: 768px) {
-            .av-slot { min-height: 6.5rem; }
+            .av-slot { min-height: 7.25rem; }
             .av-slot .text-lg { font-size: 1.5rem; }
         }
         /* Acciones Avanzado: ancho, compacto en altura (2 filas × 3) */
@@ -2825,7 +2814,7 @@
         const el = document.getElementById('avanzado-accion-title');
         if (!el) return;
         if (!state.jugadora_id) {
-            el.textContent = 'EQ · Equipo';
+            el.textContent = 'Equipo';
             return;
         }
         const pj = allJugadoras.find(x => String(x.id) === String(state.jugadora_id));
@@ -2868,24 +2857,15 @@
             const zLabel = state.zona != null ? ` · Z${state.zona}` : '';
             showToast(`🎯 #${dorsal} ${nombre}${zLabel}`);
         } else {
-            showToast('🎯 EQ · Equipo');
+            showToast('🎯 Equipo');
         }
     }
 
     function updateAvanzadoSelectedChip() {
         const chip = document.getElementById('avanzado-selected-chip');
         if (!chip) return;
-        if (!state.jugadora_id) {
-            chip.textContent = 'EQ · Equipo';
-            chip.className = 'px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-[10px] font-black text-emerald-400 uppercase tracking-wider';
-            return;
-        }
-        const pj = allJugadoras.find(x => String(x.id) === String(state.jugadora_id));
-        const dorsal = pj ? pj.dorsal : '?';
-        const nombre = pj ? pj.nombre : 'Jugadora';
-        const z = state.zona != null ? ` · Z${state.zona}` : '';
-        chip.textContent = `#${dorsal} ${nombre}${z}`;
-        chip.className = 'px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/15 text-[10px] font-black text-emerald-300 uppercase tracking-wider max-w-[14rem] truncate';
+        chip.classList.add('hidden');
+        chip.setAttribute('aria-hidden', 'true');
     }
 
     function renderAvanzadoCourt() {
@@ -2902,7 +2882,10 @@
                         Pizarra de Rotación
                     </button>
                 </div>`;
-            if (liberoBar) liberoBar.innerHTML = '';
+            if (liberoBar) {
+                liberoBar.innerHTML = '';
+                liberoBar.className = 'hidden';
+            }
             if (hintEl) {
                 hintEl.classList.add('hidden');
                 hintEl.textContent = '';
@@ -2984,6 +2967,7 @@
         if (liberoBar) {
             if (!PERMITE_LIBERO || isMini) {
                 liberoBar.innerHTML = '';
+                liberoBar.className = 'hidden';
             } else {
                 const bits = [];
                 [1, 2].forEach(n => {
@@ -2999,23 +2983,16 @@
                         <span class="text-[9px] font-bold uppercase truncate max-w-full px-0.5">${nombre}</span>
                     </button>`);
                 });
-                // Si solo hay un líbero fuera, que no quede una celda vacía rara
-                if (bits.length === 1) {
-                    liberoBar.className = 'grid grid-cols-1 gap-2';
+                if (bits.length === 0) {
+                    liberoBar.className = 'hidden';
+                    liberoBar.innerHTML = '';
+                } else if (bits.length === 1) {
+                    liberoBar.className = 'flex-1 grid grid-cols-1 gap-2 min-w-0';
+                    liberoBar.innerHTML = bits.join('');
                 } else {
-                    liberoBar.className = 'grid grid-cols-2 gap-2';
+                    liberoBar.className = 'flex-1 grid grid-cols-2 gap-2 min-w-0';
+                    liberoBar.innerHTML = bits.join('');
                 }
-                liberoBar.innerHTML = bits.join('');
-            }
-        }
-
-        // Resaltar EQ
-        const eqBtn = document.getElementById('btn-header-null');
-        if (eqBtn) {
-            if (!state.jugadora_id) {
-                eqBtn.classList.add('ring-2', 'ring-emerald-400');
-            } else {
-                eqBtn.classList.remove('ring-2', 'ring-emerald-400');
             }
         }
 
@@ -3196,26 +3173,26 @@
                 
                 const html = `
                     <div class="relative group/badge flex flex-col items-center animate-fade-in">
-                        <div class="player-badge w-16 h-16 md:w-20 md:h-20 rounded-full bg-emerald-600 border-2 border-emerald-500 text-white font-black text-xl md:text-2xl flex items-center justify-center shadow-md transition-all">
+                        <div class="player-badge w-16 h-16 md:w-20 md:h-20 rounded-full bg-elevated border border-slate-600 text-accent font-semibold text-xl md:text-2xl flex items-center justify-center transition-all">
                             ${dorsal}
                         </div>
-                        <button onclick="unassignZone(${i}); event.stopPropagation();" 
-                                class="absolute top-0 right-1/2 translate-x-7 md:translate-x-9 w-5 h-5 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center active:scale-95 transition-all shadow-md z-20"
+                        <button onclick="unassignZone(${i}); event.stopPropagation();"
+                                class="absolute -top-0.5 -right-0.5 w-5 h-5 bg-card border border-slate-600 text-slate-400 hover:text-white hover:border-slate-400 rounded-full flex items-center justify-center active:scale-95 transition-all z-20"
                                 title="Quitar jugadora">
-                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            <i data-lucide="x" class="w-3 h-3"></i>
                         </button>
-                        <span class="player-name mt-2 text-[10px] md:text-xs font-bold text-slate-200 uppercase truncate max-w-[80px] block text-center">${name}</span>
+                        <span class="player-name mt-1.5 text-xs font-medium text-slate-300 truncate max-w-[80px] block text-center">${name}</span>
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', html);
             } else {
                 const html = `
                     <div class="flex flex-col items-center animate-fade-in">
-                        <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-dashed border-slate-600 hover:border-slate-500 flex flex-col items-center justify-center text-slate-400 font-bold transition-all shadow-inner">
-                            <i data-lucide="plus" class="w-4 h-4 mb-0.5 opacity-60 text-slate-400/80"></i>
-                            <span class="text-xs md:text-sm tracking-tighter">Z${i}</span>
+                        <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border border-dashed border-slate-600 hover:border-slate-500 flex flex-col items-center justify-center text-slate-500 font-medium transition-all">
+                            <i data-lucide="plus" class="w-4 h-4 mb-0.5 opacity-60"></i>
+                            <span class="text-xs md:text-sm">Z${i}</span>
                         </div>
-                        <span class="player-name mt-2 text-[10px] md:text-xs font-bold text-slate-500 uppercase">Vacío</span>
+                        <span class="player-name mt-1.5 text-xs font-medium text-slate-500">Vacío</span>
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', html);
@@ -3225,38 +3202,63 @@
         syncColocadoraActivaSelect();
     }
 
+    function benchPosMeta(posicion) {
+        const p = String(posicion || '').toUpperCase();
+        if (p === 'COLOCADORA') return { key: 'Co', label: 'Colocadoras', order: 0 };
+        if (p === 'RECEPTORA') return { key: 'R', label: 'Puntas / Receptoras', order: 1 };
+        if (p === 'CENTRAL') return { key: 'C', label: 'Centrales', order: 2 };
+        if (p === 'OPUESTA') return { key: 'O', label: 'Opuestas', order: 3 };
+        if (p === 'LIBERO') return { key: 'L', label: 'Líberos', order: 4 };
+        return { key: '—', label: 'Sin posición', order: 5 };
+    }
+
     function drawBenchPlayers() {
         const container = document.getElementById('bench-players-list');
         if (!container) return;
         container.innerHTML = '';
-        
-        // Players currently assigned to a zone or líbero
+
         const assignedIds = new Set(
             Object.values(tempLineup).filter(Boolean).map(pid)
         );
-        
+
+        const groups = {};
         allJugadoras.forEach(j => {
-            // Skip players already on court
             if (assignedIds.has(pid(j.id))) return;
-            
-            const isActive = samePlayer(selectedBenchPlayerId, j.id);
-            const activeClasses = isActive 
-                ? 'border-blue-500 bg-blue-950/40 text-blue-400 ring-2 ring-blue-500/50' 
-                : 'border-slate-800 hover:border-slate-700 bg-[#161b26] text-white';
-                
-            const html = `
-                <button
-                    draggable="true"
-                    onclick="selectBenchPlayer('${j.id}')"
-                    ondragstart="event.dataTransfer.setData('playerId', '${j.id}'); event.currentTarget.classList.add('opacity-50');"
-                    ondragend="event.currentTarget.classList.remove('opacity-50');"
-                    class="p-3 rounded-2xl border-2 transition-all flex flex-col items-center justify-center text-center shadow-md active:scale-95 cursor-grab ${activeClasses}"
-                    id="bench-card-${j.id}">
-                    <span class="text-lg font-black">#${j.dorsal}</span>
-                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight truncate max-w-[80px] block mt-0.5">${j.nombre}</span>
-                </button>
-            `;
-            container.insertAdjacentHTML('beforeend', html);
+            const meta = benchPosMeta(j.posicion);
+            if (!groups[meta.order]) groups[meta.order] = { meta, players: [] };
+            groups[meta.order].players.push(j);
+        });
+
+        Object.keys(groups).sort((a, b) => Number(a) - Number(b)).forEach(order => {
+            const { meta, players } = groups[order];
+            if (!players.length) return;
+
+            const chips = players.map(j => {
+                const isActive = samePlayer(selectedBenchPlayerId, j.id);
+                const activeClasses = isActive
+                    ? 'border-accent bg-elevated text-white ring-1 ring-accent/40'
+                    : 'border-slate-700 hover:border-slate-500 bg-elevated text-slate-200';
+                return `
+                    <button
+                        draggable="true"
+                        onclick="selectBenchPlayer('${j.id}')"
+                        ondragstart="event.dataTransfer.setData('playerId', '${j.id}'); event.currentTarget.classList.add('opacity-50');"
+                        ondragend="event.currentTarget.classList.remove('opacity-50');"
+                        class="inline-flex items-center gap-2 min-h-[2.75rem] px-3.5 py-2 rounded-xl border text-sm font-medium cursor-grab active:scale-95 transition-all ${activeClasses}"
+                        id="bench-card-${j.id}">
+                        <span class="text-accent font-semibold">#${j.dorsal}</span>
+                        <span class="truncate max-w-[7rem]">${j.nombre}</span>
+                        <span class="text-[10px] font-semibold tracking-wide px-1.5 py-0.5 rounded bg-card border border-slate-700 text-slate-400">${meta.key}</span>
+                    </button>
+                `;
+            }).join('');
+
+            container.insertAdjacentHTML('beforeend', `
+                <div class="py-2">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-2">${meta.label}</p>
+                    <div class="flex flex-wrap gap-2">${chips}</div>
+                </div>
+            `);
         });
     }
 
@@ -3354,14 +3356,12 @@
                 const player = allJugadoras.find(x => x.id == playerId);
                 if (player) {
                     container.innerHTML = `
-                        <div class="flex flex-col items-center justify-center">
-                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1 block">LÍBERO ${n}</span>
-                            <div class="w-12 h-12 rounded-full bg-amber-500 border border-amber-400 text-slate-950 font-black flex items-center justify-center text-sm shadow-md ring-2 ring-amber-500/20">
-                                #${player.dorsal}
-                            </div>
-                            <span class="text-[9px] text-slate-300 font-semibold truncate max-w-[80px] mt-1.5 block">${player.nombre}</span>
-                            <button onclick="unassignLibero(event, ${n})" class="absolute top-1.5 right-1.5 text-slate-500 hover:text-rose-400 transition-all p-0.5" title="Quitar líbero">
-                                <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+                        <div class="relative flex items-center gap-2 w-full pr-6">
+                            <span class="text-[10px] font-medium text-slate-500">L${n}</span>
+                            <span class="w-7 h-7 rounded-full bg-elevated border border-slate-600 text-accent text-xs font-semibold flex items-center justify-center">${player.dorsal}</span>
+                            <span class="text-sm text-slate-200 truncate">${player.nombre}</span>
+                            <button onclick="unassignLibero(event, ${n})" class="absolute top-1/2 -translate-y-1/2 right-0 w-5 h-5 bg-card border border-slate-600 text-slate-400 hover:text-white hover:border-slate-400 rounded-full flex items-center justify-center transition-all" title="Quitar líbero">
+                                <i data-lucide="x" class="w-3 h-3"></i>
                             </button>
                         </div>
                     `;
@@ -3369,10 +3369,9 @@
                 }
             } else {
                 container.innerHTML = `
-                    <div class="text-center text-slate-600">
-                        <i data-lucide="shield" class="w-5 h-5 mx-auto mb-1 opacity-40"></i>
-                        <span class="text-[10px] font-black uppercase tracking-wider block">LÍBERO ${n}</span>
-                        <span class="text-[8px] opacity-60 block">Suelte aquí</span>
+                    <div class="flex items-center gap-2 text-slate-500 w-full">
+                        <span class="text-xs font-medium">L${n}</span>
+                        <span class="text-xs text-slate-600">Vacío</span>
                     </div>
                 `;
                 if (window.lucide) lucide.createIcons();
