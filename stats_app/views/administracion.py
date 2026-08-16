@@ -1,11 +1,13 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.views.generic import View, CreateView, UpdateView, DeleteView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from ..models import Equipo, Jugadora, Partido
 from ..forms import JugadoraForm
 from ..security import AuditoriaAccesoMixin
+from ..services.reporting import marcador_resumen
 
 
 class ConfiguracionView(LoginRequiredMixin, View):
@@ -21,11 +23,40 @@ class DashboardView(LoginRequiredMixin, ListView):
     context_object_name = 'partidos'
 
     def get_queryset(self):
-        return Partido.objects.filter(equipo__entrenador=self.request.user).order_by('-fecha', '-hora')
+        return (
+            Partido.objects.filter(equipo__entrenador=self.request.user)
+            .select_related('equipo')
+            .order_by('-fecha', '-hora')
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['equipos'] = Equipo.objects.filter(entrenador=self.request.user).order_by('nombre')
+
+        partidos = list(context['partidos'])
+        hoy = timezone.localdate()
+
+        upcoming = sorted(
+            (p for p in partidos if not p.finalizado and p.fecha >= hoy),
+            key=lambda p: (p.fecha, p.hora),
+        )
+        proximo = upcoming[0] if upcoming else None
+        context['proximo_partido'] = proximo
+        context['partidos_proximos'] = upcoming[1:] if proximo else []
+        context['partidos_por_scoutar'] = sorted(
+            (p for p in partidos if not p.finalizado and p.fecha < hoy),
+            key=lambda p: (p.fecha, p.hora),
+        )
+
+        historial = [p for p in partidos if p.finalizado]
+        for partido in historial:
+            partido.marcador = marcador_resumen(partido)
+        context['partidos_historial'] = historial
+        context['tab_partidos_inicial'] = (
+            'por-scoutar'
+            if not upcoming and context['partidos_por_scoutar']
+            else 'proximos'
+        )
         return context
 
 

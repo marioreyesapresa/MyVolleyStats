@@ -1,0 +1,43 @@
+<div class="bg-card rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between hover:border-slate-600 transition-colors">
+    <div>
+        <div class="p-5 border-b border-slate-800 flex justify-between items-start">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="px-2 py-0.5 rounded-md bg-elevated text-accent text-xs font-bold">
+                        {% if partido.local %}Local{% else %}Visitante{% endif %}
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-elevated text-slate-300 text-xs font-semibold">
+                        {{ partido.get_modalidad_display }}
+                    </span>
+                </div>
+                <h4 class="font-bold text-white text-lg mt-2 truncate">vs {{ partido.rival }}</h4>
+                <p class="text-sm text-slate-400">{{ partido.equipo.nombre }}</p>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <a href="{% url 'stats_app:partido_editar' partido.id %}" class="p-1.5 bg-elevated text-slate-300 rounded-lg" title="Editar partido">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                </a>
+                <a href="{% url 'stats_app:partido_eliminar' partido.id %}" class="p-1.5 bg-rose-500/10 text-rose-400 rounded-lg" title="Eliminar partido">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+        </div>
+        <div class="p-5 space-y-2 text-base text-slate-300">
+            <div class="flex items-center gap-3">
+                <i data-lucide="calendar" class="w-4 h-4 text-accent"></i>
+                <span>{{ partido.fecha|date:"d M Y" }} · {{ partido.hora|time:"H:i" }} h</span>
+            </div>
+            <div class="flex items-center gap-3 min-w-0">
+                <i data-lucide="map-pin" class="w-4 h-4 text-accent"></i>
+                <span class="truncate">{{ partido.lugar }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="p-5 pt-0 mt-auto">
+        <a href="{% url 'stats_app:modo_partido' partido.id %}"
+           class="w-full py-2.5 bg-accent text-white font-semibold text-sm rounded-xl active:scale-95 transition-all text-center flex items-center justify-center gap-2">
+            <i data-lucide="zap" class="w-4 h-4"></i>
+            Scout en vivo
+        </a>
+    </div>
+</div>

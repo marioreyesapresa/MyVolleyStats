@@ -7,7 +7,7 @@ automáticamente (nunca tocan db.sqlite3). Ejecutar con:
 """
 import json
 import threading
-from datetime import date, time
+from datetime import date, time, timedelta
 from unittest.mock import patch
 
 from django.conf import settings
@@ -19,6 +19,7 @@ from django.test.utils import CaptureQueriesContext
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from .db_utils import reintentar_en_error_transitorio
 from .forms import RegistrarAccionForm, RegistrarCambioForm, EliminarAccionForm
@@ -39,6 +40,7 @@ from .services.reporting import (
     calc_racha,
     calc_racha_maxima,
     calc_set_score,
+    marcador_resumen,
     merito_y_error_rival,
     _candidata_cambio,
 )
@@ -1582,6 +1584,35 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(snap['puntos_rival'], 17)
         self.assertEqual(snap['sets_local'], 1)
 
+    def test_marcador_resumen_sin_scout_no_inventa_resultado(self):
+        resumen = marcador_resumen(self.partido)
+        self.assertFalse(resumen['tiene_scout'])
+        self.assertEqual(resumen['parciales'], [])
+        self.assertIsNone(resumen['victoria'])
+
+    def test_marcador_resumen_devuelve_sets_y_parciales(self):
+        for _ in range(25):
+            self._punto('ATAQUE', '++')
+        for _ in range(18):
+            self._punto('ATAQUE', '--')
+        RegistroEstadistica.objects.bulk_create([
+            RegistroEstadistica(
+                partido=self.partido, jugadora=self.jugadora, tipo_fase='K1',
+                accion='ATAQUE', calidad='++' if i < 22 else '--', set_numero=2,
+            )
+            for i in range(47)
+        ])
+        self.partido._reporting_rows_cache = None
+        self.partido._reporting_rows_by_set_cache = None
+
+        resumen = marcador_resumen(self.partido)
+        self.assertTrue(resumen['tiene_scout'])
+        self.assertEqual(resumen['sets_local'], 1)
+        self.assertEqual(resumen['sets_rival'], 1)
+        self.assertEqual(resumen['parciales'][0], {'set': 1, 'local': 25, 'rival': 18})
+        self.assertEqual(resumen['parciales'][1], {'set': 2, 'local': 22, 'rival': 25})
+        self.assertIsNone(resumen['victoria'])
+
     def test_build_full_report_no_hace_n_mas_1_queries(self):
         """Regresión de rendimiento: el informe completo generaba miles de
         queries (una por cada combinación set × jugadora × fundamento ×
@@ -1707,6 +1738,155 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(jug['fundamentos']['RECEPCION']['eq'], 1)
         self.assertIn('fundamentos_meta', reporte)
         self.assertEqual(len(reporte['fundamentos_meta']), 6)
+
+
+def _puntos_set(partido, jugadora, set_n, local, rival):
+    """Crea puntos de ataque ++ / -- para cerrar un parcial en tests."""
+    registros = [
+        RegistroEstadistica(
+            partido=partido, jugadora=jugadora, tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=set_n,
+        )
+        for _ in range(local)
+    ] + [
+        RegistroEstadistica(
+            partido=partido, jugadora=jugadora, tipo_fase='K1',
+            accion='ATAQUE', calidad='--', set_numero=set_n,
+        )
+        for _ in range(rival)
+    ]
+    RegistroEstadistica.objects.bulk_create(registros)
+
+
+class DashboardSprint1Tests(TestCase):
+    """Héroe del próximo cruce, pestañas y XSS en dashboard."""
+
+    def setUp(self):
+        cache.clear()
+        self.coach, self.equipo, self.jugadora, self.partido = _crear_entrenador_con_partido(
+            'coach_dash'
+        )
+        self.client.login(username='coach_dash', password='pass12345')
+        self.hoy = timezone.localdate()
+
+    def test_heroe_muestra_el_proximo_pendiente_y_no_lo_repite_en_la_lista(self):
+        self.partido.rival = 'CV Alcorcón'
+        self.partido.lugar = 'Pabellón Sur'
+        self.partido.fecha = self.hoy
+        self.partido.hora = time(10, 30)
+        self.partido.save()
+        mas_tarde = Partido.objects.create(
+            equipo=self.equipo, fecha=self.hoy + timedelta(days=7), hora=time(18, 0),
+            rival='Otro Rival', local=True, lugar='Pabellón Norte',
+        )
+
+        response = self.client.get(reverse('stats_app:dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['proximo_partido'].pk, self.partido.pk)
+        ids_lista = [p.pk for p in response.context['partidos_proximos']]
+        self.assertEqual(ids_lista, [mas_tarde.pk])
+        self.assertContains(response, 'Próximo cruce')
+        self.assertContains(response, 'CV Alcorcón')
+        self.assertContains(response, 'Scout en vivo')
+        self.assertContains(response, 'Configurar alineación')
+        self.assertContains(
+            response,
+            reverse('stats_app:modo_partido', args=[self.partido.pk]) + '?tab=rotacion',
+        )
+        self.assertContains(response, 'Pabellón Sur')
+        self.assertContains(response, reverse('stats_app:partido_editar', args=[self.partido.pk]))
+        self.assertContains(response, reverse('stats_app:partido_eliminar', args=[self.partido.pk]))
+        self.assertNotContains(response, 'Por scoutar')
+
+    def test_pasado_sin_finalizar_va_a_por_scoutar_no_al_heroe(self):
+        self.partido.rival = 'CV Alevín'
+        self.partido.fecha = self.hoy - timedelta(days=40)
+        self.partido.hora = time(11, 0)
+        self.partido.save()
+        futuro = Partido.objects.create(
+            equipo=self.equipo, fecha=self.hoy + timedelta(days=2), hora=time(12, 0),
+            rival='CV Alcorcón', local=True, lugar='Pabellón Sur',
+        )
+
+        response = self.client.get(reverse('stats_app:dashboard'))
+        self.assertEqual(response.context['proximo_partido'].pk, futuro.pk)
+        self.assertEqual(list(response.context['partidos_proximos']), [])
+        ids_pendientes = [p.pk for p in response.context['partidos_por_scoutar']]
+        self.assertEqual(ids_pendientes, [self.partido.pk])
+        self.assertContains(response, 'Por scoutar')
+        self.assertEqual(response.context['tab_partidos_inicial'], 'proximos')
+
+    def test_pestaña_por_scoutar_oculta_si_no_hay_atrasados(self):
+        self.partido.fecha = self.hoy
+        self.partido.save()
+
+        response = self.client.get(reverse('stats_app:dashboard'))
+        self.assertEqual(list(response.context['partidos_por_scoutar']), [])
+        self.assertNotContains(response, 'Por scoutar')
+        self.assertEqual(response.context['tab_partidos_inicial'], 'proximos')
+
+    def test_solo_atrasados_abre_por_scoutar_sin_heroe(self):
+        self.partido.fecha = self.hoy - timedelta(days=3)
+        self.partido.save()
+
+        response = self.client.get(reverse('stats_app:dashboard'))
+        self.assertIsNone(response.context['proximo_partido'])
+        self.assertEqual(list(response.context['partidos_proximos']), [])
+        self.assertEqual(
+            [p.pk for p in response.context['partidos_por_scoutar']],
+            [self.partido.pk],
+        )
+        self.assertEqual(response.context['tab_partidos_inicial'], 'por-scoutar')
+        self.assertNotContains(response, 'Próximo cruce')
+        self.assertContains(response, 'Por scoutar')
+
+    def test_heroe_ausente_si_solo_hay_historial(self):
+        self.partido.finalizado = True
+        self.partido.save()
+
+        response = self.client.get(reverse('stats_app:dashboard'))
+        self.assertIsNone(response.context['proximo_partido'])
+        self.assertEqual(list(response.context['partidos_proximos']), [])
+        self.assertEqual(list(response.context['partidos_por_scoutar']), [])
+        self.assertEqual(len(response.context['partidos_historial']), 1)
+        self.assertNotContains(response, 'Próximo cruce')
+        self.assertNotContains(response, 'Por scoutar')
+        self.assertContains(response, 'Sin scout registrado')
+
+    def test_historial_muestra_marcador_y_parciales(self):
+        self.partido.finalizado = True
+        self.partido.rival = 'CV Final'
+        self.partido.save()
+        _puntos_set(self.partido, self.jugadora, 1, 25, 18)
+        _puntos_set(self.partido, self.jugadora, 2, 22, 25)
+        _puntos_set(self.partido, self.jugadora, 3, 25, 19)
+        _puntos_set(self.partido, self.jugadora, 4, 25, 21)
+
+        response = self.client.get(reverse('stats_app:dashboard'))
+        historial = response.context['partidos_historial']
+        self.assertEqual(len(historial), 1)
+        marcador = historial[0].marcador
+        self.assertTrue(marcador['tiene_scout'])
+        self.assertEqual(marcador['sets_local'], 3)
+        self.assertEqual(marcador['sets_rival'], 1)
+        self.assertTrue(marcador['victoria'])
+        self.assertContains(response, '3 – 1')
+        self.assertContains(response, '25-18')
+        self.assertContains(response, '22-25')
+        self.assertContains(response, '25-19')
+        self.assertContains(response, '25-21')
+        self.assertContains(response, 'CV Final')
+
+    def test_rival_xss_en_heroe_se_escapa(self):
+        payload = "<img src=x onerror=alert(1)>"
+        self.partido.rival = payload
+        self.partido.fecha = self.hoy
+        self.partido.save()
+
+        response = self.client.get(reverse('stats_app:dashboard'))
+        self.assertNotContains(response, payload)
+        self.assertContains(response, '&lt;img src=x onerror=alert(1)&gt;')
+        self.assertEqual(response.context['proximo_partido'].pk, self.partido.pk)
 
 
 class CrudAdministracionTests(TestCase):

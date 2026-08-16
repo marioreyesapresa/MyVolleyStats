@@ -200,6 +200,41 @@ def build_partido_snapshot(partido):
     }
 
 
+def marcador_resumen(partido):
+    """Sets ganados y parciales para las tarjetas de historial del dashboard.
+
+    Una sola carga de filas por partido (caché de `_get_match_rows`). No inventa
+    un 0-0 si no hubo scout: `tiene_scout` queda a False.
+    """
+    sets_nums = get_sets_con_datos(partido)
+    if not sets_nums:
+        return {
+            'sets_local': 0,
+            'sets_rival': 0,
+            'parciales': [],
+            'tiene_scout': False,
+            'victoria': None,
+        }
+
+    parciales = []
+    for set_n in sets_nums:
+        p_local, p_rival = calc_set_score(partido, set_n)
+        parciales.append({'set': set_n, 'local': p_local, 'rival': p_rival})
+
+    sets_local, sets_rival = count_sets_won(partido)
+    victoria = None
+    if sets_local != sets_rival:
+        victoria = sets_local > sets_rival
+
+    return {
+        'sets_local': sets_local,
+        'sets_rival': sets_rival,
+        'parciales': parciales,
+        'tiene_scout': True,
+        'victoria': victoria,
+    }
+
+
 def merito_y_error_rival(partido, set_num):
     """(puntos de mérito propio en saque/ataque/bloqueo, errores forzados al rival)."""
     rows = _rows_for(partido, set_num)
