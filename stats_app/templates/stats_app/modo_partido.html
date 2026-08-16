@@ -432,6 +432,28 @@
             </div>
             
             <div class="pt-4 border-t border-slate-800 space-y-3">
+                <div class="space-y-2">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Plantillas del equipo</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="cargarPlantilla('TITULAR')" class="py-2.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-[10px] rounded-xl active:scale-95 transition-all uppercase tracking-wider">
+                            Titular
+                        </button>
+                        <button type="button" onclick="cargarPlantilla('ALINEACION_B')" class="py-2.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-[10px] rounded-xl active:scale-95 transition-all uppercase tracking-wider">
+                            Alineación B
+                        </button>
+                        <button type="button" onclick="cargarUltimoSet()" class="py-2.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-[10px] rounded-xl active:scale-95 transition-all uppercase tracking-wider">
+                            Último set
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="guardarPlantilla('TITULAR')" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-[10px] rounded-xl active:scale-95 transition-all uppercase tracking-wider">
+                            Guardar Titular
+                        </button>
+                        <button type="button" onclick="guardarPlantilla('ALINEACION_B')" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-[10px] rounded-xl active:scale-95 transition-all uppercase tracking-wider">
+                            Guardar B
+                        </button>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button onclick="guardarAlineacionLocal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-xs active:scale-95 transition-all uppercase tracking-widest shadow-lg flex items-center justify-center">
                         <i data-lucide="save" class="w-4 h-4 mr-2"></i> Guardar Alineación
@@ -3086,6 +3108,7 @@
                 tempLineup.libero2 = state.rotation.libero2 ? pid(state.rotation.libero2.id) : null;
             } else {
                 clearTempLineupStateOnly();
+                await maybeAutocargarUltimoSet();
             }
             
             drawCourtTempLineup();
@@ -3404,6 +3427,113 @@
 
     // aplicarRotacionesIniciales fue eliminada: el selector R1-R6 es solo
     // un indicador estadístico y NUNCA mueve jugadoras en la BD.
+
+    let plantillasCache = { presets: [], ultimo_set: null };
+    let autoLoadedLastSet = false;
+
+    function aplicarAlineacionJson(data) {
+        if (!data) return;
+        tempLineup.pos1 = data.pos1 ? pid(data.pos1.id) : null;
+        tempLineup.pos2 = data.pos2 ? pid(data.pos2.id) : null;
+        tempLineup.pos3 = data.pos3 ? pid(data.pos3.id) : null;
+        tempLineup.pos4 = data.pos4 ? pid(data.pos4.id) : null;
+        tempLineup.pos5 = data.pos5 ? pid(data.pos5.id) : null;
+        tempLineup.pos6 = data.pos6 ? pid(data.pos6.id) : null;
+        tempLineup.libero1 = data.libero1 ? pid(data.libero1.id) : null;
+        tempLineup.libero2 = data.libero2 ? pid(data.libero2.id) : null;
+        drawCourtTempLineup();
+        drawLiberoTempLineup();
+        drawBenchPlayers();
+    }
+
+    async function fetchPlantillas() {
+        try {
+            const r = await fetchConReintentos(`${API_PLANTILLAS_URL}?set=${state.set_numero}`);
+            if (r.ok) {
+                plantillasCache = await r.json();
+            }
+        } catch (e) {
+            console.error('No se pudieron cargar plantillas', e);
+        }
+    }
+
+    async function maybeAutocargarUltimoSet() {
+        if (autoLoadedLastSet || state.partido_finalizado) return;
+        await fetchPlantillas();
+        if (!plantillasCache.ultimo_set) return;
+        aplicarAlineacionJson(plantillasCache.ultimo_set);
+        autoLoadedLastSet = true;
+        const setN = plantillasCache.ultimo_set.set_numero;
+        const rival = plantillasCache.ultimo_set.rival || '';
+        showToast(`Cargado el 6 inicial del último set${rival ? ' vs ' + rival : ''} (set ${setN}). Revísalo y guarda.`);
+    }
+
+    async function cargarPlantilla(clave) {
+        await fetchPlantillas();
+        const preset = (plantillasCache.presets || []).find(p => p.clave === clave);
+        if (!preset) {
+            showToast(clave === 'TITULAR' ? '⚠️ Aún no hay Titular guardado' : '⚠️ Aún no hay Alineación B');
+            return;
+        }
+        aplicarAlineacionJson(preset);
+        showToast('Plantilla cargada. Pulsa Guardar alineación para usarla en este set.');
+    }
+
+    async function cargarUltimoSet() {
+        await fetchPlantillas();
+        if (!plantillasCache.ultimo_set) {
+            showToast('⚠️ No hay un set anterior de este equipo');
+            return;
+        }
+        aplicarAlineacionJson(plantillasCache.ultimo_set);
+        showToast('Cargado el 6 inicial del último set. Pulsa Guardar alineación para usarlo.');
+    }
+
+    function bodyAlineacionActual(clave) {
+        const body = {
+            pos1: tempLineup.pos1 || '',
+            pos2: tempLineup.pos2 || '',
+            pos3: tempLineup.pos3 || '',
+            pos4: tempLineup.pos4 || '',
+            pos5: tempLineup.pos5 || '',
+            pos6: tempLineup.pos6 || '',
+            libero1: tempLineup.libero1 || '',
+            libero2: tempLineup.libero2 || '',
+        };
+        if (clave) body.clave = clave;
+        return body;
+    }
+
+    function alineacionTempIncompleta() {
+        if (MODALIDAD.toUpperCase() === 'MINIVOLEY') {
+            return !tempLineup.pos1 || !tempLineup.pos2 || !tempLineup.pos3 || !tempLineup.pos4;
+        }
+        return !tempLineup.pos1 || !tempLineup.pos2 || !tempLineup.pos3 || !tempLineup.pos4 || !tempLineup.pos5 || !tempLineup.pos6;
+    }
+
+    async function guardarPlantilla(clave) {
+        if (alineacionTempIncompleta()) {
+            showToast(MODALIDAD.toUpperCase() === 'MINIVOLEY'
+                ? '⚠️ Asigna jugadoras a las 4 zonas antes de guardar la plantilla'
+                : '⚠️ Asigna jugadoras a las 6 zonas antes de guardar la plantilla');
+            return;
+        }
+        try {
+            const r = await fetchConReintentos(API_GUARDAR_PLANTILLA_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                body: JSON.stringify(bodyAlineacionActual(clave)),
+            });
+            if (r.ok) {
+                await fetchPlantillas();
+                showToast(clave === 'TITULAR' ? '✅ Titular guardado para el equipo' : '✅ Alineación B guardada');
+            } else {
+                showToast('❌ No se pudo guardar la plantilla');
+            }
+        } catch (e) {
+            showToast('❌ No se pudo guardar la plantilla');
+        }
+    }
 
     async function guardarAlineacionLocal() {
         const irAlScout = volverAlScoutTrasGuardar;
@@ -3787,6 +3917,8 @@
     const API_CONFIG_SET_URL = '{% url "stats_app:api_actualizar_config_set" partido.id %}';
     const API_CLIENT_ERROR_URL = '{% url "stats_app:api_client_error" %}';
     const API_GET_ROTACION_URL = '{% url "stats_app:api_get_rotacion" partido.id %}';
+    const API_PLANTILLAS_URL = '{% url "stats_app:api_plantillas_rotacion" partido.id %}';
+    const API_GUARDAR_PLANTILLA_URL = '{% url "stats_app:api_guardar_plantilla_rotacion" partido.id %}';
     const CSRF_TOKEN = '{{ csrf_token }}';
     let offlineFlushInProgress = false;
     let offlineFlushTimer = null;

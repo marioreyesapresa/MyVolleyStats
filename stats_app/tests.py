@@ -23,7 +23,7 @@ from django.utils import timezone
 
 from .db_utils import reintentar_en_error_transitorio
 from .forms import RegistrarAccionForm, RegistrarCambioForm, EliminarAccionForm
-from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet, NotaPartido
+from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet, NotaPartido, LineupPreset
 from .security import RateLimitMiddleware
 from .services.reporting import (
     build_full_report,
@@ -520,6 +520,19 @@ class IDORTests(TestCase):
             content_type='application/json',
         )
         self.assertEqual(response.status_code, 404)
+
+    def test_listar_plantillas_de_partido_ajeno_da_404(self):
+        response = self.client.get(reverse('stats_app:api_plantillas_rotacion', args=[self.partido_b.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_guardar_plantilla_de_partido_ajeno_da_404(self):
+        response = self.client.post(
+            reverse('stats_app:api_guardar_plantilla_rotacion', args=[self.partido_b.id]),
+            data=json.dumps({'clave': 'TITULAR', 'pos1': self.jugadora_b1.id}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(LineupPreset.objects.filter(equipo=self.equipo_b).exists())
 
     def test_actualizar_posicion_de_jugadora_ajena_da_404_y_no_la_modifica(self):
         response = self.client.post(
@@ -1319,6 +1332,143 @@ class FlujoCompletoPartidoTests(TestCase):
         pdf_response = self.client.get(reverse('stats_app:descargar_informe_completo', args=[self.partido.pk]))
         self.assertEqual(pdf_response.status_code, 200)
         self.assertEqual(pdf_response['Content-Type'], 'application/pdf')
+
+
+class LineupPresetTests(TestCase):
+    """Guardar/cargar Titular y B, último set del equipo, aislamiento."""
+
+    def setUp(self):
+        cache.clear()
+        self.coach, self.equipo, _, self.partido = _crear_entrenador_con_partido('coach_preset')
+        self.jugadoras = [
+            Jugadora.objects.create(
+                equipo=self.equipo, nombre=f'P{i}', apellidos='Test',
+                dorsal=i, posicion='CENTRAL',
+            )
+            for i in range(1, 8)
+        ]
+        self.client.login(username='coach_preset', password='pass12345')
+        self.payload_titular = {
+            'clave': 'TITULAR',
+            'pos1': self.jugadoras[0].id, 'pos2': self.jugadoras[1].id,
+            'pos3': self.jugadoras[2].id, 'pos4': self.jugadoras[3].id,
+            'pos5': self.jugadoras[4].id, 'pos6': self.jugadoras[5].id,
+            'libero1': self.jugadoras[6].id,
+        }
+
+    def test_guardar_titular_y_listar(self):
+        guardar = self.client.post(
+            reverse('stats_app:api_guardar_plantilla_rotacion', args=[self.partido.id]),
+            data=json.dumps(self.payload_titular),
+            content_type='application/json',
+        )
+        self.assertEqual(guardar.status_code, 200)
+        self.assertEqual(LineupPreset.objects.filter(equipo=self.equipo, clave='TITULAR').count(), 1)
+
+        listado = self.client.get(
+            reverse('stats_app:api_plantillas_rotacion', args=[self.partido.id]),
+            {'set': 1},
+        )
+        self.assertEqual(listado.status_code, 200)
+        data = listado.json()
+        self.assertEqual(len(data['presets']), 1)
+        self.assertEqual(data['presets'][0]['clave'], 'TITULAR')
+        self.assertEqual(data['presets'][0]['nombre'], 'Titular')
+        self.assertEqual(data['presets'][0]['pos1']['id'], self.jugadoras[0].id)
+        self.assertIsNone(data['ultimo_set'])
+
+    def test_guardar_titular_dos_veces_actualiza_sin_duplicar(self):
+        url = reverse('stats_app:api_guardar_plantilla_rotacion', args=[self.partido.id])
+        self.client.post(url, data=json.dumps(self.payload_titular), content_type='application/json')
+        segundo = dict(self.payload_titular)
+        segundo['pos1'] = self.jugadoras[5].id
+        response = self.client.post(url, data=json.dumps(segundo), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(LineupPreset.objects.filter(equipo=self.equipo).count(), 1)
+        preset = LineupPreset.objects.get(equipo=self.equipo, clave='TITULAR')
+        self.assertEqual(preset.pos1_id, self.jugadoras[5].id)
+
+    def test_ultimo_set_es_el_inicial_del_partido_anterior_del_equipo(self):
+        anterior = Partido.objects.create(
+            equipo=self.equipo, fecha=date(2026, 1, 20), hora=time(18, 0),
+            rival='CV Previo', local=True, lugar='Pabellón',
+        )
+        RotacionSet.objects.create(
+            partido=anterior, set_numero=1, es_inicial=True,
+            pos1=self.jugadoras[1], pos2=self.jugadoras[2], pos3=self.jugadoras[3],
+            pos4=self.jugadoras[4], pos5=self.jugadoras[5], pos6=self.jugadoras[0],
+        )
+        RotacionSet.objects.create(
+            partido=anterior, set_numero=3, es_inicial=True,
+            pos1=self.jugadoras[6], pos2=self.jugadoras[0], pos3=self.jugadoras[1],
+            pos4=self.jugadoras[2], pos5=self.jugadoras[3], pos6=self.jugadoras[4],
+        )
+        response = self.client.get(
+            reverse('stats_app:api_plantillas_rotacion', args=[self.partido.id]),
+            {'set': 1},
+        )
+        ultimo = response.json()['ultimo_set']
+        self.assertEqual(ultimo['partido_id'], anterior.pk)
+        self.assertEqual(ultimo['set_numero'], 3)
+        self.assertEqual(ultimo['rival'], 'CV Previo')
+        self.assertEqual(ultimo['pos1']['id'], self.jugadoras[6].id)
+
+    def test_set_dos_usa_el_inicial_del_set_uno_del_mismo_partido(self):
+        RotacionSet.objects.create(
+            partido=self.partido, set_numero=1, es_inicial=True,
+            pos1=self.jugadoras[0], pos2=self.jugadoras[1], pos3=self.jugadoras[2],
+            pos4=self.jugadoras[3], pos5=self.jugadoras[4], pos6=self.jugadoras[5],
+        )
+        response = self.client.get(
+            reverse('stats_app:api_plantillas_rotacion', args=[self.partido.id]),
+            {'set': 2},
+        )
+        ultimo = response.json()['ultimo_set']
+        self.assertEqual(ultimo['partido_id'], self.partido.pk)
+        self.assertEqual(ultimo['set_numero'], 1)
+        self.assertEqual(ultimo['pos1']['id'], self.jugadoras[0].id)
+
+    def test_plantilla_ajena_no_aparece_en_el_listado(self):
+        _, equipo_b, jugadora_b, _ = _crear_entrenador_con_partido('coach_preset_b')
+        LineupPreset.objects.create(
+            equipo=equipo_b, clave='TITULAR', nombre='Titular', orden=0,
+            pos1=jugadora_b,
+        )
+        response = self.client.get(reverse('stats_app:api_plantillas_rotacion', args=[self.partido.id]))
+        self.assertEqual(response.json()['presets'], [])
+
+    def test_ultimo_set_no_usa_partidos_de_otro_entrenador(self):
+        _, equipo_b, jugadora_b, partido_b = _crear_entrenador_con_partido('coach_preset_intruso')
+        partido_b.fecha = date(2026, 8, 1)
+        partido_b.save()
+        RotacionSet.objects.create(
+            partido=partido_b, set_numero=1, es_inicial=True, pos1=jugadora_b,
+        )
+        response = self.client.get(
+            reverse('stats_app:api_plantillas_rotacion', args=[self.partido.id]),
+            {'set': 1},
+        )
+        self.assertIsNone(response.json()['ultimo_set'])
+
+    def test_guardar_con_jugadora_de_otro_equipo_es_rechazado(self):
+        _, _, jugadora_ajena, _ = _crear_entrenador_con_partido('coach_preset_ajeno')
+        payload = dict(self.payload_titular)
+        payload['pos1'] = jugadora_ajena.id
+        response = self.client.post(
+            reverse('stats_app:api_guardar_plantilla_rotacion', args=[self.partido.id]),
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(LineupPreset.objects.filter(equipo=self.equipo).exists())
+
+    def test_guardar_plantilla_vacia_es_rechazado(self):
+        response = self.client.post(
+            reverse('stats_app:api_guardar_plantilla_rotacion', args=[self.partido.id]),
+            data=json.dumps({'clave': 'ALINEACION_B'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
 
 
 class ReportingHelpersTests(TestCase):

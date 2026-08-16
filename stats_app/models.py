@@ -189,6 +189,71 @@ class RotacionSet(models.Model):
         verbose_name_plural = "Rotaciones de Sets"
 
 
+class LineupPreset(models.Model):
+    """Alineación reutilizable por equipo (Titular / Alineación B)."""
+
+    class Clave(models.TextChoices):
+        TITULAR = 'TITULAR', 'Titular'
+        ALINEACION_B = 'ALINEACION_B', 'Alineación B'
+
+    ORDEN_POR_CLAVE = {
+        Clave.TITULAR: 0,
+        Clave.ALINEACION_B: 1,
+    }
+
+    equipo = models.ForeignKey(
+        Equipo, on_delete=models.CASCADE, related_name='lineup_presets',
+        verbose_name="Equipo",
+    )
+    clave = models.CharField(max_length=20, choices=Clave.choices, verbose_name="Clave")
+    nombre = models.CharField(max_length=80, verbose_name="Nombre")
+    orden = models.PositiveSmallIntegerField(default=0, verbose_name="Orden")
+    pos1 = models.ForeignKey(
+        Jugadora, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pos1_presets', verbose_name="Zona 1 (Saque)",
+    )
+    pos2 = models.ForeignKey(
+        Jugadora, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pos2_presets', verbose_name="Zona 2",
+    )
+    pos3 = models.ForeignKey(
+        Jugadora, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pos3_presets', verbose_name="Zona 3",
+    )
+    pos4 = models.ForeignKey(
+        Jugadora, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pos4_presets', verbose_name="Zona 4",
+    )
+    pos5 = models.ForeignKey(
+        Jugadora, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pos5_presets', verbose_name="Zona 5",
+    )
+    pos6 = models.ForeignKey(
+        Jugadora, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pos6_presets', verbose_name="Zona 6",
+    )
+    libero1 = models.ForeignKey(
+        Jugadora, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='libero1_presets', verbose_name="Líbero 1",
+    )
+    libero2 = models.ForeignKey(
+        Jugadora, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='libero2_presets', verbose_name="Líbero 2",
+    )
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.equipo.nombre} — {self.nombre}"
+
+    class Meta:
+        verbose_name = "Plantilla de alineación"
+        verbose_name_plural = "Plantillas de alineación"
+        constraints = [
+            models.UniqueConstraint(fields=['equipo', 'clave'], name='uniq_lineup_preset_equipo_clave'),
+        ]
+        ordering = ['orden', 'id']
+
+
 class NotaPartido(models.Model):
     """Observación libre del entrenador durante o tras un partido."""
 

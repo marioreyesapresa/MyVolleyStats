@@ -5,7 +5,8 @@ from .notas import (
     ListNotasPartidoAPI, CrearNotaPartidoAPI, ActualizarNotaPartidoAPI, EliminarNotaPartidoAPI,
 )
 from .rotaciones import (
-    GetRotacionActualAPI, GuardarAlineacionInicialAPI, RotarManualAPI, ActualizarPosicionJugadoraAPI
+    GetRotacionActualAPI, GuardarAlineacionInicialAPI, RotarManualAPI, ActualizarPosicionJugadoraAPI,
+    ListPlantillasRotacionAPI, GuardarPlantillaRotacionAPI,
 )
 from .informes import (
     DescargarResumenPDF, DescargarInformeCompletoPDF, DescargarInformeAvanzadoPDF,

@@ -3,7 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
 
-from .models import Equipo, Jugadora, RegistroEstadistica
+from .models import Equipo, Jugadora, LineupPreset, RegistroEstadistica
 
 User = get_user_model()
 
@@ -253,6 +253,20 @@ class AlineacionInicialForm(forms.Form):
 
     set_numero = IdField(required=False, max_value=MAX_SET_NUMERO, initial=1)
     solo_actual = forms.BooleanField(required=False)
+    pos1 = IdField(required=False)
+    pos2 = IdField(required=False)
+    pos3 = IdField(required=False)
+    pos4 = IdField(required=False)
+    pos5 = IdField(required=False)
+    pos6 = IdField(required=False)
+    libero1 = IdField(required=False)
+    libero2 = IdField(required=False)
+
+
+class GuardarPlantillaForm(forms.Form):
+    """Payload de POST /api/rotacion/plantillas/<partido_id>/guardar/."""
+
+    clave = forms.ChoiceField(choices=LineupPreset.Clave.choices)
     pos1 = IdField(required=False)
     pos2 = IdField(required=False)
     pos3 = IdField(required=False)

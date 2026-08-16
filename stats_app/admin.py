@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet, NotaPartido
+from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet, NotaPartido, LineupPreset
 
 @admin.register(Equipo)
 class EquipoAdmin(admin.ModelAdmin):
@@ -29,6 +29,12 @@ class RegistroEstadisticaAdmin(admin.ModelAdmin):
 class RotacionSetAdmin(admin.ModelAdmin):
     list_display = ('partido', 'set_numero', 'es_inicial')
     list_filter = ('partido', 'set_numero')
+
+@admin.register(LineupPreset)
+class LineupPresetAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'clave', 'equipo', 'orden')
+    list_filter = ('clave', 'equipo')
+
 
 @admin.register(NotaPartido)
 class NotaPartidoAdmin(admin.ModelAdmin):

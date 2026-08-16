@@ -5,8 +5,8 @@ from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, Http404
 from django.db import OperationalError, InterfaceError
-from ..models import RotacionSet, Jugadora, Partido
-from ..forms import AlineacionInicialForm, RotarManualForm, ActualizarPosicionForm
+from ..models import RotacionSet, Jugadora, Partido, LineupPreset
+from ..forms import AlineacionInicialForm, RotarManualForm, ActualizarPosicionForm, GuardarPlantillaForm
 from ..db_utils import reintentar_en_error_transitorio
 from ..security import log_intento_acceso_no_autorizado, ocultar_detalle_interno
 
@@ -245,3 +245,144 @@ class ActualizarPosicionJugadoraAPI(LoginRequiredMixin, View):
         except Jugadora.DoesNotExist:
             log_intento_acceso_no_autorizado(request, 'Jugadora', cd['jugadora_id'])
             return JsonResponse({'status': 'error', 'mensaje': 'Jugadora no encontrada'}, status=404)
+
+
+CAMPOS_ALINEACION = ('pos1', 'pos2', 'pos3', 'pos4', 'pos5', 'pos6', 'libero1', 'libero2')
+
+
+def _serialize_alineacion(obj):
+    data = {}
+    for campo in CAMPOS_ALINEACION:
+        jugadora = getattr(obj, campo)
+        data[campo] = (
+            {'id': jugadora.id, 'dorsal': jugadora.dorsal} if jugadora else None
+        )
+    return data
+
+
+def _ids_alineacion(cleaned):
+    return {cleaned.get(campo) for campo in CAMPOS_ALINEACION if cleaned.get(campo)}
+
+
+def _validar_jugadoras_del_equipo(request, equipo, ids):
+    if not ids:
+        return None
+    encontradas = set(
+        Jugadora.objects.filter(id__in=ids, equipo=equipo).values_list('id', flat=True)
+    )
+    if encontradas != ids:
+        for jugadora_id in ids - encontradas:
+            log_intento_acceso_no_autorizado(request, 'Jugadora', jugadora_id)
+        return JsonResponse({'error': 'Jugadora no válida para este equipo'}, status=400)
+    return None
+
+
+def _aplicar_alineacion(obj, cleaned):
+    for campo in CAMPOS_ALINEACION:
+        setattr(obj, f'{campo}_id', cleaned.get(campo))
+
+
+def _rotacion_tiene_jugadoras(rotacion):
+    return any(getattr(rotacion, f'{campo}_id') for campo in CAMPOS_ALINEACION)
+
+
+def _ultimo_set_inicial(equipo, partido, set_n):
+    """6 inicial del set anterior: primero sets previos de este partido, luego otros."""
+    if set_n and set_n > 1:
+        previa = (
+            RotacionSet.objects.filter(
+                partido=partido, es_inicial=True, set_numero__lt=set_n,
+            )
+            .select_related('partido', *CAMPOS_ALINEACION)
+            .order_by('-set_numero')
+            .first()
+        )
+        if previa and _rotacion_tiene_jugadoras(previa):
+            return previa
+
+    otros = (
+        Partido.objects.filter(equipo=equipo)
+        .exclude(pk=partido.pk)
+        .order_by('-fecha', '-hora', '-id')
+    )
+    for anterior in otros:
+        rotacion = (
+            RotacionSet.objects.filter(partido=anterior, es_inicial=True)
+            .select_related('partido', *CAMPOS_ALINEACION)
+            .order_by('-set_numero')
+            .first()
+        )
+        if rotacion and _rotacion_tiene_jugadoras(rotacion):
+            return rotacion
+    return None
+
+
+class ListPlantillasRotacionAPI(LoginRequiredMixin, View):
+    @reintentar_en_error_transitorio()
+    def get(self, request, partido_id):
+        partido = _partido_del_entrenador(request, partido_id)
+        try:
+            set_n = int(request.GET.get('set', 1))
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'Parámetro "set" inválido'}, status=400)
+
+        qs_presets = (
+            LineupPreset.objects.filter(equipo=partido.equipo)
+            .select_related(*CAMPOS_ALINEACION)
+            .order_by('orden', 'id')
+        )
+        presets = []
+        for preset in qs_presets:
+            fila = _serialize_alineacion(preset)
+            fila['clave'] = preset.clave
+            fila['nombre'] = preset.nombre
+            fila['orden'] = preset.orden
+            presets.append(fila)
+
+        ultimo = _ultimo_set_inicial(partido.equipo, partido, set_n)
+        ultimo_payload = None
+        if ultimo:
+            ultimo_payload = _serialize_alineacion(ultimo)
+            ultimo_payload['partido_id'] = ultimo.partido_id
+            ultimo_payload['set_numero'] = ultimo.set_numero
+            ultimo_payload['rival'] = ultimo.partido.rival
+
+        return JsonResponse({'presets': presets, 'ultimo_set': ultimo_payload})
+
+
+class GuardarPlantillaRotacionAPI(LoginRequiredMixin, View):
+    @reintentar_en_error_transitorio()
+    def post(self, request, partido_id):
+        partido = _partido_del_entrenador(request, partido_id)
+        data, error = _parsear_json(request)
+        if error:
+            return error
+        data = {k: (None if v == '' else v) for k, v in data.items()}
+        form = GuardarPlantillaForm(data)
+        if not form.is_valid():
+            return _form_invalido(form)
+        cd = form.cleaned_data
+        ids = _ids_alineacion(cd)
+        if not ids:
+            return JsonResponse({'error': 'La plantilla no puede estar vacía'}, status=400)
+        rechazo = _validar_jugadoras_del_equipo(request, partido.equipo, ids)
+        if rechazo:
+            return rechazo
+
+        clave = cd['clave']
+        preset, _creado = LineupPreset.objects.get_or_create(
+            equipo=partido.equipo,
+            clave=clave,
+            defaults={
+                'nombre': dict(LineupPreset.Clave.choices)[clave],
+                'orden': LineupPreset.ORDEN_POR_CLAVE.get(clave, 0),
+            },
+        )
+        _aplicar_alineacion(preset, cd)
+        preset.nombre = dict(LineupPreset.Clave.choices)[clave]
+        preset.orden = LineupPreset.ORDEN_POR_CLAVE.get(clave, preset.orden)
+        preset.save()
+        payload = _serialize_alineacion(preset)
+        payload['clave'] = preset.clave
+        payload['nombre'] = preset.nombre
+        return JsonResponse({'status': 'ok', 'preset': payload})
