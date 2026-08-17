@@ -89,9 +89,14 @@
                                                 <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-black text-xs">
                                                     #{{ jugadora.dorsal|default:"--" }}
                                                 </div>
-                                                <div>
-                                                    <p class="text-sm font-semibold text-white">{{ jugadora.nombre }} {{ jugadora.apellidos }}</p>
-                                                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-wider">{{ jugadora.get_posicion_display }}</p>
+                                                <div class="min-w-0">
+                                                    <a href="{% url 'stats_app:jugadora_ficha' jugadora.id %}"
+                                                       class="text-sm font-semibold text-white hover:text-accent">
+                                                        {{ jugadora.nombre }} {{ jugadora.apellidos }}
+                                                    </a>
+                                                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-wider">
+                                                        {% if jugadora.posicion %}{{ jugadora.get_posicion_display }}{% else %}Sin posición{% endif %}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div class="flex items-center space-x-1">

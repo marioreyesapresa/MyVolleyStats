@@ -20,6 +20,7 @@ from ..forms import (
 )
 from ..db_utils import reintentar_en_error_transitorio
 from ..security import log_intento_acceso_no_autorizado, ocultar_detalle_interno
+from ..services.temporada import stats_temporada_equipo
 from ..services.reporting import (
     build_quick_set_report,
     build_full_report,
@@ -199,7 +200,8 @@ class ModoPartidoView(LoginRequiredMixin, View):
             'marcador_inicial': marcador_inicial,
             'marcador_inicial_json': json.dumps(marcador_inicial),
             'permite_libero': permite_libero,
-            'partidos_guardados': partidos_guardados
+            'partidos_guardados': partidos_guardados,
+            'kpis_temporada': stats_temporada_equipo(partido.equipo),
         })
 
 

@@ -17,6 +17,6 @@ from .administracion import (
     ConfiguracionView, DashboardView,
     EquipoCreateView, EquipoUpdateView, EquipoDeleteView, EquipoListView,
     ExportarPlantillaCSVView, ImportarPlantillaCSVView,
-    JugadoraCreateView, JugadoraUpdateView, JugadoraDeleteView,
+    JugadoraDetailView, JugadoraCreateView, JugadoraUpdateView, JugadoraDeleteView,
     PartidoCreateView, PartidoUpdateView, PartidoDeleteView
 )

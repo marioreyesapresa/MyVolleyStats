@@ -10,8 +10,8 @@
                         {{ partido.get_modalidad_display }}
                     </span>
                 </div>
-                <h4 class="font-bold text-white text-lg mt-2 truncate">vs {{ partido.rival }}</h4>
-                <p class="text-sm text-slate-400">{{ partido.equipo.nombre }}</p>
+                <h4 class="font-bold text-white text-lg mt-2">{{ partido.equipo.nombre }} vs {{ partido.rival }}</h4>
+                <p class="text-sm text-slate-400">{{ partido.equipo.get_categoria_display }}</p>
             </div>
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 <a href="{% url 'stats_app:partido_editar' partido.id %}" class="p-1.5 bg-elevated text-slate-300 rounded-lg" title="Editar partido">

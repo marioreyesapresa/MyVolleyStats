@@ -45,6 +45,7 @@ from .services.reporting import (
     merito_y_error_rival,
     _candidata_cambio,
 )
+from .services.temporada import stats_jugadora_temporada, stats_temporada_equipo
 from .services.plantilla_csv import (
     normalizar_posicion,
     parsear_plantilla_csv,
@@ -110,6 +111,11 @@ class AislamientoEntrenadorTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
         self.assertFalse(Jugadora.objects.filter(equipo=self.equipo_b, dorsal=9).exists())
+
+    def test_ficha_jugadora_ajena_da_404(self):
+        self.login_a()
+        response = self.client.get(reverse('stats_app:jugadora_ficha', args=[self.jugadora_b.pk]))
+        self.assertEqual(response.status_code, 404)
 
     def test_eliminar_partido_ajeno_da_404(self):
         self.login_a()
@@ -1958,7 +1964,7 @@ class DashboardSprint1Tests(TestCase):
         self.assertContains(response, 'Próximo cruce')
         self.assertContains(response, 'CV Alcorcón')
         self.assertContains(response, 'Scout en vivo')
-        self.assertContains(response, 'Configurar alineación')
+        self.assertContains(response, 'Preparar partido')
         self.assertContains(
             response,
             reverse('stats_app:modo_partido', args=[self.partido.pk]) + '?tab=rotacion',
@@ -2045,6 +2051,7 @@ class DashboardSprint1Tests(TestCase):
         self.assertContains(response, '22-25')
         self.assertContains(response, '25-19')
         self.assertContains(response, '25-21')
+        self.assertContains(response, f'{self.equipo.nombre} vs CV Final')
         self.assertContains(response, 'CV Final')
 
     def test_rival_xss_en_heroe_se_escapa(self):
@@ -2744,4 +2751,123 @@ class PlantillaCSVViewsTests(TestCase):
             Jugadora.objects.filter(equipo=self.equipo, nombre='María', apellidos='Callesi Flor').count(),
             1,
         )
+
+
+def _accion_scout(partido, jugadora, accion, calidad, fase='K1', set_numero=1):
+    return RegistroEstadistica.objects.create(
+        partido=partido, jugadora=jugadora, tipo_fase=fase,
+        accion=accion, calidad=calidad, set_numero=set_numero,
+    )
+
+
+class FichaTemporadaTests(TestCase):
+    """Sprint C: ficha de jugadora, agregación y KPIs de Inicio."""
+
+    def setUp(self):
+        cache.clear()
+        self.coach, self.equipo, self.jugadora, self.partido = _crear_entrenador_con_partido(
+            'coach_ficha'
+        )
+        self.client.login(username='coach_ficha', password='pass12345')
+        self.sin_scout = Jugadora.objects.create(
+            equipo=self.equipo, nombre='Laura', apellidos='SinDatos',
+        )
+
+    def test_ficha_vacia_sin_scout_y_sin_dorsal(self):
+        response = self.client.get(reverse('stats_app:jugadora_ficha', args=[self.sin_scout.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['temporada'].totales)
+        self.assertContains(response, 'Sin scout en esta temporada')
+        self.assertContains(response, 'Sin posición')
+        self.assertContains(response, 'Falta el dorsal y la posición')
+        self.assertNotContains(response, 'Recepción +')
+
+    def test_agrega_varios_partidos_finalizados_y_ignora_el_abierto(self):
+        self.partido.finalizado = True
+        self.partido.rival = 'Rival Uno'
+        self.partido.fecha = date(2026, 1, 10)
+        self.partido.save()
+        _accion_scout(self.partido, self.jugadora, 'ATAQUE', '++')
+        _accion_scout(self.partido, self.jugadora, 'ATAQUE', '++')
+        _accion_scout(self.partido, self.jugadora, 'RECEPCION', '+')
+        _accion_scout(self.partido, self.jugadora, 'SAQUE', '++')
+
+        segundo = Partido.objects.create(
+            equipo=self.equipo, fecha=date(2026, 1, 17), hora=time(18, 0),
+            rival='Rival Dos', local=True, lugar='Pabellón', finalizado=True,
+        )
+        _accion_scout(segundo, self.jugadora, 'ATAQUE', '++')
+        _accion_scout(segundo, self.jugadora, 'BLOQUEO', '++')
+        _accion_scout(segundo, self.jugadora, 'RECEPCION', '--')
+
+        abierto = Partido.objects.create(
+            equipo=self.equipo, fecha=date(2026, 2, 1), hora=time(18, 0),
+            rival='No cuenta', local=True, lugar='Pabellón',
+        )
+        _accion_scout(abierto, self.jugadora, 'ATAQUE', '++')
+
+        stats = stats_jugadora_temporada(self.jugadora)
+        self.assertEqual(stats.partidos_count, 2)
+        self.assertEqual(stats.totales['partidos'], 2)
+        self.assertEqual(stats.totales['ataque'], 3)
+        self.assertEqual(stats.totales['bloqueo'], 1)
+        self.assertEqual(stats.totales['saque'], 1)
+        self.assertEqual(stats.totales['recepcion_pct'], 50.0)
+        self.assertEqual(stats.totales['balance'], 4)
+        self.assertEqual([f.partido.rival for f in stats.partidos], ['Rival Uno', 'Rival Dos'])
+
+        response = self.client.get(reverse('stats_app:jugadora_ficha', args=[self.jugadora.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Rival Uno')
+        self.assertContains(response, 'Rival Dos')
+        self.assertNotContains(response, 'No cuenta')
+        self.assertContains(response, 'Opuesta')
+
+        listado = self.client.get(reverse('stats_app:equipos_list'))
+        self.assertContains(listado, reverse('stats_app:jugadora_ficha', args=[self.jugadora.pk]))
+        self.assertContains(listado, reverse('stats_app:jugadora_editar', args=[self.jugadora.pk]))
+
+    def test_kpis_en_pizarra_no_en_inicio(self):
+        hoy = timezone.localdate()
+        self.partido.fecha = hoy
+        self.partido.save()
+
+        sin_historial = self.client.get(reverse('stats_app:dashboard'))
+        self.assertNotIn('kpis_temporada', sin_historial.context)
+        self.assertNotContains(sin_historial, 'Puntos al recibir')
+
+        cerrado = Partido.objects.create(
+            equipo=self.equipo, fecha=hoy - timedelta(days=7), hora=time(18, 0),
+            rival='Ya jugado', local=True, lugar='Pabellón', finalizado=True,
+        )
+        _puntos_set(cerrado, self.jugadora, 1, 25, 18)
+        _accion_scout(cerrado, self.jugadora, 'SAQUE', '++', fase='K0')
+        _accion_scout(cerrado, self.jugadora, 'SAQUE', '--', fase='K0')
+
+        inicio = self.client.get(reverse('stats_app:dashboard'))
+        self.assertNotContains(inicio, 'Puntos al recibir')
+        self.assertContains(inicio, 'Preparar partido')
+
+        pizarra = self.client.get(
+            reverse('stats_app:modo_partido', args=[self.partido.pk]),
+            {'tab': 'rotacion'},
+        )
+        kpis = pizarra.context['kpis_temporada']
+        self.assertIsNotNone(kpis)
+        self.assertEqual(kpis.partidos, 1)
+        self.assertEqual(kpis.victorias, 1)
+        self.assertEqual(kpis.derrotas, 0)
+        self.assertEqual(kpis.sets_local, 1)
+        self.assertEqual(kpis.sets_rival, 0)
+        self.assertIsNotNone(kpis.sideout_pct)
+        self.assertIsNotNone(kpis.breakpoint_pct)
+        self.assertIsNotNone(kpis.ataque_pct)
+        self.assertContains(pizarra, 'Puntos al recibir')
+        self.assertContains(pizarra, 'Puntos al defender')
+        self.assertContains(pizarra, '1V – 0D')
+
+        equipo_kpis = stats_temporada_equipo(self.equipo)
+        self.assertEqual(equipo_kpis.partidos, 1)
+        self.assertEqual(equipo_kpis.victorias, 1)
+        self.assertEqual(equipo_kpis.breakpoint_pct, 50.0)
 

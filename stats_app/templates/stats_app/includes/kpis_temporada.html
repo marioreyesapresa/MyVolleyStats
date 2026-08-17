@@ -1,0 +1,27 @@
+{% if kpis_temporada %}
+<div class="bg-card border border-slate-800 rounded-2xl px-4 py-3">
+    <p class="text-xs font-semibold text-slate-400 mb-3">Temporada de {{ partido.equipo.nombre }}</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div>
+            <p class="text-[11px] font-semibold text-slate-500">Resultado</p>
+            <p class="text-lg font-bold text-white tabular-nums">{{ kpis_temporada.victorias }}V – {{ kpis_temporada.derrotas }}D</p>
+            <p class="text-[11px] text-slate-500">{{ kpis_temporada.partidos }} partido{{ kpis_temporada.partidos|pluralize }} · sets {{ kpis_temporada.sets_local }}–{{ kpis_temporada.sets_rival }}</p>
+        </div>
+        <div>
+            <p class="text-[11px] font-semibold text-slate-500">Puntos al recibir</p>
+            <p class="text-lg font-bold text-white tabular-nums">{% if kpis_temporada.sideout_pct is not None %}{{ kpis_temporada.sideout_pct }}%{% else %}—{% endif %}</p>
+            <p class="text-[11px] text-slate-500">Cuando saca el rival</p>
+        </div>
+        <div>
+            <p class="text-[11px] font-semibold text-slate-500">Puntos al defender</p>
+            <p class="text-lg font-bold text-white tabular-nums">{% if kpis_temporada.breakpoint_pct is not None %}{{ kpis_temporada.breakpoint_pct }}%{% else %}—{% endif %}</p>
+            <p class="text-[11px] text-slate-500">Cuando sacáis vosotros</p>
+        </div>
+        <div>
+            <p class="text-[11px] font-semibold text-slate-500">Ataque</p>
+            <p class="text-lg font-bold text-white tabular-nums">{% if kpis_temporada.ataque_pct is not None %}{{ kpis_temporada.ataque_pct }}%{% else %}—{% endif %}</p>
+            <p class="text-[11px] text-slate-500">Puntos menos errores</p>
+        </div>
+    </div>
+</div>
+{% endif %}

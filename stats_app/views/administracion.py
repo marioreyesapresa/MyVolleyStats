@@ -3,12 +3,13 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views.generic import View, CreateView, UpdateView, DeleteView, ListView
+from django.views.generic import View, CreateView, UpdateView, DeleteView, ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from ..models import Equipo, Jugadora, Partido
 from ..forms import JugadoraForm
 from ..security import AuditoriaAccesoMixin, log_intento_acceso_no_autorizado
 from ..services.reporting import marcador_resumen
+from ..services.temporada import stats_jugadora_temporada
 from ..services.plantilla_csv import (
     MAX_BYTES,
     aplicar_plantilla,
@@ -177,6 +178,24 @@ class ImportarPlantillaCSVView(LoginRequiredMixin, View):
 # CRUD JUGADORA — el desplegable de equipo y las consultas se restringen
 # siempre a equipos propiedad del usuario autenticado
 # ─────────────────────────────────────────────────────────────────────────────
+class JugadoraDetailView(LoginRequiredMixin, AuditoriaAccesoMixin, DetailView):
+    model = Jugadora
+    template_name = 'stats_app/jugadora_ficha.html'
+    context_object_name = 'jugadora'
+
+    def get_queryset(self):
+        return (
+            Jugadora.objects
+            .filter(equipo__entrenador=self.request.user)
+            .select_related('equipo')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['temporada'] = stats_jugadora_temporada(self.object)
+        return context
+
+
 class JugadoraCreateView(LoginRequiredMixin, CreateView):
     model = Jugadora
     form_class = JugadoraForm
