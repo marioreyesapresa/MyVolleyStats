@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.http import Http404, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -6,8 +7,15 @@ from django.views.generic import View, CreateView, UpdateView, DeleteView, ListV
 from django.contrib.auth.mixins import LoginRequiredMixin
 from ..models import Equipo, Jugadora, Partido
 from ..forms import JugadoraForm
-from ..security import AuditoriaAccesoMixin
+from ..security import AuditoriaAccesoMixin, log_intento_acceso_no_autorizado
 from ..services.reporting import marcador_resumen
+from ..services.plantilla_csv import (
+    MAX_BYTES,
+    aplicar_plantilla,
+    exportar_plantilla_csv,
+    nombre_archivo_csv,
+    parsear_plantilla_csv,
+)
 
 
 class ConfiguracionView(LoginRequiredMixin, View):
@@ -104,6 +112,65 @@ class EquipoListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Equipo.objects.filter(entrenador=self.request.user).order_by('nombre')
+
+
+def _equipo_del_entrenador(request, pk):
+    try:
+        return Equipo.objects.get(pk=pk, entrenador=request.user)
+    except Equipo.DoesNotExist:
+        log_intento_acceso_no_autorizado(request, 'Equipo', pk)
+        raise Http404
+
+
+class ExportarPlantillaCSVView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        equipo = _equipo_del_entrenador(request, pk)
+        contenido = exportar_plantilla_csv(equipo)
+        response = HttpResponse(contenido, content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="{nombre_archivo_csv(equipo)}"'
+        return response
+
+
+class ImportarPlantillaCSVView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        equipo = _equipo_del_entrenador(request, pk)
+        archivo = request.FILES.get('archivo')
+        if not archivo:
+            messages.error(request, 'Selecciona un archivo CSV.')
+            return redirect('stats_app:equipos_list')
+        if archivo.size and archivo.size > MAX_BYTES:
+            messages.error(request, 'El archivo es demasiado grande (máx. 64 KB).')
+            return redirect('stats_app:equipos_list')
+
+        parseo = parsear_plantilla_csv(archivo.read())
+        resultado = aplicar_plantilla(equipo, parseo.filas)
+        partes = []
+        if resultado.creadas or resultado.actualizadas:
+            partes.append(
+                f'Plantilla importada: {resultado.creadas} creadas, '
+                f'{resultado.actualizadas} actualizadas.'
+            )
+            if parseo.sin_dorsal:
+                partes.append(
+                    f'{parseo.sin_dorsal} sin dorsal: así no se ven bien en la pizarra; '
+                    'puedes editarlo luego en la ficha.'
+                )
+        errores = parseo.errores
+        if errores:
+            muestra = '; '.join(errores[:5])
+            extra = f' (+{len(errores) - 5} más)' if len(errores) > 5 else ''
+            partes.append(f'{len(errores)} filas con error: {muestra}{extra}')
+        if not partes:
+            messages.error(request, 'No hay filas válidas para importar.')
+        elif resultado.creadas or resultado.actualizadas:
+            texto = ' '.join(partes)
+            if errores or parseo.sin_dorsal:
+                messages.warning(request, texto)
+            else:
+                messages.success(request, texto)
+        else:
+            messages.error(request, partes[0] if partes else 'No hay filas válidas para importar.')
+        return redirect('stats_app:equipos_list')
 
 
 # ─────────────────────────────────────────────────────────────────────────────

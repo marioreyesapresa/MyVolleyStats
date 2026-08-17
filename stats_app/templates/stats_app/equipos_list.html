@@ -59,12 +59,27 @@
 
                             <!-- Card Body: Roster -->
                             <div class="p-5">
-                                <div class="flex justify-between items-center mb-4">
+                                <div class="flex justify-between items-center mb-4 gap-2">
                                     <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Plantilla ({{ equipo.jugadoras.count }})</span>
-                                    <a href="{% url 'stats_app:jugadora_nueva' %}?equipo_id={{ equipo.id }}" class="flex items-center space-x-1 text-xs text-emerald-400 hover:text-emerald-300 font-bold">
-                                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                                        <span>Añadir</span>
-                                    </a>
+                                    <div class="flex items-center gap-2 flex-wrap justify-end">
+                                        <a href="{% url 'stats_app:equipo_exportar_csv' equipo.id %}"
+                                           class="flex items-center space-x-1 text-xs text-slate-300 hover:text-white font-semibold">
+                                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                            <span>Exportar CSV</span>
+                                        </a>
+                                        <form method="post" action="{% url 'stats_app:equipo_importar_csv' equipo.id %}" enctype="multipart/form-data" class="inline">
+                                            {% csrf_token %}
+                                            <label class="flex items-center space-x-1 text-xs text-slate-300 hover:text-white font-semibold cursor-pointer">
+                                                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                                                <span>Importar CSV</span>
+                                                <input type="file" name="archivo" accept=".csv,text/csv" class="hidden" onchange="this.form.submit()">
+                                            </label>
+                                        </form>
+                                        <a href="{% url 'stats_app:jugadora_nueva' %}?equipo_id={{ equipo.id }}" class="flex items-center space-x-1 text-xs text-emerald-400 hover:text-emerald-300 font-bold">
+                                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                            <span>Añadir</span>
+                                        </a>
+                                    </div>
                                 </div>
                                 
                                 <div class="space-y-2 max-h-[350px] overflow-y-auto pr-1">

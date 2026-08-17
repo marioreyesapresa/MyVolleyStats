@@ -12,6 +12,8 @@ urlpatterns = [
     path('equipo/<int:pk>/editar/', views.EquipoUpdateView.as_view(), name='equipo_editar'),
     path('equipo/<int:pk>/eliminar/', views.EquipoDeleteView.as_view(), name='equipo_eliminar'),
     path('equipos/', views.EquipoListView.as_view(), name='equipos_list'),
+    path('equipo/<int:pk>/plantilla.csv', views.ExportarPlantillaCSVView.as_view(), name='equipo_exportar_csv'),
+    path('equipo/<int:pk>/plantilla/importar/', views.ImportarPlantillaCSVView.as_view(), name='equipo_importar_csv'),
     
     path('jugadora/nueva/', views.JugadoraCreateView.as_view(), name='jugadora_nueva'),
     path('jugadora/<int:pk>/editar/', views.JugadoraUpdateView.as_view(), name='jugadora_editar'),

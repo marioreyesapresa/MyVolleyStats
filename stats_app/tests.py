@@ -15,6 +15,7 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
 from django.db import OperationalError, connection
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import CaptureQueriesContext
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, TestCase, TransactionTestCase, override_settings
@@ -43,6 +44,10 @@ from .services.reporting import (
     marcador_resumen,
     merito_y_error_rival,
     _candidata_cambio,
+)
+from .services.plantilla_csv import (
+    normalizar_posicion,
+    parsear_plantilla_csv,
 )
 
 User = get_user_model()
@@ -90,6 +95,21 @@ class AislamientoEntrenadorTests(TestCase):
         self.login_a()
         response = self.client.get(reverse('stats_app:equipo_editar', args=[self.equipo_b.pk]))
         self.assertEqual(response.status_code, 404)
+
+    def test_exportar_csv_de_equipo_ajeno_da_404(self):
+        self.login_a()
+        response = self.client.get(reverse('stats_app:equipo_exportar_csv', args=[self.equipo_b.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_importar_csv_en_equipo_ajeno_da_404_y_no_crea_jugadoras(self):
+        self.login_a()
+        csv_bytes = b'dorsal,nombre,apellidos,posicion\n9,Hacker,IDOR,C\n'
+        response = self.client.post(
+            reverse('stats_app:equipo_importar_csv', args=[self.equipo_b.pk]),
+            data={'archivo': SimpleUploadedFile('plantilla.csv', csv_bytes, content_type='text/csv')},
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(Jugadora.objects.filter(equipo=self.equipo_b, dorsal=9).exists())
 
     def test_eliminar_partido_ajeno_da_404(self):
         self.login_a()
@@ -2584,3 +2604,144 @@ class BlindajePerimetroTests(TestCase):
     @override_settings(DJANGO_ADMIN_URL='mvs-test-admin')
     def test_admin_url_setting_configurable(self):
         self.assertEqual(settings.DJANGO_ADMIN_URL, 'mvs-test-admin')
+
+
+class PlantillaCSVParserTests(TestCase):
+    """Parser de plantilla: Excel ES, BOM, abreviaturas y filas inválidas."""
+
+    def test_normaliza_abreviaturas_de_posicion(self):
+        self.assertEqual(normalizar_posicion('Co'), 'COLOCADORA')
+        self.assertEqual(normalizar_posicion(' col '), 'COLOCADORA')
+        self.assertEqual(normalizar_posicion('R'), 'RECEPTORA')
+        self.assertEqual(normalizar_posicion('REC'), 'RECEPTORA')
+        self.assertEqual(normalizar_posicion('C'), 'CENTRAL')
+        self.assertEqual(normalizar_posicion('O'), 'OPUESTA')
+        self.assertEqual(normalizar_posicion('L'), 'LIBERO')
+        self.assertEqual(normalizar_posicion('COLOCADORA'), 'COLOCADORA')
+        self.assertIsNone(normalizar_posicion('XX'))
+
+    def test_parsea_punto_y_coma_tildes_y_bom(self):
+        texto = 'dorsal;nombre;apellidos;posicion\n4;Laura;Gómez;R\n'
+        contenido = texto.encode('utf-8-sig')
+        parseo = parsear_plantilla_csv(contenido)
+        self.assertEqual(parseo.errores, [])
+        self.assertEqual(len(parseo.filas), 1)
+        self.assertEqual(parseo.filas[0].nombre, 'Laura')
+        self.assertEqual(parseo.filas[0].apellidos, 'Gómez')
+        self.assertEqual(parseo.filas[0].posicion, 'RECEPTORA')
+
+    def test_fila_invalida_no_impide_las_validas(self):
+        csv_txt = (
+            'dorsal,nombre,apellidos,posicion\n'
+            '7,Marta,Sanz,Co\n'
+            ',Sin,Dorsal,C\n'
+            '7,Otra,Marta,R\n'
+            '8,Paula,Navarro,XX\n'
+            '9,Irene,Vega,CEN\n'
+        )
+        parseo = parsear_plantilla_csv(csv_txt.encode('utf-8'))
+        dorsales = [f.dorsal for f in parseo.filas]
+        self.assertEqual(dorsales, [7, None, 9])
+        self.assertTrue(any('duplicado' in e for e in parseo.errores))
+        self.assertTrue(any('no válida' in e for e in parseo.errores))
+
+    def test_parsea_informe_club_nombre_apellido_sin_dorsal(self):
+        csv_txt = (
+            'Categoría y Equipo,Nombre,Apellido,Año,Dorsal,Técnica\n'
+            ',,,,,,,,\n'
+            'INFANTIL A,María,Callesi Flor,2012,,7\n'
+            'INFANTIL A,Carola,Delgado Moreno,2013,,9\n'
+        )
+        parseo = parsear_plantilla_csv(csv_txt.encode('utf-8'))
+        self.assertEqual(parseo.errores, [])
+        self.assertEqual(len(parseo.filas), 2)
+        self.assertEqual(parseo.filas[0].nombre, 'María')
+        self.assertEqual(parseo.filas[0].apellidos, 'Callesi Flor')
+        self.assertIsNone(parseo.filas[0].dorsal)
+        self.assertEqual(parseo.filas[0].fecha_nacimiento.year, 2012)
+        self.assertEqual(parseo.sin_dorsal, 2)
+
+    def test_parsea_asistencia_con_logo_y_n_dorsal(self):
+        csv_txt = (
+            'Claret,,,,\n'
+            ',,,,\n'
+            'Nº,Talla,compit,Apellidos y Nombre,,Fecha nac\n'
+            '18,,SI,Lucía,García Porfirio,14/1/2014\n'
+            '25,,SI,Belén,Alcalde Guerrero,1/2/2014\n'
+        )
+        parseo = parsear_plantilla_csv(csv_txt.encode('utf-8'))
+        self.assertEqual(parseo.errores, [])
+        self.assertEqual(len(parseo.filas), 2)
+        self.assertEqual(parseo.filas[0].dorsal, 18)
+        self.assertEqual(parseo.filas[0].nombre, 'Lucía')
+        self.assertEqual(parseo.filas[0].apellidos, 'García Porfirio')
+
+
+class PlantillaCSVViewsTests(TestCase):
+    """Exportar/importar CSV en Gestión de Equipos."""
+
+    def setUp(self):
+        cache.clear()
+        self.coach, self.equipo, self.jugadora, _ = _crear_entrenador_con_partido('coach_csv')
+        self.client.login(username='coach_csv', password='pass12345')
+
+    def test_exportar_csv_incluye_cabecera_y_jugadora(self):
+        response = self.client.get(reverse('stats_app:equipo_exportar_csv', args=[self.equipo.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/csv', response['Content-Type'])
+        cuerpo = response.content.decode('utf-8-sig')
+        self.assertTrue(cuerpo.startswith('dorsal,nombre,apellidos,posicion'))
+        self.assertIn('7,Val,Con,OPUESTA', cuerpo)
+
+    def test_importar_crea_y_actualiza_sin_borrar_al_resto(self):
+        otra = Jugadora.objects.create(
+            equipo=self.equipo, nombre='Sara', apellidos='Ortiz', dorsal=12, posicion='RECEPTORA',
+        )
+        csv_txt = (
+            'dorsal,nombre,apellidos,posicion\n'
+            '7,Marta,Sanz,Co\n'
+            '4,Laura,Gómez,R\n'
+        )
+        response = self.client.post(
+            reverse('stats_app:equipo_importar_csv', args=[self.equipo.pk]),
+            data={'archivo': SimpleUploadedFile('plantilla.csv', csv_txt.encode('utf-8-sig'), content_type='text/csv')},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.jugadora.refresh_from_db()
+        self.assertEqual(self.jugadora.nombre, 'Marta')
+        self.assertEqual(self.jugadora.posicion, 'COLOCADORA')
+        nueva = Jugadora.objects.get(equipo=self.equipo, dorsal=4)
+        self.assertEqual(nueva.nombre, 'Laura')
+        otra.refresh_from_db()
+        self.assertEqual(otra.nombre, 'Sara')
+        self.assertContains(response, '1 creadas')
+        self.assertContains(response, '1 actualizadas')
+
+    def test_importar_informe_club_crea_sin_dorsal_y_no_duplica(self):
+        csv_txt = (
+            'Categoría y Equipo,Nombre,Apellido,Año,Dorsal,Técnica\n'
+            ',,,,,,,,\n'
+            'INFANTIL A,María,Callesi Flor,2012,,7\n'
+            'INFANTIL A,Carola,Delgado Moreno,2013,,9\n'
+        )
+        url = reverse('stats_app:equipo_importar_csv', args=[self.equipo.pk])
+        archivo = lambda: SimpleUploadedFile(
+            'informe.csv', csv_txt.encode('utf-8'), content_type='text/csv',
+        )
+        primero = self.client.post(url, data={'archivo': archivo()}, follow=True)
+        self.assertEqual(primero.status_code, 200)
+        self.assertEqual(
+            Jugadora.objects.filter(equipo=self.equipo, nombre='María', apellidos='Callesi Flor').count(),
+            1,
+        )
+        maria = Jugadora.objects.get(equipo=self.equipo, nombre='María', apellidos='Callesi Flor')
+        self.assertIsNone(maria.dorsal)
+        self.assertEqual(maria.fecha_nacimiento.year, 2012)
+        segundo = self.client.post(url, data={'archivo': archivo()}, follow=True)
+        self.assertEqual(segundo.status_code, 200)
+        self.assertEqual(
+            Jugadora.objects.filter(equipo=self.equipo, nombre='María', apellidos='Callesi Flor').count(),
+            1,
+        )
+
