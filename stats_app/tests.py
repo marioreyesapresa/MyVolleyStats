@@ -43,6 +43,10 @@ from .services.reporting import (
     calc_set_score,
     marcador_resumen,
     merito_y_error_rival,
+    zone_performance,
+    zona_heatmap_class,
+    zonas_en_orden_pista,
+    zonas_tienen_datos,
     _candidata_cambio,
 )
 from .services.temporada import stats_jugadora_temporada, stats_temporada_equipo
@@ -1353,7 +1357,8 @@ class FlujoCompletoPartidoTests(TestCase):
         content = response.content.decode()
         self.assertIn('Rendimiento por Zona', content)
         self.assertIn('Eficacia por Rotación', content)
-        self.assertIn('Zona 4', content)
+        self.assertIn('data-zona="4"', content)
+        self.assertIn('Z4', content)
 
         pdf_response = self.client.get(reverse('stats_app:descargar_informe_completo', args=[self.partido.pk]))
         self.assertEqual(pdf_response.status_code, 200)
@@ -1551,9 +1556,10 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(len(reporte['detalle_sets']), 1)
         self.assertIsNone(reporte['detalle_total'])
         set_data = reporte['detalle_sets'][0]
-        for clave in ('zonas', 'trazo', 'rotacion', 'racha_maxima', 'run_chart', 'k1_efi', 'k2_efi', 'lideres', 'destacados_por_accion'):
+        for clave in ('zonas', 'zonas_tienen_datos', 'zonas_pista', 'trazo', 'rotacion', 'racha_maxima', 'run_chart', 'k1_efi', 'k2_efi', 'lideres', 'destacados_por_accion'):
             self.assertIn(clave, set_data)
         self.assertEqual(len(set_data['zonas']), 6)
+        self.assertFalse(set_data['zonas_tienen_datos'])
         self.assertEqual(len(set_data['rotacion']), 6)
         self.assertIn('saque', set_data['trazo'])
         self.assertIn('ataque', set_data['trazo'])
@@ -1914,6 +1920,159 @@ class ReportingHelpersTests(TestCase):
         self.assertEqual(jug['fundamentos']['RECEPCION']['eq'], 1)
         self.assertIn('fundamentos_meta', reporte)
         self.assertEqual(len(reporte['fundamentos_meta']), 6)
+
+    def test_zona_heatmap_class_escala_de_eficacia(self):
+        self.assertEqual(
+            zona_heatmap_class(None, 0),
+            'bg-elevated/40 text-slate-500 border-slate-800',
+        )
+        self.assertEqual(
+            zona_heatmap_class(20, 5),
+            'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        )
+        self.assertEqual(
+            zona_heatmap_class(0, 3),
+            'bg-emerald-900/20 text-emerald-400 border-emerald-900/40',
+        )
+        self.assertEqual(
+            zona_heatmap_class(19.9, 5),
+            'bg-emerald-900/20 text-emerald-400 border-emerald-900/40',
+        )
+        self.assertEqual(
+            zona_heatmap_class(-10, 2),
+            'bg-rose-500/20 text-rose-300 border-rose-500/40',
+        )
+
+    def test_zone_performance_ataque_con_zona_calcula_eficacia_y_heatmap(self):
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadora, tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=1, zona=4,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadora, tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=1, zona=4,
+        )
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadora, tipo_fase='K2',
+            accion='BLOQUEO', calidad='++', set_numero=1, zona=3,
+        )
+        zonas = zone_performance(self.partido, 1)
+        self.assertTrue(zonas_tienen_datos(zonas))
+        z4 = next(z for z in zonas if z['zona'] == 4)
+        self.assertEqual(z4['ataque_total'], 2)
+        self.assertEqual(z4['ataque_pts'], 2)
+        self.assertEqual(z4['ataque_pct'], 100.0)
+        self.assertEqual(z4['heatmap_class'], 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40')
+        z3 = next(z for z in zonas if z['zona'] == 3)
+        self.assertEqual(z3['bloqueo_total'], 1)
+        self.assertEqual(z3['bloqueo_pct'], 100.0)
+        self.assertTrue(z3['es_red'])
+        self.assertEqual(
+            [z['zona'] for z in zonas_en_orden_pista(zonas)],
+            [4, 3, 2, 5, 6, 1],
+        )
+        reporte = build_full_report(self.partido, '1')
+        self.assertTrue(reporte['detalle_sets'][0]['zonas_tienen_datos'])
+
+    def test_zone_performance_sin_zona_no_inventa_ceros(self):
+        """Scout Avanzado (sin zona) no alimenta el mapa."""
+        self._punto('ATAQUE', '++')
+        self._punto('BLOQUEO', '++')
+        zonas = zone_performance(self.partido, 1)
+        self.assertFalse(zonas_tienen_datos(zonas))
+        self.assertTrue(all(z['ataque_total'] == 0 and z['bloqueo_total'] == 0 for z in zonas))
+        self.assertTrue(all(z['ataque_pct'] is None for z in zonas))
+        self.assertTrue(all(
+            z['heatmap_class'] == 'bg-elevated/40 text-slate-500 border-slate-800'
+            for z in zonas
+        ))
+
+    def test_zone_performance_minivoley_solo_cuatro_zonas(self):
+        self.partido.modalidad = 'MINIVOLEY'
+        self.partido.save(update_fields=['modalidad'])
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadora, tipo_fase='K1',
+            accion='ATAQUE', calidad='--', set_numero=1, zona=3,
+        )
+        zonas = zone_performance(self.partido, 1)
+        self.assertEqual([z['zona'] for z in zonas], [1, 2, 3, 4])
+        self.assertEqual(
+            [z['zona'] for z in zonas_en_orden_pista(zonas, minivoley=True)],
+            [3, 2, 4, 1],
+        )
+        z3 = next(z for z in zonas if z['zona'] == 3)
+        self.assertEqual(z3['ataque_pct'], -100.0)
+        self.assertEqual(z3['heatmap_class'], 'bg-rose-500/20 text-rose-300 border-rose-500/40')
+
+
+class ZoneHeatmapVistaTests(TestCase):
+    """Pista de zonas en Estadísticas rápidas: con datos, vacío Avanzado y Minivoley."""
+
+    def setUp(self):
+        cache.clear()
+        self.coach, self.equipo, self.jugadora, self.partido = _crear_entrenador_con_partido('coach_heatmap')
+        self.client.login(username='coach_heatmap', password='pass12345')
+
+    def test_stats_final_con_zona_pinta_pista_y_no_la_tabla(self):
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadora, tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=1, zona=4,
+        )
+        response = self.client.get(reverse('stats_app:partido_stats_final', args=[self.partido.pk]))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn('data-zona="4"', html)
+        self.assertIn('bg-emerald-500/20', html)
+        self.assertIn('(1/1)', html)
+        self.assertTrue('100,0%' in html or '100.0%' in html)
+        self.assertNotIn('Ataque Int.', html)
+        self.assertNotIn('Sin zonas en este set', html)
+
+    def test_stats_final_scout_avanzado_sin_zona_muestra_vacio(self):
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadora, tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=1, zona=None,
+        )
+        response = self.client.get(reverse('stats_app:partido_stats_final', args=[self.partido.pk]))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn('Sin zonas en este set', html)
+        self.assertIn('El Avanzado no', html)
+        self.assertNotIn('data-zona="', html)
+        self.assertNotIn('Ataque Int.', html)
+
+    def test_stats_final_minivoley_diamante_sin_z5_z6(self):
+        self.partido.modalidad = 'MINIVOLEY'
+        self.partido.save(update_fields=['modalidad'])
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadora, tipo_fase='K1',
+            accion='ATAQUE', calidad='+', set_numero=1, zona=3,
+        )
+        response = self.client.get(reverse('stats_app:partido_stats_final', args=[self.partido.pk]))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn('data-zona="3"', html)
+        self.assertIn('data-zona="1"', html)
+        self.assertIn('grid-area: z3', html)
+        self.assertNotIn('data-zona="5"', html)
+        self.assertNotIn('data-zona="6"', html)
+        self.assertNotIn('Ataque Int.', html)
+
+    def test_api_stats_set_incluye_heatmap_class_en_vivo(self):
+        RegistroEstadistica.objects.create(
+            partido=self.partido, jugadora=self.jugadora, tipo_fase='K1',
+            accion='ATAQUE', calidad='++', set_numero=1, zona=2,
+        )
+        response = self.client.post(
+            reverse('stats_app:api_obtener_stats_set'),
+            data=json.dumps({'partido_id': self.partido.id, 'set_numero': 1}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        z2 = next(z for z in data['zonas'] if z['zona'] == 2)
+        self.assertEqual(z2['heatmap_class'], 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40')
+        self.assertEqual(z2['ataque_pct'], 100.0)
 
 
 def _puntos_set(partido, jugadora, set_n, local, rival):

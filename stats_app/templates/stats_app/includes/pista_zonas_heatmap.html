@@ -1,0 +1,55 @@
+{% if not zonas_tienen_datos %}
+<div class="px-4 py-6 text-center space-y-1">
+    <p class="text-sm font-semibold text-slate-300">Sin zonas en este set</p>
+    <p class="text-xs text-slate-500 max-w-sm mx-auto">
+        El Modo Rápido guarda la zona de cada acción. El Avanzado no, así que aquí no hay mapa.
+    </p>
+</div>
+{% else %}
+<div class="px-3 py-3 space-y-2">
+    <p class="text-[9px] font-black uppercase tracking-[0.2em] text-center text-yellow-400/80">Red</p>
+    {% if modalidad == 'MINIVOLEY' %}
+    <div class="grid grid-cols-3 gap-1 max-w-xs mx-auto" style="grid-template-areas: '. z3 .' 'z4 . z2' '. z1 .';">
+        {% for z in zonas_pista %}
+        <div class="p-3 border rounded-xl text-center {{ z.heatmap_class }}" data-zona="{{ z.zona }}" style="grid-area: z{{ z.zona }};">
+            <span class="text-[10px] font-semibold uppercase tracking-wide opacity-80">
+                Z{{ z.zona }}{% if z.zona == 1 %} · saque{% endif %}
+            </span>
+            {% if z.ataque_total %}
+            <p class="text-base font-bold tabular-nums mt-1">{{ z.ataque_pct }}%</p>
+            <p class="text-[11px] opacity-80 tabular-nums">({{ z.ataque_pts }}/{{ z.ataque_total }})</p>
+            {% else %}
+            <p class="text-base font-bold mt-1">—</p>
+            {% endif %}
+            {% if z.es_red %}
+            <p class="text-[11px] text-blue-300 mt-1">
+                {% if z.bloqueo_total %}Blo {{ z.bloqueo_pct }}% ({{ z.bloqueo_pts }}/{{ z.bloqueo_total }}){% else %}Blo —{% endif %}
+            </p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="grid grid-cols-3 rounded-xl border border-slate-700 overflow-hidden bg-elevated/30">
+        {% for z in zonas_pista %}
+        <div class="p-3 border border-slate-800 text-center {{ z.heatmap_class }}" data-zona="{{ z.zona }}">
+            <span class="text-[10px] font-semibold uppercase tracking-wide opacity-80">
+                Z{{ z.zona }}{% if z.zona == 1 %} · saque{% endif %}
+            </span>
+            {% if z.ataque_total %}
+            <p class="text-base font-bold tabular-nums mt-1">{{ z.ataque_pct }}%</p>
+            <p class="text-[11px] opacity-80 tabular-nums">({{ z.ataque_pts }}/{{ z.ataque_total }})</p>
+            {% else %}
+            <p class="text-base font-bold mt-1">—</p>
+            {% endif %}
+            {% if z.es_red %}
+            <p class="text-[11px] text-blue-300 mt-1">
+                {% if z.bloqueo_total %}Blo {{ z.bloqueo_pct }}% ({{ z.bloqueo_pts }}/{{ z.bloqueo_total }}){% else %}Blo —{% endif %}
+            </p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}

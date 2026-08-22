@@ -800,6 +800,10 @@ def build_full_report(partido, set_filter='global'):
     for s in sets_nums:
         sd = build_set_report(partido, s)
         sd['zonas'] = zone_performance(partido, s)
+        sd['zonas_tienen_datos'] = zonas_tienen_datos(sd['zonas'])
+        sd['zonas_pista'] = zonas_en_orden_pista(
+            sd['zonas'], minivoley=partido.modalidad == 'MINIVOLEY',
+        )
         sd['trazo'] = trazo_analysis(partido, s)
         sd['rotacion'] = rotation_matrix(partido, s)
         sd['racha_maxima'] = calc_racha_maxima(partido, s)
@@ -850,6 +854,17 @@ def build_destacadas(detalle_sets, min_ataques=3):
     }
 
 
+def zona_heatmap_class(ataque_pct, ataque_total):
+    """Clases Tailwind del mapa de zonas según eficacia de ataque."""
+    if not ataque_total or ataque_pct is None:
+        return 'bg-elevated/40 text-slate-500 border-slate-800'
+    if ataque_pct >= 20:
+        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+    if ataque_pct >= 0:
+        return 'bg-emerald-900/20 text-emerald-400 border-emerald-900/40'
+    return 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+
+
 def zone_performance(partido, set_num):
     """Rendimiento de Ataque y Bloqueo por zona de pista (1-6), a partir del
     campo `zona` que el Modo Rápido guarda en cada acción. Solo cuenta
@@ -864,8 +879,9 @@ def zone_performance(partido, set_num):
     for r in rows:
         rows_by_zone[r['zona']].append(r)
 
+    max_z = _max_zona_partido(partido)
     zonas = []
-    for z in range(1, 7):
+    for z in range(1, max_z + 1):
         z_rows = rows_by_zone.get(z, [])
         atq = _fund_counts(z_rows, 'ATAQUE')
         blo = _fund_counts(z_rows, 'BLOQUEO')
@@ -882,8 +898,20 @@ def zone_performance(partido, set_num):
             'bloqueo_pts': blo['pp'],
             'bloqueo_err': blo['mm'],
             'bloqueo_pct': blo_pct,
+            'heatmap_class': zona_heatmap_class(atq_pct, atq['total']),
         })
     return zonas
+
+
+def zonas_tienen_datos(zonas):
+    return any((z.get('ataque_total') or 0) > 0 or (z.get('bloqueo_total') or 0) > 0 for z in zonas)
+
+
+def zonas_en_orden_pista(zonas, minivoley=False):
+    """Zonas en el orden visual de la pista (red arriba)."""
+    orden = (3, 2, 4, 1) if minivoley else (4, 3, 2, 5, 6, 1)
+    por_zona = {z['zona']: z for z in zonas}
+    return [por_zona[z] for z in orden if z in por_zona]
 
 
 def _max_zona_partido(partido):

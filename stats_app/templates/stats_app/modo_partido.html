@@ -1728,18 +1728,18 @@
                 <div id="zone-perf-grid" class="grid {% if partido.modalidad == 'MINIVOLEY' %}grid-cols-2{% else %}grid-cols-3{% endif %} gap-2">
                     {% if partido.modalidad == 'MINIVOLEY' %}
                     {% for z in "3241" %}
-                    <div class="zone-perf-block bg-[#090d16] rounded-xl p-2 border border-slate-800 text-center" data-zona="{{ z }}">
-                        <span class="text-[8px] font-black text-slate-500">Z{{ z }}</span>
-                        <div class="zp-ataque text-[10px] font-black text-emerald-400 mt-1">—</div>
-                        <div class="zp-bloqueo text-[9px] font-black text-blue-400">—</div>
+                    <div class="zone-perf-block rounded-xl p-2 border text-center bg-elevated/40 text-slate-500 border-slate-800" data-zona="{{ z }}">
+                        <span class="zp-label text-[8px] font-black uppercase tracking-wide opacity-80">Z{{ z }}</span>
+                        <div class="zp-ataque text-[10px] font-black mt-1">—</div>
+                        <div class="zp-bloqueo text-[9px] font-black text-blue-300{% if z != '2' and z != '3' and z != '4' %} hidden{% endif %}">{% if z == '2' or z == '3' or z == '4' %}—{% endif %}</div>
                     </div>
                     {% endfor %}
                     {% else %}
                     {% for z in "432561" %}
-                    <div class="zone-perf-block bg-[#090d16] rounded-xl p-2 border border-slate-800 text-center" data-zona="{{ z }}">
-                        <span class="text-[8px] font-black text-slate-500">Z{{ z }}</span>
-                        <div class="zp-ataque text-[10px] font-black text-emerald-400 mt-1">—</div>
-                        <div class="zp-bloqueo text-[9px] font-black text-blue-400">—</div>
+                    <div class="zone-perf-block rounded-xl p-2 border text-center bg-elevated/40 text-slate-500 border-slate-800" data-zona="{{ z }}">
+                        <span class="zp-label text-[8px] font-black uppercase tracking-wide opacity-80">Z{{ z }}</span>
+                        <div class="zp-ataque text-[10px] font-black mt-1">—</div>
+                        <div class="zp-bloqueo text-[9px] font-black text-blue-300{% if z != '2' and z != '3' and z != '4' %} hidden{% endif %}">{% if z == '2' or z == '3' or z == '4' %}—{% endif %}</div>
                     </div>
                     {% endfor %}
                     {% endif %}
@@ -5674,20 +5674,39 @@
             });
         }
 
+        const ZONE_HEAT = {
+            empty: 'bg-elevated/40 text-slate-500 border-slate-800',
+            hot: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+            mild: 'bg-emerald-900/20 text-emerald-400 border-emerald-900/40',
+            cold: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+        };
         document.querySelectorAll('.zone-perf-block').forEach(block => {
+            block.className = `zone-perf-block rounded-xl p-2 border text-center ${ZONE_HEAT.empty}`;
             const atqEl = block.querySelector('.zp-ataque');
             const bloEl = block.querySelector('.zp-bloqueo');
             if (atqEl) atqEl.innerText = '—';
-            if (bloEl) bloEl.innerText = '—';
+            if (bloEl && !bloEl.classList.contains('hidden')) bloEl.innerText = '—';
         });
         if (res.zonas) {
             res.zonas.forEach(z => {
                 const block = document.querySelector(`.zone-perf-block[data-zona="${z.zona}"]`);
                 if (!block) return;
+                const heat = z.heatmap_class || ZONE_HEAT.empty;
+                block.className = `zone-perf-block rounded-xl p-2 border text-center ${heat}`;
                 const atqEl = block.querySelector('.zp-ataque');
                 const bloEl = block.querySelector('.zp-bloqueo');
-                if (atqEl) atqEl.innerText = z.ataque_total > 0 ? `${z.ataque_pct}%` : '—';
-                if (bloEl) bloEl.innerText = z.es_red ? (z.bloqueo_total > 0 ? `${z.bloqueo_pct}%` : '—') : '';
+                if (atqEl) {
+                    atqEl.innerText = z.ataque_total > 0
+                        ? `${z.ataque_pct}% (${z.ataque_pts}/${z.ataque_total})`
+                        : '—';
+                }
+                if (bloEl && !bloEl.classList.contains('hidden')) {
+                    if (z.bloqueo_total > 0) {
+                        bloEl.innerText = `Blo ${z.bloqueo_pct}% (${z.bloqueo_pts}/${z.bloqueo_total})`;
+                    } else {
+                        bloEl.innerText = 'Blo —';
+                    }
+                }
             });
         }
 
