@@ -50,7 +50,7 @@ steps:
       - --allow-unauthenticated
       - --memory=512Mi
       - --timeout=60
-      - --set-env-vars=DJANGO_DEBUG=False,ALLOWED_HOSTS=${_ALLOWED_HOSTS},CSRF_TRUSTED_ORIGINS=${_CSRF_ORIGINS},ALLOW_PUBLIC_REGISTRATION=False,DJANGO_ADMIN_URL=mvs-gestion-k7p2,${_EMAIL_ENV}
+      - --set-env-vars=DJANGO_DEBUG=False,ALLOWED_HOSTS=${_ALLOWED_HOSTS},CSRF_TRUSTED_ORIGINS=${_CSRF_ORIGINS},ALLOW_PUBLIC_REGISTRATION=True,DJANGO_ADMIN_URL=mvs-gestion-k7p2,${_EMAIL_ENV}
       - --set-secrets=SECRET_KEY=voley-secret-key:latest,DATABASE_URL=voley-database-url:latest,EMAIL_HOST_PASSWORD=voley-email-password:latest
       - --quiet
 

@@ -177,8 +177,8 @@ RATE_LIMIT_RULES = [
     (r'^/api/', 240, 60),
 ]
 
-# Registro público de entrenadores. En producción conviene False y crear
-# cuentas vía createsuperuser / admin.
+# Registro público de entrenadores. False = solo cuentas creadas a mano
+# (createsuperuser / admin).
 ALLOW_PUBLIC_REGISTRATION = config('ALLOW_PUBLIC_REGISTRATION', default=True, cast=bool)
 
 # Ruta del panel Django Admin (sin barras). En producción usar path no adivinable.

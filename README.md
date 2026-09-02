@@ -49,7 +49,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Abre **http://127.0.0.1:8000** e inicia sesión. En local el registro público está activo por defecto (`ALLOW_PUBLIC_REGISTRATION=True`). En producción se desactiva y las cuentas se crean con `createsuperuser` o desde el panel admin (ruta configurable con `DJANGO_ADMIN_URL`).
+Abre **http://127.0.0.1:8000** e inicia sesión. El registro público está activo (`ALLOW_PUBLIC_REGISTRATION=True`): en el login aparece **Crear cuenta**. Para cerrarlo, pon la variable a `False` y crea cuentas solo con `createsuperuser` o el panel admin.
 
 ### Tests
 
