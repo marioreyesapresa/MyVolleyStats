@@ -281,3 +281,63 @@ class NotaPartido(models.Model):
         indexes = [
             models.Index(fields=['partido', 'set_numero'], name='statsapp_nota_partido_set_idx'),
         ]
+
+
+class Convocatoria(models.Model):
+    """Lista de convocadas de un partido. No se crea al dar de alta el cruce."""
+
+    partido = models.OneToOneField(
+        Partido, on_delete=models.CASCADE, related_name='convocatoria',
+        verbose_name="Partido",
+    )
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Convocatoria {self.partido}"
+
+    class Meta:
+        verbose_name = "Convocatoria"
+        verbose_name_plural = "Convocatorias"
+
+
+class ConvocatoriaJugadora(models.Model):
+    """Sí/no de cada jugadora en una lista, con motivo si no va."""
+
+    class MotivoBaja(models.TextChoices):
+        LESION = 'LESION', 'Lesión'
+        ENFERMEDAD = 'ENFERMEDAD', 'Enfermedad'
+        ESTUDIOS = 'ESTUDIOS', 'Estudios'
+        VIAJE = 'VIAJE', 'Viaje'
+        SANCION = 'SANCION', 'Sanción'
+        ROTACION = 'ROTACION', 'Rotación'
+        DECISION_TECNICA = 'DECISION_TECNICA', 'Decisión técnica'
+        OTRO = 'OTRO', 'Otro'
+
+    convocatoria = models.ForeignKey(
+        Convocatoria, on_delete=models.CASCADE, related_name='lineas',
+        verbose_name="Convocatoria",
+    )
+    jugadora = models.ForeignKey(
+        Jugadora, on_delete=models.CASCADE, related_name='lineas_convocatoria',
+        verbose_name="Jugadora",
+    )
+    convocada = models.BooleanField(default=True, verbose_name="Convocada")
+    motivo_baja = models.CharField(
+        max_length=20, choices=MotivoBaja.choices, blank=True, null=True,
+        verbose_name="Motivo de baja",
+    )
+
+    def __str__(self):
+        estado = 'Va' if self.convocada else f'No va ({self.get_motivo_baja_display() or "—"})'
+        return f"{self.jugadora} · {estado}"
+
+    class Meta:
+        verbose_name = "Jugadora en convocatoria"
+        verbose_name_plural = "Jugadoras en convocatoria"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['convocatoria', 'jugadora'],
+                name='uniq_convocatoria_jugadora',
+            ),
+        ]

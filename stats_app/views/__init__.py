@@ -13,6 +13,7 @@ from .informes import (
     DescargarManualUsuarioPDF,
 )
 from .telemetry import ClientErrorAPI
+from .convocatorias import ConvocatoriaPartidoView
 from .administracion import (
     ConfiguracionView, DashboardView,
     EquipoCreateView, EquipoUpdateView, EquipoDeleteView, EquipoListView,

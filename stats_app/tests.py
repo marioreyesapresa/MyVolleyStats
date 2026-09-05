@@ -24,7 +24,7 @@ from django.utils import timezone
 
 from .db_utils import reintentar_en_error_transitorio
 from .forms import RegistrarAccionForm, RegistrarCambioForm, EliminarAccionForm
-from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet, NotaPartido, LineupPreset
+from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet, NotaPartido, LineupPreset, Convocatoria
 from .security import RateLimitMiddleware
 from .services.reporting import (
     build_full_report,
@@ -50,6 +50,12 @@ from .services.reporting import (
     _candidata_cambio,
 )
 from .services.temporada import stats_jugadora_temporada, stats_temporada_equipo
+from .services.convocatoria import (
+    guardar_convocatoria,
+    stats_convocatorias_jugadora,
+    texto_whatsapp,
+    ConvocatoriaInvalida,
+)
 from .services.plantilla_csv import (
     normalizar_posicion,
     parsear_plantilla_csv,
@@ -124,6 +130,11 @@ class AislamientoEntrenadorTests(TestCase):
     def test_eliminar_partido_ajeno_da_404(self):
         self.login_a()
         response = self.client.get(reverse('stats_app:partido_eliminar', args=[self.partido_b.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_convocatoria_partido_ajeno_da_404(self):
+        self.login_a()
+        response = self.client.get(reverse('stats_app:partido_convocatoria', args=[self.partido_b.pk]))
         self.assertEqual(response.status_code, 404)
 
     # ── Modo partido y estadísticas ──────────────────────────────────────
@@ -2123,10 +2134,10 @@ class DashboardSprint1Tests(TestCase):
         self.assertContains(response, 'Próximo cruce')
         self.assertContains(response, 'CV Alcorcón')
         self.assertContains(response, 'Scout en vivo')
-        self.assertContains(response, 'Preparar partido')
+        self.assertContains(response, 'Convocar')
         self.assertContains(
             response,
-            reverse('stats_app:modo_partido', args=[self.partido.pk]) + '?tab=rotacion',
+            reverse('stats_app:partido_convocatoria', args=[self.partido.pk]),
         )
         self.assertContains(response, 'Pabellón Sur')
         self.assertContains(response, reverse('stats_app:partido_editar', args=[self.partido.pk]))
@@ -3005,7 +3016,7 @@ class FichaTemporadaTests(TestCase):
 
         inicio = self.client.get(reverse('stats_app:dashboard'))
         self.assertNotContains(inicio, 'Puntos al recibir')
-        self.assertContains(inicio, 'Preparar partido')
+        self.assertContains(inicio, 'Convocar')
 
         pizarra = self.client.get(
             reverse('stats_app:modo_partido', args=[self.partido.pk]),
@@ -3029,4 +3040,130 @@ class FichaTemporadaTests(TestCase):
         self.assertEqual(equipo_kpis.partidos, 1)
         self.assertEqual(equipo_kpis.victorias, 1)
         self.assertEqual(equipo_kpis.breakpoint_pct, 50.0)
+
+
+class ConvocatoriaTests(TestCase):
+    """Listas de convocatoria: calendario libre, pizarra filtrada y ficha."""
+
+    def setUp(self):
+        cache.clear()
+        self.coach, self.equipo, self.jugadora, self.partido = _crear_entrenador_con_partido(
+            'coach_convocatoria'
+        )
+        self.client.login(username='coach_convocatoria', password='pass12345')
+        self.otra = Jugadora.objects.create(
+            equipo=self.equipo, nombre='Nora', apellidos='Banquillo', dorsal=11,
+            posicion='CENTRAL',
+        )
+
+    def _payload(self, va_ids, bajas):
+        lineas = []
+        for j in (self.jugadora, self.otra):
+            if j.id in va_ids:
+                lineas.append({'jugadora_id': j.id, 'convocada': True, 'motivo_baja': None})
+            else:
+                lineas.append({
+                    'jugadora_id': j.id,
+                    'convocada': False,
+                    'motivo_baja': bajas[j.id],
+                })
+        return json.dumps(lineas)
+
+    def test_crear_partido_no_crea_convocatoria(self):
+        self.assertFalse(Convocatoria.objects.filter(partido=self.partido).exists())
+
+    def test_guardar_lista_y_rechazar_baja_sin_motivo(self):
+        url = reverse('stats_app:partido_convocatoria', args=[self.partido.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Convocar a todas')
+        self.assertContains(response, 'Copiar texto para WhatsApp')
+
+        malo = self.client.post(url, {'lineas': json.dumps([
+            {'jugadora_id': self.jugadora.id, 'convocada': True, 'motivo_baja': None},
+            {'jugadora_id': self.otra.id, 'convocada': False, 'motivo_baja': None},
+        ])})
+        self.assertEqual(malo.status_code, 200)
+        self.assertFalse(Convocatoria.objects.filter(partido=self.partido).exists())
+        self.assertContains(malo, 'Marca un motivo')
+
+        ok = self.client.post(url, {
+            'lineas': self._payload(
+                [self.jugadora.id],
+                {self.otra.id: 'LESION'},
+            )
+        }, follow=True)
+        self.assertEqual(ok.status_code, 200)
+        conv = Convocatoria.objects.get(partido=self.partido)
+        self.assertEqual(conv.lineas.count(), 2)
+        self.assertTrue(conv.lineas.get(jugadora=self.jugadora).convocada)
+        baja = conv.lineas.get(jugadora=self.otra)
+        self.assertFalse(baja.convocada)
+        self.assertEqual(baja.motivo_baja, 'LESION')
+
+    def test_inicio_convocar_luego_editar_y_preparar(self):
+        self.partido.fecha = timezone.localdate() + timedelta(days=2)
+        self.partido.save(update_fields=['fecha'])
+        inicio = self.client.get(reverse('stats_app:dashboard'))
+        self.assertContains(inicio, 'Convocar')
+        self.assertNotContains(inicio, 'Editar convocatoria')
+
+        guardar_convocatoria(self.partido, [
+            {'jugadora_id': self.jugadora.id, 'convocada': True},
+            {'jugadora_id': self.otra.id, 'convocada': True},
+        ])
+        inicio2 = self.client.get(reverse('stats_app:dashboard'))
+        self.assertContains(inicio2, 'Editar convocatoria')
+        self.assertContains(inicio2, 'Preparar partido')
+        self.assertNotContains(inicio2, '>Convocar<')
+
+    def test_pizarra_filtra_no_convocadas_y_sin_lista_muestra_plantilla(self):
+        pizarra = self.client.get(reverse('stats_app:modo_partido', args=[self.partido.pk]))
+        ids = {j.id for j in pizarra.context['jugadoras']}
+        self.assertEqual(ids, {self.jugadora.id, self.otra.id})
+
+        guardar_convocatoria(self.partido, [
+            {'jugadora_id': self.jugadora.id, 'convocada': True},
+            {'jugadora_id': self.otra.id, 'convocada': False, 'motivo_baja': 'ESTUDIOS'},
+        ])
+        filtrada = self.client.get(reverse('stats_app:modo_partido', args=[self.partido.pk]))
+        ids2 = {j.id for j in filtrada.context['jugadoras']}
+        self.assertEqual(ids2, {self.jugadora.id})
+        self.assertNotContains(filtrada, 'Nora')
+
+    def test_ficha_cuenta_listas_y_motivos(self):
+        guardar_convocatoria(self.partido, [
+            {'jugadora_id': self.jugadora.id, 'convocada': True},
+            {'jugadora_id': self.otra.id, 'convocada': False, 'motivo_baja': 'LESION'},
+        ])
+        otro_partido = Partido.objects.create(
+            equipo=self.equipo, fecha=date(2026, 3, 1), hora=time(18, 0),
+            rival='Otro', local=True, lugar='Pabellón',
+        )
+        guardar_convocatoria(otro_partido, [
+            {'jugadora_id': self.jugadora.id, 'convocada': False, 'motivo_baja': 'ESTUDIOS'},
+            {'jugadora_id': self.otra.id, 'convocada': True},
+        ])
+        stats = stats_convocatorias_jugadora(self.jugadora)
+        self.assertEqual(stats.listas, 2)
+        self.assertEqual(stats.convocada, 1)
+        self.assertEqual(stats.bajas, 1)
+        self.assertEqual(stats.motivos, [('ESTUDIOS', 'Estudios', 1)])
+
+        ficha = self.client.get(reverse('stats_app:jugadora_ficha', args=[self.jugadora.pk]))
+        self.assertContains(ficha, '1 / 2')
+        self.assertContains(ficha, 'Estudios')
+        self.assertContains(ficha, 'Motivos de ausencia')
+
+        texto = texto_whatsapp(self.partido)
+        self.assertIn('VAN (1)', texto)
+        self.assertIn('Lesión', texto)
+
+    def test_guardar_servicio_exige_motivo(self):
+        with self.assertRaises(ConvocatoriaInvalida):
+            guardar_convocatoria(self.partido, [
+                {'jugadora_id': self.jugadora.id, 'convocada': True},
+                {'jugadora_id': self.otra.id, 'convocada': False},
+            ])
+
 

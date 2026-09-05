@@ -23,6 +23,7 @@ urlpatterns = [
     path('partido/nuevo/', views.PartidoCreateView.as_view(), name='partido_nuevo'),
     path('partido/<int:pk>/editar/', views.PartidoUpdateView.as_view(), name='partido_editar'),
     path('partido/<int:pk>/eliminar/', views.PartidoDeleteView.as_view(), name='partido_eliminar'),
+    path('partido/<int:pk>/convocatoria/', views.ConvocatoriaPartidoView.as_view(), name='partido_convocatoria'),
 
     # Scouting y estadísticas
     path('partido/<int:pk>/modo-partido/', views.ModoPartidoView.as_view(), name='modo_partido'),

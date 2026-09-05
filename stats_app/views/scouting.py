@@ -21,6 +21,7 @@ from ..forms import (
 from ..db_utils import reintentar_en_error_transitorio
 from ..security import log_intento_acceso_no_autorizado, ocultar_detalle_interno
 from ..services.temporada import stats_temporada_equipo
+from ..services.convocatoria import jugadoras_para_pizarra
 from ..services.reporting import (
     build_quick_set_report,
     build_full_report,
@@ -175,7 +176,7 @@ class ModoPartidoView(LoginRequiredMixin, View):
 
     def get(self, request, pk):
         partido = _partido_del_entrenador(request, pk)
-        jugadoras = Jugadora.objects.filter(equipo=partido.equipo).order_by('dorsal')
+        jugadoras = jugadoras_para_pizarra(partido)
 
         acciones = [
             ('SAQUE', 'Saque'),

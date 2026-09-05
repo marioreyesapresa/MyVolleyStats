@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet, NotaPartido, LineupPreset
+from .models import Equipo, Jugadora, Partido, RegistroEstadistica, RotacionSet, NotaPartido, LineupPreset, Convocatoria, ConvocatoriaJugadora
 
 @admin.register(Equipo)
 class EquipoAdmin(admin.ModelAdmin):
@@ -45,3 +45,15 @@ class NotaPartidoAdmin(admin.ModelAdmin):
     @admin.display(description='Texto')
     def texto_corto(self, obj):
         return obj.texto[:80] + ('…' if len(obj.texto) > 80 else '')
+
+
+@admin.register(Convocatoria)
+class ConvocatoriaAdmin(admin.ModelAdmin):
+    list_display = ('partido', 'actualizado_en')
+    search_fields = ('partido__rival', 'partido__equipo__nombre')
+
+
+@admin.register(ConvocatoriaJugadora)
+class ConvocatoriaJugadoraAdmin(admin.ModelAdmin):
+    list_display = ('convocatoria', 'jugadora', 'convocada', 'motivo_baja')
+    list_filter = ('convocada', 'motivo_baja')

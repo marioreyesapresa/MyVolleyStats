@@ -1,15 +1,17 @@
 from django.contrib import messages
+from django.db.models import Exists, OuterRef
 from django.http import Http404, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import View, CreateView, UpdateView, DeleteView, ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from ..models import Equipo, Jugadora, Partido
+from ..models import Equipo, Jugadora, Partido, Convocatoria
 from ..forms import JugadoraForm
 from ..security import AuditoriaAccesoMixin, log_intento_acceso_no_autorizado
 from ..services.reporting import marcador_resumen
 from ..services.temporada import stats_jugadora_temporada
+from ..services.convocatoria import stats_convocatorias_jugadora
 from ..services.plantilla_csv import (
     MAX_BYTES,
     aplicar_plantilla,
@@ -35,6 +37,11 @@ class DashboardView(LoginRequiredMixin, ListView):
         return (
             Partido.objects.filter(equipo__entrenador=self.request.user)
             .select_related('equipo')
+            .annotate(
+                tiene_convocatoria=Exists(
+                    Convocatoria.objects.filter(partido_id=OuterRef('pk'))
+                )
+            )
             .order_by('-fecha', '-hora')
         )
 
@@ -193,6 +200,7 @@ class JugadoraDetailView(LoginRequiredMixin, AuditoriaAccesoMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['temporada'] = stats_jugadora_temporada(self.object)
+        context['convocatorias'] = stats_convocatorias_jugadora(self.object)
         return context
 
 

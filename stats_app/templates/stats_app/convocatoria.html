@@ -1,0 +1,259 @@
+{% extends 'stats_app/base_voley.html' %}
+
+{% block title %}Convocatoria vs {{ partido.rival }} | MyVolleyStats{% endblock %}
+{% block header_title %}Convocatoria{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in max-w-3xl" id="convocatoria-app"
+     data-whatsapp="{{ texto_whatsapp|escape }}">
+    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div class="min-w-0">
+            <a href="{% url 'stats_app:dashboard' %}" class="text-sm text-slate-400 hover:text-white font-semibold">
+                ← Inicio
+            </a>
+            <h2 class="text-2xl font-bold text-white tracking-tight mt-3">
+                {{ partido.equipo.nombre }} vs {{ partido.rival }}
+            </h2>
+            <p class="text-base text-slate-400 mt-1">
+                {{ partido.fecha|date:"l d \d\e F" }}
+                <span class="text-slate-600">·</span>
+                {{ partido.hora|time:"H:i" }} h
+                <span class="text-slate-600">·</span>
+                {{ partido.lugar }}
+            </p>
+        </div>
+        <p id="cupo-convocadas" class="text-lg font-bold text-white tabular-nums flex-shrink-0">
+            Convocadas: 0 / 0
+        </p>
+    </div>
+
+    {% if not lineas %}
+    <section class="bg-card border border-slate-800 rounded-2xl p-10 text-center">
+        <p class="text-lg font-bold text-white mb-1">No hay plantilla</p>
+        <p class="text-base text-slate-400 max-w-md mx-auto">
+            Añade jugadoras al equipo antes de hacer la convocatoria.
+        </p>
+        <a href="{% url 'stats_app:equipos_list' %}"
+           class="inline-flex mt-5 px-4 py-2.5 bg-elevated text-white border border-slate-700 font-semibold text-sm rounded-xl">
+            Ir a equipos
+        </a>
+    </section>
+    {% else %}
+    <div class="flex flex-wrap gap-2">
+        <button type="button" id="btn-convocar-todas"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-elevated text-white border border-slate-700 font-semibold text-sm rounded-xl active:scale-95">
+            Convocar a todas
+        </button>
+        <button type="button" id="btn-copiar-whatsapp"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-elevated text-white border border-slate-700 font-semibold text-sm rounded-xl active:scale-95">
+            <i data-lucide="share-2" class="w-4 h-4 text-accent"></i>
+            Copiar texto para WhatsApp
+        </button>
+        {% if tiene_lista %}
+        <a href="{% url 'stats_app:modo_partido' partido.id %}?tab=rotacion"
+           class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-elevated text-white border border-slate-700 font-semibold text-sm rounded-xl">
+            Preparar partido
+        </a>
+        {% endif %}
+    </div>
+
+    <form method="post" id="form-convocatoria" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="lineas" id="input-lineas" value="[]">
+
+        <div class="space-y-3" id="lista-convocatoria">
+            {% for linea in lineas %}
+            <article class="convocatoria-fila bg-card border border-slate-800 rounded-2xl p-4"
+                     data-jugadora-id="{{ linea.jugadora.id }}"
+                     data-convocada="{% if linea.convocada %}1{% else %}0{% endif %}"
+                     data-motivo="{{ linea.motivo_baja|default:'' }}">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                    <div class="min-w-0">
+                        <p class="font-semibold text-white truncate">
+                            {% if linea.jugadora.dorsal %}<span class="text-accent tabular-nums">#{{ linea.jugadora.dorsal }}</span>{% endif %}
+                            {{ linea.jugadora.nombre }} {{ linea.jugadora.apellidos }}
+                        </p>
+                        <p class="text-sm text-slate-500">
+                            {% if linea.jugadora.posicion %}{{ linea.jugadora.get_posicion_display }}{% else %}Sin posición{% endif %}
+                        </p>
+                    </div>
+                    <div class="flex rounded-xl overflow-hidden border border-slate-700 flex-shrink-0">
+                        <button type="button" class="btn-va min-h-[2.75rem] px-5 text-sm font-semibold">Va</button>
+                        <button type="button" class="btn-no min-h-[2.75rem] px-5 text-sm font-semibold">No va</button>
+                    </div>
+                </div>
+                <div class="motivos-wrap mt-3 {% if linea.convocada %}hidden{% endif %}">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Motivo</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for codigo, etiqueta in motivos %}
+                        <button type="button"
+                                class="chip-motivo min-h-[2.5rem] px-3 rounded-xl border text-sm font-medium"
+                                data-motivo="{{ codigo }}">{{ etiqueta }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+            <a href="{% url 'stats_app:dashboard' %}"
+               class="inline-flex items-center justify-center px-4 py-2.5 bg-slate-800 text-slate-300 font-semibold text-sm rounded-xl">
+                Cancelar
+            </a>
+            <button type="submit"
+                    class="inline-flex items-center justify-center px-5 py-2.5 bg-accent text-white font-semibold text-sm rounded-xl active:scale-95">
+                Guardar convocatoria
+            </button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+{% if lineas %}
+<script>
+(function () {
+    const filas = () => Array.from(document.querySelectorAll('.convocatoria-fila'));
+    const cupo = document.getElementById('cupo-convocadas');
+    const input = document.getElementById('input-lineas');
+    const form = document.getElementById('form-convocatoria');
+    const partido = {
+        equipo: "{{ partido.equipo.nombre|escapejs }}",
+        rival: "{{ partido.rival|escapejs }}",
+        fecha: "{{ partido.fecha|date:'d/m/Y' }}",
+        hora: "{{ partido.hora|time:'H:i' }}",
+        sede: "{% if partido.local %}Local{% else %}Visitante{% endif %}",
+        lugar: "{{ partido.lugar|escapejs }}",
+    };
+
+    function pintarFila(fila) {
+        const va = fila.dataset.convocada === '1';
+        const motivo = fila.dataset.motivo || '';
+        const btnVa = fila.querySelector('.btn-va');
+        const btnNo = fila.querySelector('.btn-no');
+        const wrap = fila.querySelector('.motivos-wrap');
+        btnVa.className = 'btn-va min-h-[2.75rem] px-5 text-sm font-semibold ' + (va
+            ? 'bg-accent text-white'
+            : 'bg-elevated text-slate-300');
+        btnNo.className = 'btn-no min-h-[2.75rem] px-5 text-sm font-semibold ' + (!va
+            ? 'bg-rose-600 text-white'
+            : 'bg-elevated text-slate-300');
+        wrap.classList.toggle('hidden', va);
+        fila.querySelectorAll('.chip-motivo').forEach(chip => {
+            const on = !va && chip.dataset.motivo === motivo;
+            chip.className = 'chip-motivo min-h-[2.5rem] px-3 rounded-xl border text-sm font-medium ' + (on
+                ? 'bg-rose-500/20 text-rose-200 border-rose-500/40'
+                : 'bg-elevated text-slate-300 border-slate-700');
+        });
+    }
+
+    function serializar() {
+        return filas().map(fila => ({
+            jugadora_id: Number(fila.dataset.jugadoraId),
+            convocada: fila.dataset.convocada === '1',
+            motivo_baja: fila.dataset.convocada === '1' ? null : (fila.dataset.motivo || null),
+        }));
+    }
+
+    function actualizarCupo() {
+        const total = filas().length;
+        const n = filas().filter(f => f.dataset.convocada === '1').length;
+        if (cupo) cupo.textContent = `Convocadas: ${n} / ${total}`;
+    }
+
+    function etiqueta(fila) {
+        const p = fila.querySelector('p.font-semibold');
+        return p ? p.innerText.replace(/\s+/g, ' ').trim() : '';
+    }
+
+    function motivoLabel(fila) {
+        const chip = fila.querySelector('.chip-motivo.bg-rose-500\\/20, .chip-motivo[data-on]');
+        const activo = Array.from(fila.querySelectorAll('.chip-motivo')).find(c => c.dataset.motivo === fila.dataset.motivo);
+        return activo ? activo.textContent.trim() : '—';
+    }
+
+    function textoWhatsApp() {
+        const van = [];
+        const no = [];
+        filas().forEach(fila => {
+            const nombre = etiqueta(fila);
+            if (fila.dataset.convocada === '1') van.push('· ' + nombre);
+            else no.push('· ' + nombre + ' — ' + motivoLabel(fila));
+        });
+        return [
+            `Convocatoria · ${partido.equipo} vs ${partido.rival}`,
+            `${partido.fecha} · ${partido.hora} · ${partido.sede} · ${partido.lugar}`,
+            '',
+            `VAN (${van.length})`,
+            ...(van.length ? van : ['· —']),
+            '',
+            `NO VAN (${no.length})`,
+            ...(no.length ? no : ['· —']),
+        ].join('\n');
+    }
+
+    filas().forEach(fila => {
+        pintarFila(fila);
+        fila.querySelector('.btn-va').addEventListener('click', () => {
+            fila.dataset.convocada = '1';
+            fila.dataset.motivo = '';
+            pintarFila(fila);
+            actualizarCupo();
+        });
+        fila.querySelector('.btn-no').addEventListener('click', () => {
+            fila.dataset.convocada = '0';
+            pintarFila(fila);
+            actualizarCupo();
+        });
+        fila.querySelectorAll('.chip-motivo').forEach(chip => {
+            chip.addEventListener('click', () => {
+                fila.dataset.convocada = '0';
+                fila.dataset.motivo = chip.dataset.motivo;
+                pintarFila(fila);
+                actualizarCupo();
+            });
+        });
+    });
+    actualizarCupo();
+
+    document.getElementById('btn-convocar-todas').addEventListener('click', () => {
+        filas().forEach(fila => {
+            fila.dataset.convocada = '1';
+            fila.dataset.motivo = '';
+            pintarFila(fila);
+        });
+        actualizarCupo();
+    });
+
+    document.getElementById('btn-copiar-whatsapp').addEventListener('click', async () => {
+        const texto = textoWhatsApp();
+        try {
+            await navigator.clipboard.writeText(texto);
+        } catch (e) {
+            const ta = document.createElement('textarea');
+            ta.value = texto;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+        }
+        const btn = document.getElementById('btn-copiar-whatsapp');
+        const prev = btn.innerHTML;
+        btn.textContent = 'Copiado';
+        setTimeout(() => { btn.innerHTML = prev; if (window.lucide) lucide.createIcons(); }, 1400);
+    });
+
+    form.addEventListener('submit', (ev) => {
+        const lineas = serializar();
+        const sinMotivo = lineas.find(l => !l.convocada && !l.motivo_baja);
+        if (sinMotivo) {
+            ev.preventDefault();
+            alert('Marca un motivo en cada jugadora que no va.');
+            return;
+        }
+        input.value = JSON.stringify(lineas);
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}
